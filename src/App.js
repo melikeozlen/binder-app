@@ -737,6 +737,7 @@ function App() {
   // defaultBackImage localStorage'da saklanmaz (büyük olabilir), sadece state'te tutulur
   // Sayfa yenilendiğinde kaybolur ama localStorage'da yer kaplamaz
   const [defaultBackImage, setDefaultBackImage] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [pages, setPages] = useState(() => loadAllPages());
   // Sayfaları order alanına göre sırala (yoksa ID'ye göre - geriye dönük uyumluluk)
   const sortedPages = useMemo(() => {
@@ -1423,6 +1424,53 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [currentSpreadIndex, maxSpreadIndex, pages]);
 
+  // Fullscreen fonksiyonları
+  const enterFullscreen = () => {
+    const element = document.documentElement;
+    if (element.requestFullscreen) {
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen();
+    } else if (element.msRequestFullscreen) {
+      element.msRequestFullscreen();
+    }
+  };
+
+  const exitFullscreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  };
+
+  // Fullscreen değişikliklerini dinle
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement));
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (isFullscreen) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+  };
+
   return (
     <div className="App">
       <SettingsBar
@@ -1451,6 +1499,8 @@ function App() {
         onImageInputModeChange={setImageInputMode}
         galleryUrls={galleryUrls}
         onGalleryUrlsChange={setGalleryUrls}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
       />
       <PageOrderBar
         pages={sortedPages}
@@ -1487,6 +1537,9 @@ function App() {
         onNextPage={handleNextPage}
         onPrevPage={handlePrevPage}
         onDeletePage={handleDeletePage}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        onAddPage={handleAddPage}
       />
       <Footer />
     </div>

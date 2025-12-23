@@ -7,6 +7,24 @@
   overflow: hidden;
 }
 
+.App.fullscreen-mode {
+  height: 100vh;
+  width: 100vw;
+}
+
+.App.fullscreen-mode .settings-bar,
+.App.fullscreen-mode .page-order-bar,
+.App.fullscreen-mode .app-footer {
+  display: none !important;
+}
+
+.App.fullscreen-mode .binder-container {
+  margin-right: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  padding: 0 !important;
+}
+
 .App > .app-footer {
   flex-shrink: 0;
 }

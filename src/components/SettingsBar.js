@@ -55,7 +55,9 @@ const SettingsBar = ({
   imageInputMode = 'file',
   onImageInputModeChange,
   galleryUrls = [],
-  onGalleryUrlsChange
+  onGalleryUrlsChange,
+  isFullscreen = false,
+  onToggleFullscreen
 }) => {
   const { language } = useLanguage();
   const t = (key, params) => {
@@ -135,6 +137,18 @@ const SettingsBar = ({
   };
   return (
     <div className="settings-bar">
+      {/* Fullscreen butonu - En solda */}
+      {onToggleFullscreen && (
+        <div className="setting-item">
+          <button
+            className="fullscreen-toggle-btn-left"
+            onClick={onToggleFullscreen}
+            title={isFullscreen ? t('binder.exitFullscreen') : t('binder.enterFullscreen')}
+          >
+            {isFullscreen ? '⛶' : '⛶'}
+          </button>
+        </div>
+      )}
       <div className="setting-item">
         <select
           value={binderType}

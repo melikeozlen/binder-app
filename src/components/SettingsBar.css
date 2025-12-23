@@ -208,6 +208,30 @@
   white-space: nowrap;
 }
 
+.fullscreen-toggle-btn-left {
+  width: 32px !important;
+  height: 25px !important;
+  border-radius: 4px !important;
+  border: 1px solid #ccc !important;
+  background-color: #ffffff !important;
+  color: #333 !important;
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+  padding: 0 !important;
+}
+
+.fullscreen-toggle-btn-left:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #999 !important;
+  color: #000 !important;
+  transform: scale(1.05);
+}
+
 .icon-button.remove-button:hover {
   border-color: #dc143c;
   background-color: #ffe4e1;

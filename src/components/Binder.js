@@ -30,12 +30,17 @@ const Binder = ({
   onPrevPage,
   onDeletePage,
   imageInputMode = 'file',
-  galleryUrls = []
+  galleryUrls = [],
+  isFullscreen = false,
+  onToggleFullscreen,
+  onAddPage
 }) => {
   const { language } = useLanguage();
   const t = (key) => getTranslation(key, language);
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ width: 1, height: 1 });
+  const touchStartRef = useRef(null);
+  const touchEndRef = useRef(null);
 
 
   useEffect(() => {
@@ -50,6 +55,35 @@ const Binder = ({
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
+
+  // Touch sürükleme ile sayfa değiştirme
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    touchEndRef.current = null;
+    touchStartRef.current = e.touches[0].clientX;
+  };
+
+  const onTouchMove = (e) => {
+    touchEndRef.current = e.touches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartRef.current || !touchEndRef.current) return;
+    
+    const distance = touchStartRef.current - touchEndRef.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && onNextPage) {
+      // Sağdan sola sürükleme - sonraki sayfa
+      onNextPage();
+    }
+    if (isRightSwipe && onPrevPage) {
+      // Soldan sağa sürükleme - önceki sayfa
+      onPrevPage();
+    }
+  };
 
   const binderAspectRatio = widthRatio / heightRatio;
   const containerAspectRatio = containerSize.width / containerSize.height;
@@ -200,7 +234,35 @@ const Binder = ({
   const rightPageNumber = rightPagePhysicalIndex !== null ? rightPagePhysicalIndex * 2 + 1 : null; // Ön yüz
 
   return (
-    <div className="binder-container" ref={containerRef} style={{ backgroundColor: containerColor }}>
+    <div 
+      className={`binder-container ${isFullscreen ? 'fullscreen' : ''}`} 
+      ref={containerRef} 
+      style={{ backgroundColor: containerColor }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Fullscreen kontrolleri */}
+      {isFullscreen && (
+        <div className="fullscreen-controls">
+          {/* Üstte ortada sayfa ekle butonu */}
+          <button
+            className="fullscreen-add-page-btn"
+            onClick={onAddPage}
+            title={t('binder.addPage')}
+          >
+            +
+          </button>
+          {/* Sağda ekran küçültme butonu */}
+          <button
+            className="fullscreen-exit-btn"
+            onClick={onToggleFullscreen}
+            title={t('binder.exitFullscreen')}
+          >
+            ⛶
+          </button>
+        </div>
+      )}
       <div className="binder-wrapper" style={{ 
         ...wrapperStyle,
         '--binder-color': binderColor,
