@@ -72,6 +72,12 @@ const SettingsBar = ({
   };
   const backImageInputRef = useRef(null);
   const textFileInputRef = useRef(null);
+  const widthUpIntervalRef = useRef(null);
+  const widthDownIntervalRef = useRef(null);
+  const heightUpIntervalRef = useRef(null);
+  const heightDownIntervalRef = useRef(null);
+  const widthRatioRef = useRef(widthRatio);
+  const heightRatioRef = useRef(heightRatio);
   const [storageUsage, setStorageUsage] = useState(0);
   const [imageCount, setImageCount] = useState(0);
   const [showBackImageModal, setShowBackImageModal] = useState(false);
@@ -83,6 +89,15 @@ const SettingsBar = ({
   const [colorPickerType, setColorPickerType] = useState(null); // 'binder', 'ring', 'background'
   const [colorPickerValue, setColorPickerValue] = useState('#000000');
   
+  // widthRatio ve heightRatio ref'lerini güncelle
+  useEffect(() => {
+    widthRatioRef.current = widthRatio;
+  }, [widthRatio]);
+
+  useEffect(() => {
+    heightRatioRef.current = heightRatio;
+  }, [heightRatio]);
+
   // localStorage durumunu periyodik olarak güncelle
   useEffect(() => {
     const updateStorageInfo = () => {
@@ -95,6 +110,101 @@ const SettingsBar = ({
     
     return () => clearInterval(interval);
   }, []);
+
+  // Interval'ları temizle
+  useEffect(() => {
+    return () => {
+      if (widthUpIntervalRef.current) clearInterval(widthUpIntervalRef.current);
+      if (widthDownIntervalRef.current) clearInterval(widthDownIntervalRef.current);
+      if (heightUpIntervalRef.current) clearInterval(heightUpIntervalRef.current);
+      if (heightDownIntervalRef.current) clearInterval(heightDownIntervalRef.current);
+    };
+  }, []);
+
+  // Basılı tutma için yardımcı fonksiyonlar
+  const startWidthIncrease = () => {
+    // İlk tıklamada hemen çalış
+    const current = parseFloat(widthRatioRef.current) || 2;
+    const newValue = Math.min(5, (current + 0.1).toFixed(1));
+    onWidthRatioChange(parseFloat(newValue));
+    
+    // Sonra hızlı tekrarla
+    widthUpIntervalRef.current = setInterval(() => {
+      const current = parseFloat(widthRatioRef.current) || 2;
+      const newValue = Math.min(5, (current + 0.1).toFixed(1));
+      onWidthRatioChange(parseFloat(newValue));
+    }, 50); // 50ms = çok hızlı
+  };
+
+  const stopWidthIncrease = () => {
+    if (widthUpIntervalRef.current) {
+      clearInterval(widthUpIntervalRef.current);
+      widthUpIntervalRef.current = null;
+    }
+  };
+
+  const startWidthDecrease = () => {
+    // İlk tıklamada hemen çalış
+    const current = parseFloat(widthRatioRef.current) || 2;
+    const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
+    onWidthRatioChange(parseFloat(newValue));
+    
+    // Sonra hızlı tekrarla
+    widthDownIntervalRef.current = setInterval(() => {
+      const current = parseFloat(widthRatioRef.current) || 2;
+      const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
+      onWidthRatioChange(parseFloat(newValue));
+    }, 50); // 50ms = çok hızlı
+  };
+
+  const stopWidthDecrease = () => {
+    if (widthDownIntervalRef.current) {
+      clearInterval(widthDownIntervalRef.current);
+      widthDownIntervalRef.current = null;
+    }
+  };
+
+  const startHeightIncrease = () => {
+    // İlk tıklamada hemen çalış
+    const current = parseFloat(heightRatioRef.current) || 1;
+    const newValue = Math.min(5, (current + 0.1).toFixed(1));
+    onHeightRatioChange(parseFloat(newValue));
+    
+    // Sonra hızlı tekrarla
+    heightUpIntervalRef.current = setInterval(() => {
+      const current = parseFloat(heightRatioRef.current) || 1;
+      const newValue = Math.min(5, (current + 0.1).toFixed(1));
+      onHeightRatioChange(parseFloat(newValue));
+    }, 50); // 50ms = çok hızlı
+  };
+
+  const stopHeightIncrease = () => {
+    if (heightUpIntervalRef.current) {
+      clearInterval(heightUpIntervalRef.current);
+      heightUpIntervalRef.current = null;
+    }
+  };
+
+  const startHeightDecrease = () => {
+    // İlk tıklamada hemen çalış
+    const current = parseFloat(heightRatioRef.current) || 1;
+    const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
+    onHeightRatioChange(parseFloat(newValue));
+    
+    // Sonra hızlı tekrarla
+    heightDownIntervalRef.current = setInterval(() => {
+      const current = parseFloat(heightRatioRef.current) || 1;
+      const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
+      onHeightRatioChange(parseFloat(newValue));
+    }, 50); // 50ms = çok hızlı
+  };
+
+  const stopHeightDecrease = () => {
+    if (heightDownIntervalRef.current) {
+      clearInterval(heightDownIntervalRef.current);
+      heightDownIntervalRef.current = null;
+    }
+  };
 
   const handleBackImageSelect = (e) => {
     const file = e.target.files && e.target.files[0];
@@ -321,11 +431,17 @@ const SettingsBar = ({
             <button
               type="button"
               className="ratio-btn ratio-btn-up"
-              onClick={() => {
-                const current = parseFloat(widthRatio) || 2;
-                const newValue = Math.min(5, (current + 0.1).toFixed(1));
-                onWidthRatioChange(parseFloat(newValue));
+              onMouseDown={(e) => {
+                e.preventDefault();
+                startWidthIncrease();
               }}
+              onMouseUp={stopWidthIncrease}
+              onMouseLeave={stopWidthIncrease}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                startWidthIncrease();
+              }}
+              onTouchEnd={stopWidthIncrease}
               title={t('settings.increase')}
             >
               ▲
@@ -333,11 +449,17 @@ const SettingsBar = ({
             <button
               type="button"
               className="ratio-btn ratio-btn-down"
-              onClick={() => {
-                const current = parseFloat(widthRatio) || 2;
-                const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
-                onWidthRatioChange(parseFloat(newValue));
+              onMouseDown={(e) => {
+                e.preventDefault();
+                startWidthDecrease();
               }}
+              onMouseUp={stopWidthDecrease}
+              onMouseLeave={stopWidthDecrease}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                startWidthDecrease();
+              }}
+              onTouchEnd={stopWidthDecrease}
               title={t('settings.decrease')}
             >
               ▼
@@ -383,11 +505,17 @@ const SettingsBar = ({
             <button
               type="button"
               className="ratio-btn ratio-btn-up"
-              onClick={() => {
-                const current = parseFloat(heightRatio) || 1;
-                const newValue = Math.min(5, (current + 0.1).toFixed(1));
-                onHeightRatioChange(parseFloat(newValue));
+              onMouseDown={(e) => {
+                e.preventDefault();
+                startHeightIncrease();
               }}
+              onMouseUp={stopHeightIncrease}
+              onMouseLeave={stopHeightIncrease}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                startHeightIncrease();
+              }}
+              onTouchEnd={stopHeightIncrease}
               title={t('settings.increase')}
             >
               ▲
@@ -395,11 +523,17 @@ const SettingsBar = ({
             <button
               type="button"
               className="ratio-btn ratio-btn-down"
-              onClick={() => {
-                const current = parseFloat(heightRatio) || 1;
-                const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
-                onHeightRatioChange(parseFloat(newValue));
+              onMouseDown={(e) => {
+                e.preventDefault();
+                startHeightDecrease();
               }}
+              onMouseUp={stopHeightDecrease}
+              onMouseLeave={stopHeightDecrease}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                startHeightDecrease();
+              }}
+              onTouchEnd={stopHeightDecrease}
               title={t('settings.decrease')}
             >
               ▼

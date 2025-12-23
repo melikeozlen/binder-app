@@ -55,7 +55,7 @@
   "start_url": ".",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#E6E6FA",
+  "theme_color": "#ffffff",
   "background_color": "#ffffff",
   "scope": "/",
   "categories": ["productivity", "utilities"]

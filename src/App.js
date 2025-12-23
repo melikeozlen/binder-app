@@ -718,6 +718,25 @@ function App() {
   useEffect(() => {
     cleanupDefaultBackImage();
   }, []);
+
+  // Splash screen'i kaldır
+  useEffect(() => {
+    const splashScreen = document.getElementById('splash-screen');
+    if (splashScreen) {
+      // Kısa bir gecikme sonrası fade out
+      const timer = setTimeout(() => {
+        splashScreen.classList.add('hidden');
+        // Animasyon bitince DOM'dan kaldır
+        setTimeout(() => {
+          if (splashScreen.parentNode) {
+            splashScreen.parentNode.removeChild(splashScreen);
+          }
+        }, 500); // fade out animasyon süresi
+      }, 800); // 800ms göster
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
   
   // localStorage'dan ayarları yükle
   const savedSettings = loadSettings();
