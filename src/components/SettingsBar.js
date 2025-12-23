@@ -222,6 +222,8 @@ const SettingsBar = ({
     if (file) {
       setShowBackImageModal(false);
     }
+    // Input'un value'sunu temizle ki aynı dosya tekrar seçilebilsin
+    e.target.value = '';
   };
 
   const handleBackImageFileClick = () => {
@@ -309,6 +311,8 @@ const SettingsBar = ({
     } else {
       alert(t('settings.invalidTextFile'));
     }
+    // Input'un value'sunu temizle ki aynı dosya tekrar seçilebilsin
+    e.target.value = '';
   };
   return (
     <div className="settings-bar">

@@ -634,6 +634,8 @@ const Page = ({
         });
       };
       reader.readAsDataURL(file);
+      // Input'un value'sunu temizle ki aynı dosya tekrar seçilebilsin
+      e.target.value = '';
     }
   };
 
@@ -835,6 +837,8 @@ const Page = ({
         });
       };
       reader.readAsDataURL(file);
+      // Input'un value'sunu temizle ki aynı dosya tekrar seçilebilsin
+      e.target.value = '';
     }
   };
 
