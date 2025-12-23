@@ -1,0 +1,1143 @@
+.page-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  perspective: 2000px;
+  transform-style: preserve-3d;
+  /* Z-index sayfa container'a CSS variable ile verilecek - üstteki sayfanın resimleri görünmeli */
+  z-index: var(--page-z-index, 1);
+  /* isolation: isolate kaldırıldı - z-index'in child elementlere inherit edilmesi için */
+}
+
+/* Alttaki sayfalar için tüm içerik tıklanamaz olmalı */
+.page-container.page-non-interactive {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+.page-container.page-non-interactive * {
+  pointer-events: none !important;
+  cursor: default !important;
+  user-select: none !important;
+}
+
+/* Alttaki sayfalar için tüm butonlar devre dışı */
+.page-container.page-non-interactive button {
+  pointer-events: none !important;
+  cursor: default !important;
+  opacity: 0 !important;
+}
+
+/* Alttaki sayfalar için tüm input alanları devre dışı */
+.page-container.page-non-interactive input {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* Alttaki sayfalar için tüm textarea alanları devre dışı */
+.page-container.page-non-interactive textarea {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* Alttaki sayfalar için tüm select alanları devre dışı */
+.page-container.page-non-interactive select {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* Alttaki sayfalar için tüm linkler devre dışı */
+.page-container.page-non-interactive a {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* Alttaki sayfalar için hover efektlerini tamamen devre dışı bırak */
+.page-container.page-non-interactive *:hover {
+  pointer-events: none !important;
+  cursor: default !important;
+  opacity: inherit !important;
+}
+
+/* Alttaki sayfalar için active/focus durumlarını devre dışı bırak */
+.page-container.page-non-interactive *:active,
+.page-container.page-non-interactive *:focus {
+  pointer-events: none !important;
+  cursor: default !important;
+  outline: none !important;
+}
+
+.page {
+  background-color: transparent;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  position: absolute;
+  top: 0;
+  left: 0;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+  /* Boş alanlar tıklamaları engellemeli - sadece child elementler tıklanabilir */
+  pointer-events: none;
+}
+
+/* Sayfa içeriğinin üzerine hafif ışık efekti */
+.page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0; /* İçeriğin altında kalmalı */
+  background: radial-gradient(
+    ellipse 100% 70% at 50% 0%,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.15) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 75%
+  );
+  opacity: 0.9;
+  mix-blend-mode: overlay;
+}
+
+/* Holo sayfalarda ışık efektini biraz azalt ki holo efekti daha belirgin olsun */
+.page-type-holo::before {
+  opacity: 0.6;
+}
+
+.page-front {
+  transform: rotateY(0deg);
+  z-index: 2;
+}
+
+.page-back {
+  transform: rotateY(180deg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.page-back .grid-cell {
+  pointer-events: auto;
+}
+
+.page-container.flipped .page-front {
+  transform: rotateY(-180deg);
+}
+
+.page-container.flipped .page-back {
+  transform: rotateY(0deg);
+}
+
+.page-selected {
+  outline: none;
+}
+
+.page-left {
+  flex-direction: row-reverse; /* Sol sayfada delikler sağ kenarda (ring mekanizmasına yakın) */
+}
+
+.page-right {
+  flex-direction: row; /* Sağ sayfada delikler sol kenarda (ring mekanizmasına yakın) */
+}
+
+.page.transparent {
+  background-color: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(1px);
+}
+
+.page.transparent .cell-image-wrapper {
+  background-color: transparent !important;
+}
+
+.page.transparent .cell-image {
+  opacity: 1 !important;
+  background-color: transparent !important;
+}
+
+.page-back.transparent {
+  background-color: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(0.5px);
+}
+
+.page-back.transparent .cell-image-wrapper {
+  background-color: transparent !important;
+}
+
+.page-back.transparent .cell-image {
+  opacity: 1 !important;
+  background-color: transparent !important;
+}
+
+/* Dosya tipi stilleri */
+/* Mat dosya - normal görünüm */
+.page-type-mat .grid-cell {
+  background-color: rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.page-type-mat .cell-image {
+  filter: none;
+}
+
+.page-type-mat .grid-cell::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  background-color: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Parlak dosya - glossy efekt */
+.page-type-glossy .grid-cell {
+  background-color: rgba(255, 255, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-type-glossy .cell-image {
+  /* Resmin kalitesi korunuyor - filter yok */
+  position: relative;
+  z-index: 1;
+}
+
+.page-type-glossy .grid-cell::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 30%,
+    rgba(255, 255, 255, 0.2) 40%,
+    rgba(255, 255, 255, 0.45) 45%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.15) 55%,
+    transparent 65%
+  );
+  animation: glossy-shine 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: overlay;
+  opacity: 0.8;
+}
+
+@keyframes glossy-shine {
+  0% {
+    transform: translateX(-50%) translateY(-50%) rotate(0deg);
+    opacity: 0.5;
+  }
+  25% {
+    transform: translateX(-30%) translateY(-30%) rotate(10deg);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateX(0%) translateY(0%) rotate(20deg);
+    opacity: 1;
+  }
+  75% {
+    transform: translateX(30%) translateY(30%) rotate(10deg);
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateX(50%) translateY(50%) rotate(0deg);
+    opacity: 0.5;
+  }
+}
+
+/* Holo dosya - holografik yansıma efekti (gök kuşağı) */
+.page-type-holo .grid-cell {
+  background-color: rgba(255, 255, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-type-holo .cell-image {
+  /* Resmin kalitesi korunuyor - filter yok */
+  position: relative;
+  z-index: 1;
+}
+
+.page-type-holo .grid-cell::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 20%,
+    rgba(255, 100, 100, 0.25) 30%,
+    rgba(255, 180, 100, 0.25) 35%,
+    rgba(255, 255, 150, 0.25) 40%,
+    rgba(150, 255, 150, 0.25) 45%,
+    rgba(100, 150, 255, 0.25) 50%,
+    rgba(150, 100, 200, 0.25) 55%,
+    rgba(200, 100, 255, 0.25) 60%,
+    transparent 70%
+  );
+  animation: holo-shine 4s infinite;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: soft-light;
+  opacity: 0.8;
+}
+
+.page-type-holo .grid-cell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 150, 150, 0.15) 0%,
+    rgba(255, 200, 150, 0.15) 14%,
+    rgba(255, 255, 180, 0.15) 28%,
+    rgba(180, 255, 180, 0.15) 42%,
+    rgba(150, 180, 255, 0.15) 57%,
+    rgba(180, 150, 220, 0.15) 71%,
+    rgba(220, 150, 255, 0.15) 85%,
+    rgba(255, 150, 150, 0.15) 100%
+  );
+  background-size: 300% 100%;
+  pointer-events: none;
+  z-index: 3;
+  mix-blend-mode: overlay;
+  opacity: 0.7;
+  animation: holo-rainbow 5s linear infinite;
+}
+
+@keyframes holo-shine {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+@keyframes holo-rainbow {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+/* Ring delikleri alanı - grid'in dışında */
+.page-holes {
+  width: 40px;
+  min-width: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 15px 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+  position: relative;
+  /* Ring delikleri alanı tıklamaları engellemeli */
+  pointer-events: auto;
+}
+
+.holes-left {
+  border-left: 3px dashed rgba(240, 240, 240, 0.95); /* Sol sayfada delikler sağ kenarda, sol kenarda border */
+  border-right: none;
+  /* Dikiş izine hafif shadow */
+  box-shadow: -1px 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.holes-right {
+  border-right: 3px dashed rgba(240, 240, 240, 0.95); /* Sağ sayfada delikler sol kenarda, sağ kenarda border */
+  border-left: none;
+  /* Dikiş izine hafif shadow */
+  box-shadow: 1px 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.ring-hole {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 1);
+  border: 2px solid rgba(255, 255, 255, 1);
+  box-shadow: 
+    inset 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.ring-hole::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.page-content {
+  flex: 1;
+  padding: 15px;
+  padding-top: 25px; /* Sayfa numarası için üst boşluk */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* Page content tıklamaları engellemeli - sadece grid-cell'ler tıklanabilir */
+  pointer-events: none;
+  position: relative;
+  overflow: visible; /* Sayfa numarasının görünmesi için */
+  z-index: 1; /* Işık efektinin üzerinde olmalı */
+}
+
+/* Sayfa numarası - minimal ve silik, dosyanın en üstünde */
+.page-number {
+  position: absolute;
+  top: 2px;
+  font-size: 8px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.9);
+  background-color: transparent;
+  padding: 1px 4px;
+  border-radius: 2px;
+  z-index: 1001;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.5;
+  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.page-number-left {
+  left: 8px;
+}
+
+.page-number-right {
+  right: 8px;
+}
+
+/* Her iki tarafta da görünmeli */
+.page-left .page-number,
+.page-right .page-number {
+  display: block;
+}
+
+/* Alttaki sayfalar için sayfa numarasını daha da silik yap */
+.page-number-hidden {
+  opacity: 0.3;
+}
+
+.page-leaf-number {
+  position: absolute;
+  bottom: 4px;
+  font-size: 8px;
+  font-weight: 450;
+  color: rgba(0, 0, 0, 0.4);
+  background-color: transparent;
+  padding: 1px 4px;
+  border-radius: 2px;
+  z-index: 1001;
+  pointer-events: none;
+  user-select: none;
+}
+
+.page-leaf-number-left {
+  left: 8px;
+}
+
+.page-leaf-number-right {
+  right: 8px;
+}
+
+.page-grid {
+  display: grid;
+  gap: 0px;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  /* Üst kenar açık - resim eklenebilsin diye */
+  /* Sağ ve alt kenar yok - hücrelerin kenarlarındaki border yeterli */
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  border-left: 3px dashed rgba(240, 240, 240, 0.95);
+  background-color: rgba(255, 255, 255, 0.15);
+  /* Sol kenar dikiş izine hafif shadow */
+  box-shadow: -1px 0 1px rgba(0, 0, 0, 0.06);
+  /* Boş alanlar tıklamaları engellemeli - sadece grid-cell'ler tıklanabilir */
+  pointer-events: none;
+}
+
+/* Sağ sayfa: ring sol tarafta, sol kenarda dikiş izi olmamalı */
+.page-right .page-grid {
+  border-left: none;
+  box-shadow: none;
+}
+
+/* Sol sayfa: ring sağ tarafta, sağ kenarda dikiş izi olmamalı */
+.page-left .page-grid {
+  border-left: 3px dashed rgba(240, 240, 240, 0.95);
+  border-right: none;
+  box-shadow: -1px 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.grid-cell {
+  border: none;
+  border-radius: 0px;
+  background-color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  position: relative;
+  overflow: visible;
+  padding: 2px;
+  box-sizing: border-box;
+  /* isolation: isolate kaldırıldı - z-index'in inherit edilmesi için */
+  /* Belirgin beyaz kesikli dikiş izleri (----) - sadece sağ ve alt kenarlarda, üst kenar açık */
+  border-top: none;
+  border-right: 3px dashed rgba(240, 240, 240, 0.95);
+  border-bottom: 3px dashed rgba(240, 240, 240, 0.95);
+  border-left: none;
+  /* Dikiş izlerine hafif shadow - dikiş efekti bozulmadan */
+  box-shadow: 
+    1px 0 1px rgba(0, 0, 0, 0.06),
+    0 1px 1px rgba(0, 0, 0, 0.06);
+  /* Grid hücreleri tıklanabilir olmalı - ama alttaki sayfalarda değil */
+  pointer-events: auto;
+  /* Grid cell'ler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
+  z-index: inherit;
+}
+
+/* Resim içeren grid-cell'lerde cursor default - sadece butonlarla işlem yapılır */
+.grid-cell:has(.cell-image) {
+  cursor: default;
+}
+
+/* Alttaki sayfalar için grid-cell'ler tıklanamaz */
+.page-container.page-non-interactive .grid-cell {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* Ring tarafında dikiş izi olmamalı - dinamik class'lar ile kontrol ediliyor */
+.grid-cell.no-left-border {
+  border-left: none;
+  box-shadow: 
+    0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
+.grid-cell.no-right-border {
+  border-right: none;
+  box-shadow: 
+    0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
+.grid-cell:hover .cell-image-controls {
+  opacity: 1;
+}
+
+/* Alttaki sayfalar için hover efektlerini devre dışı bırak */
+.page-container.page-non-interactive .grid-cell:hover .cell-image-controls {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* Alttaki sayfalar için grid-cell hover'ı tamamen devre dışı */
+.page-container.page-non-interactive .grid-cell:hover {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.page-container.page-non-interactive .grid-cell {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.page-container.page-non-interactive .grid-cell:hover {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.page-container.page-non-interactive .cell-image {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.page-container.page-non-interactive .cell-image-wrapper {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+.page-container.page-non-interactive .cell-placeholder {
+  display: none;
+  pointer-events: none !important;
+}
+
+.page-container.page-non-interactive .cell-input {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* Alttaki sayfalar için resim kontrol butonları devre dışı */
+.page-container.page-non-interactive .cell-image-controls {
+  pointer-events: none !important;
+  cursor: default !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+}
+
+.page-container.page-non-interactive .cell-image-controls * {
+  pointer-events: none !important;
+  cursor: default !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Alttaki sayfalar için cell control butonları devre dışı */
+.page-container.page-non-interactive .cell-control-btn {
+  pointer-events: none !important;
+  cursor: default !important;
+  opacity: 0 !important;
+}
+
+.page-container.page-non-interactive .cell-control-btn:hover {
+  pointer-events: none !important;
+  cursor: default !important;
+  opacity: 0 !important;
+}
+
+.cell-placeholder {
+  font-size: 2rem;
+  color: #ccc;
+  font-weight: 300;
+}
+
+.cell-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  font-size: 0.9rem;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  cursor: text;
+}
+
+.cell-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  padding: 5px;
+  box-sizing: border-box;
+  overflow: hidden; /* Taşan kısımları gizle */
+  border-radius: 10px; /* Yuvarlatılmış kenarlar - img */
+  /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
+  z-index: inherit;
+}
+
+/* Yatay uzun cepler için resim hizalaması */
+.cell-image-wrapper.align-right {
+  justify-content: flex-end;
+}
+
+.cell-image-wrapper.align-left {
+  justify-content: flex-start;
+}
+
+.cell-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Taşan kısımları kesmek için contain yerine cover */
+  object-position: center;
+  cursor: default; /* Resme tıklama ile işlem yapılmaz, sadece butonlarla */
+  box-sizing: border-box;
+  flex-shrink: 0;
+  opacity: 1 !important;
+  background-color: transparent;
+  display: block;
+  position: relative;
+  border-radius: 10px; /* Yuvarlatılmış kenarlar - img */
+  /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
+  z-index: inherit;
+  pointer-events: none; /* Resim tıklamalarını engelle, sadece butonlar tıklanabilir */
+  /* Yüksek kaliteli resim render etme */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+  -ms-interpolation-mode: bicubic;
+}
+
+/* Yatay uzun cepler için resim pozisyonu */
+.cell-image-wrapper.align-right .cell-image {
+  object-position: right center;
+}
+
+.cell-image-wrapper.align-left .cell-image {
+  object-position: left center;
+}
+
+.cell-image.default-image {
+  /* Default görüntü ön yüzdeki resim gibi yer kaplamalı */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Resim kontrol butonları - resmin ortasında şeffaf overlay, hover'da görünür */
+.cell-image-controls {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex !important;
+  gap: 4px;
+  z-index: 1000 !important;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  visibility: visible !important;
+}
+
+.grid-cell:hover .cell-image-controls {
+  opacity: 1 !important;
+}
+
+/* Alttaki sayfalar için hover efektlerini devre dışı bırak */
+.page-container.page-non-interactive .grid-cell:hover .cell-image-controls {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+}
+
+.cell-control-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #333;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  pointer-events: auto;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(4px);
+  opacity: 0.85;
+}
+
+.cell-control-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  background-color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.8);
+  opacity: 1;
+}
+
+.cell-control-btn:active {
+  transform: scale(1.0);
+}
+
+.cell-control-remove {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #dc143c;
+}
+
+.cell-control-remove:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #dc143c;
+}
+
+.cell-control-replace {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #228b22;
+}
+
+.cell-control-replace:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #228b22;
+}
+
+.cell-control-rotate {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #007bff;
+}
+
+.cell-control-rotate:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #007bff;
+}
+
+/* Sayfa çevirme butonu */
+.page-flip-button {
+  position: absolute;
+  top: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background-color: rgba(0, 123, 255, 0.7);
+  color: white;
+  font-size: 12px;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  transition: all 0.2s;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.page-flip-forward {
+  right: 30px;
+}
+
+.page-flip-back {
+  right: 55px;
+  background-color: rgba(108, 117, 125, 0.7);
+}
+
+.page-container:hover .page-flip-button {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Alttaki sayfalar için sayfa çevirme butonları devre dışı */
+.page-container.page-non-interactive .page-flip-button {
+  pointer-events: none !important;
+  cursor: default !important;
+  opacity: 0 !important;
+}
+
+.page-container.page-non-interactive:hover .page-flip-button {
+  pointer-events: none !important;
+  cursor: default !important;
+  opacity: 0 !important;
+}
+
+/* Alttaki sayfalar için ring delikleri devre dışı */
+.page-container.page-non-interactive .page-holes {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+.page-container.page-non-interactive .ring-hole {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+.page-flip-button:hover {
+  background-color: rgba(0, 123, 255, 1);
+  transform: scale(1.15);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.page-flip-back:hover {
+  background-color: rgba(108, 117, 125, 1);
+}
+
+/* Arka yüz stilleri - grid sistemi ön yüzle aynı */
+
+.grid-1x1 .grid-cell {
+  min-height: 200px;
+}
+
+.grid-2x2 .grid-cell {
+  min-height: 120px;
+}
+
+.grid-3x3 .grid-cell {
+  min-height: 80px;
+}
+
+.grid-4x4 .grid-cell {
+  min-height: 60px;
+}
+
+/* URL Input Container */
+.cell-url-input-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.3rem;
+}
+
+.cell-url-input {
+  flex: 1;
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  resize: none;
+}
+
+.cell-url-input:focus {
+  outline: none;
+  border-color: #333;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.cell-url-buttons {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.cell-url-btn {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background-color: #fff;
+  color: #333;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cell-url-btn:hover {
+  background-color: #f5f5f5;
+  border-color: #666;
+}
+
+/* Galeri Modalı */
+.gallery-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(0, 0, 0, 0.774) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999 !important;
+  animation: fadeIn 0.2s ease;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  transform: none !important;
+}
+
+.gallery-content {
+  background: white;
+  border-radius: 0;
+  box-shadow: none;
+  width: 85vw !important;
+  height: 85% !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease;
+  margin: 0;
+  position: relative;
+  transform: none !important;
+}
+
+.gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: white;
+  flex-shrink: 0;
+  gap: 1rem;
+}
+
+.gallery-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.gallery-search-container {
+  flex: 1;
+  max-width: 400px;
+}
+
+.gallery-search-input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.gallery-search-input:focus {
+  border-color: #333;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.gallery-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.gallery-close:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  grid-auto-rows: min-content;
+  gap: 1.2rem;
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+  height: calc(100vh - 100px);
+  min-height: 0;
+  align-items: start;
+}
+
+.gallery-item {
+  position: relative;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: visible;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #f8f8f8;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  min-height: 0;
+  max-height: none;
+}
+
+
+.gallery-item:hover {
+  border-color: #333;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.gallery-item:active {
+  transform: scale(0.98);
+}
+
+.gallery-item img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+  border-radius: 4px 4px 0 0;
+}
+
+.gallery-item-name {
+  padding: 0.3rem 0.4rem;
+  font-size: 0.65rem;
+  color: #333;
+  background-color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-top: 1px solid #e0e0e0;
+  border-radius: 0 0 4px 4px;
+  line-height: 1.2;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+.gallery-item-error {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+

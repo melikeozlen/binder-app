@@ -1,0 +1,199 @@
+.page-order-bar {
+  position: fixed !important;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 60px;
+  background-color: #ffffff;
+  border-left: 1px solid #e0e0e0;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.25rem;
+  overflow-y: auto;
+}
+
+.page-order-bar-hidden {
+  display: none !important;
+}
+
+.page-order-header {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.page-order-header h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.page-order-bar:empty {
+  display: none;
+}
+
+.page-order-bar > .page-order-list {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+
+.page-order-hint {
+  font-size: 0.65rem;
+  color: #999;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0e0e0;
+  white-space: nowrap;
+  user-select: none;
+  text-align: center;
+}
+
+.page-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: stretch;
+  flex: 1;
+}
+
+.page-order-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 3px;
+  position: relative;
+  cursor: grab;
+  transition: background-color 0.15s, opacity 0.15s, transform 0.15s;
+  font-size: 0.7rem;
+  user-select: none;
+  min-height: 32px;
+}
+
+.page-order-item:hover {
+  background-color: #e8e8e8;
+}
+
+.page-order-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.page-order-item.drag-over {
+  background-color: #d0e8ff;
+  transform: scale(1.05);
+}
+
+.page-order-item:active {
+  cursor: grabbing;
+}
+
+.page-order-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.15rem;
+}
+
+.page-order-item.active {
+  background-color: #e0e0e0;
+  font-weight: 600;
+}
+
+.page-order-item.active .page-order-number {
+  color: #333;
+}
+
+.page-order-number {
+  font-weight: 400;
+  color: #666;
+  font-size: 0.65rem;
+  text-align: center;
+  line-height: 1;
+}
+
+.page-order-item.active .page-order-number {
+  color: #000;
+  font-weight: 600;
+}
+
+.page-order-controls {
+  display: none; /* Butonları gizle, minimal için */
+}
+
+.page-order-button {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: #999;
+  font-size: 0.6rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border-radius: 2px;
+}
+
+.page-order-button:hover:not(:disabled) {
+  background-color: #d0d0d0;
+  color: #333;
+}
+
+.page-order-button:disabled {
+  opacity: 0.15;
+  cursor: not-allowed;
+}
+
+.page-order-ellipsis {
+  color: #999;
+  font-size: 0.6rem;
+  padding: 0.25rem 0;
+  user-select: none;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .page-order-bar {
+    padding: 0.25rem 0.4rem;
+    min-height: 28px;
+  }
+  
+  .page-order-hint {
+    font-size: 0.6rem;
+    margin-right: 0.3rem;
+  }
+  
+  .page-order-item {
+    padding: 0.1rem 0.25rem;
+    font-size: 0.65rem;
+  }
+  
+  .page-order-number {
+    font-size: 0.65rem;
+    min-width: 14px;
+  }
+  
+  .page-order-button {
+    font-size: 0.55rem;
+    width: 12px;
+    height: 12px;
+  }
+  
+  .page-order-ellipsis {
+    font-size: 0.65rem;
+  }
+}
+
