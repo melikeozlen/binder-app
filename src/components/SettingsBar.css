@@ -10,6 +10,16 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 1024px) {
+  .settings-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
 .setting-item {
   display: flex;
   align-items: center;

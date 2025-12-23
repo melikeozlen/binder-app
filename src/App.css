@@ -12,6 +12,19 @@
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    min-height: 100vh;
+  }
+  
+  .App > .settings-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  .App > .app-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 999;
   }
 }
 
