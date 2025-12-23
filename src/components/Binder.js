@@ -69,6 +69,11 @@ const Binder = ({
   };
 
   const onTouchEnd = () => {
+    // Galeri açıkken sürükle bırak ile sayfa değiştirmeyi engelle
+    if (document.body.classList.contains('gallery-modal-open')) {
+      return;
+    }
+    
     if (!touchStartRef.current || !touchEndRef.current) return;
     
     const distance = touchStartRef.current - touchEndRef.current;

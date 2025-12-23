@@ -14,9 +14,9 @@ export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
     try {
       const saved = localStorage.getItem('app-language');
-      return saved || 'tr';
+      return saved || 'en';
     } catch {
-      return 'tr';
+      return 'en';
     }
   });
 

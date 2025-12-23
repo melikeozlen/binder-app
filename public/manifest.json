@@ -1,52 +1,52 @@
 {
   "short_name": "Binder App",
-  "name": "Binder App - Dijital Defter",
-  "description": "Dijital defter ve planlayıcı uygulaması",
+  "name": "Binder App",
+  "description": "Photocard Collector App",
   "icons": [
     {
-      "src": "favicon.png",
+      "src": "260185-.png",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "favicon192.png",
+      "src": "260185-192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "favicon.png",
+      "src": "260185-.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
     },
     {
-      "src": "favicon180.png",
+      "src": "260185-180.png",
       "type": "image/png",
       "sizes": "180x180",
       "purpose": "any"
     },
     {
-      "src": "favicon192.png",
+      "src": "260185-192.png",
       "type": "image/png",
       "sizes": "144x144",
       "purpose": "any"
     },
     {
-      "src": "favicon192.png",
+      "src": "260185-192.png",
       "type": "image/png",
       "sizes": "96x96",
       "purpose": "any"
     },
     {
-      "src": "favicon192.png",
+      "src": "260185-192.png",
       "type": "image/png",
       "sizes": "72x72",
       "purpose": "any"
     },
     {
-      "src": "favicon192.png",
+      "src": "260185-192.png",
       "type": "image/png",
       "sizes": "48x48",
       "purpose": "any"

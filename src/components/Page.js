@@ -39,6 +39,18 @@ const Page = ({
   const fileInputRefs = useRef({});
   const backFileInputRefs = useRef({});
   
+  // Galeri açıkken body'ye class ekle (sürükle bırak ile sayfa değiştirmeyi engellemek için)
+  useEffect(() => {
+    if (showGallery) {
+      document.body.classList.add('gallery-modal-open');
+    } else {
+      document.body.classList.remove('gallery-modal-open');
+    }
+    return () => {
+      document.body.classList.remove('gallery-modal-open');
+    };
+  }, [showGallery]);
+  
   // Güncel state'leri ref'lerde sakla (closure sorunlarını önlemek için)
   const contentRef = useRef(content);
   const backContentRef = useRef(backContent);
@@ -276,7 +288,6 @@ const Page = ({
       } else if (imageInputMode === 'gallery' && galleryUrls.length > 0) {
         // Galeri modu: Galeri modalını göster
         setGalleryCell({ row, col, side: 'front' });
-        setGallerySearchTerm('');
       setShowGallery(true);
       } else {
         // File modu: Dosya seçiciyi aç
@@ -663,7 +674,6 @@ const Page = ({
     } else if (imageInputMode === 'gallery' && galleryUrls.length > 0) {
       // Galeri modu: Galeri modalını göster
       setGalleryCell({ row, col, side: 'front' });
-      setGallerySearchTerm('');
       setShowGallery(true);
     } else {
       // File modu: Dosya seçiciyi aç
@@ -754,7 +764,6 @@ const Page = ({
       } else if (imageInputMode === 'gallery' && galleryUrls.length > 0) {
         // Galeri modu: Galeri modalını göster
         setGalleryCell({ row, col, side: 'back' });
-        setGallerySearchTerm('');
         setShowGallery(true);
       } else {
         // File modu: Dosya seçiciyi aç
@@ -866,7 +875,6 @@ const Page = ({
     } else if (imageInputMode === 'gallery' && galleryUrls.length > 0) {
       // Galeri modu: Galeri modalını göster
       setGalleryCell({ row, col, side: 'back' });
-      setGallerySearchTerm('');
       setShowGallery(true);
     } else {
       // File modu: Dosya seçiciyi aç
@@ -1346,19 +1354,33 @@ const Page = ({
               <div className="gallery-header">
                 <h3>{t('settings.selectFromGallery')}</h3>
                 <div className="gallery-search-container">
-                  <input
-                    type="text"
-                    className="gallery-search-input"
-                    placeholder={t('settings.searchGallery')}
-                    value={gallerySearchTerm}
-                    onChange={(e) => setGallerySearchTerm(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  />
+                  <div className="gallery-search-wrapper">
+                    <input
+                      type="text"
+                      className="gallery-search-input"
+                      placeholder={t('settings.searchGallery')}
+                      value={gallerySearchTerm}
+                      onChange={(e) => setGallerySearchTerm(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                    {gallerySearchTerm && (
+                      <button
+                        className="gallery-search-clear"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setGallerySearchTerm('');
+                        }}
+                        title={t('settings.clear')}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <button
                   className="gallery-close"
-                  onClick={() => { setShowGallery(false); setGalleryCell(null); setGallerySearchTerm(''); }}
+                  onClick={() => { setShowGallery(false); setGalleryCell(null); }}
                   title={t('binder.cancel')}
                 >
                   ×
