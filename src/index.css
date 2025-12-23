@@ -48,10 +48,11 @@ code {
 }
 
 .splash-subtext {
-  font-size: 1.2rem;
-  font-weight: 400;
-  color: rgba(120, 120, 140, 0.8);
+  font-size: 0.75rem;
+  font-weight: 300;
+  color: rgba(120, 120, 140, 0.4);
   letter-spacing: 0.05em;
+  margin-top: 0.3rem;
 }
 
 @keyframes fadeInUp {
@@ -71,6 +72,6 @@ code {
   }
   
   .splash-subtext {
-    font-size: 1rem;
+    font-size: 0.65rem;
   }
 }
