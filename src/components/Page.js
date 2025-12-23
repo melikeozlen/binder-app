@@ -1229,9 +1229,7 @@ const Page = ({
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              const { cols: totalCols } = getGridSize();
-                              const mirroredCol = totalCols - 1 - col;
-                              handleBackCellClick(row, mirroredCol);
+                              handleBackCellClick(row, col);
                             }}
                             title={t('page.replaceImage')}
                           >
@@ -1245,9 +1243,7 @@ const Page = ({
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                const { cols: totalCols } = getGridSize();
-                                const mirroredCol = totalCols - 1 - col;
-                                handleRotateBackImage(e, row, mirroredCol);
+                                handleRotateBackImage(e, row, col);
                               }}
                               title={t('page.rotateImage')}
                             >
@@ -1259,9 +1255,7 @@ const Page = ({
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                const { cols: totalCols } = getGridSize();
-                                const mirroredCol = totalCols - 1 - col;
-                                handleRemoveBackImage(e, row, mirroredCol);
+                                handleRemoveBackImage(e, row, col);
                               }}
                               title={t('page.removeImage')}
                             >
@@ -1273,9 +1267,7 @@ const Page = ({
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                const { cols: totalCols } = getGridSize();
-                                const mirroredCol = totalCols - 1 - col;
-                                handleReplaceBackImage(e, row, mirroredCol);
+                                handleReplaceBackImage(e, row, col);
                               }}
                               title={t('page.replaceImage')}
                             >
@@ -1285,7 +1277,7 @@ const Page = ({
                         )}
                       </div>
                     </>
-                  ) : urlInputCell && urlInputCell.row === row && urlInputCell.col === mirroredCol && urlInputCell.side === 'back' ? (
+                  ) : urlInputCell && urlInputCell.row === row && urlInputCell.col === col && urlInputCell.side === 'back' ? (
                     <div className="cell-url-input-container" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="text"
@@ -1294,7 +1286,7 @@ const Page = ({
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            handleUrlSubmit(row, mirroredCol, 'back');
+                            handleUrlSubmit(row, col, 'back');
                           } else if (e.key === 'Escape') {
                             setUrlInputCell(null);
                             setUrlInputValue('');
@@ -1307,7 +1299,7 @@ const Page = ({
                       <div className="cell-url-buttons">
                         <button
                           className="cell-url-btn"
-                          onClick={() => handleUrlSubmit(row, mirroredCol, 'back')}
+                          onClick={() => handleUrlSubmit(row, col, 'back')}
                           title={t('settings.apply')}
                         >
                           ✓
