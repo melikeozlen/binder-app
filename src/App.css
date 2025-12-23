@@ -7,6 +7,14 @@
   overflow: hidden;
 }
 
+@media (max-width: 1024px) {
+  .App {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .App.fullscreen-mode {
   height: 100vh;
   width: 100vw;
@@ -38,6 +46,13 @@
   margin-right: 60px; /* PageOrderBar için yer bırak */
 }
 
+@media (max-width: 1024px) {
+  .App > .binder-container {
+    margin-right: 0;
+    min-height: auto;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -49,7 +64,23 @@ html, body {
   overflow: hidden;
 }
 
+@media (max-width: 1024px) {
+  html, body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 #root {
   height: 100%;
   overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  #root {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
 }
