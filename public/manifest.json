@@ -1,6 +1,7 @@
 {
   "short_name": "Binder App",
-  "name": "Binder App",
+  "name": "Binder App - Dijital Defter",
+  "description": "Dijital defter ve planlayıcı uygulaması",
   "icons": [
     {
       "src": "favicon.png",
@@ -10,16 +11,21 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "any",
+  "theme_color": "#E6E6FA",
+  "background_color": "#ffffff",
+  "scope": "/",
+  "categories": ["productivity", "utilities"]
 }

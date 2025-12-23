@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
@@ -73,6 +74,11 @@ const SettingsBar = ({
   const textFileInputRef = useRef(null);
   const [storageUsage, setStorageUsage] = useState(0);
   const [imageCount, setImageCount] = useState(0);
+  const [showBackImageModal, setShowBackImageModal] = useState(false);
+  const [showBackImageUrlInput, setShowBackImageUrlInput] = useState(false);
+  const [backImageUrlInput, setBackImageUrlInput] = useState('');
+  const [showBackImageGallery, setShowBackImageGallery] = useState(false);
+  const [backImageGallerySearch, setBackImageGallerySearch] = useState('');
   
   // localStorage durumunu periyodik olarak güncelle
   useEffect(() => {
@@ -88,11 +94,67 @@ const SettingsBar = ({
   }, []);
 
   const handleBackImageSelect = (e) => {
-    const file = e.target.files[0];
-    if (file && onDefaultBackImageChange) {
-      onDefaultBackImageChange(file);
+    const file = e.target.files && e.target.files[0];
+    if (file && file instanceof File && onDefaultBackImageChange) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        onDefaultBackImageChange(event.target.result);
+      };
+      reader.onerror = () => {
+        console.error('Dosya okuma hatası');
+      };
+      reader.readAsDataURL(file);
+    }
+    // Modal'ı sadece dosya seçildiyse kapat
+    if (file) {
+      setShowBackImageModal(false);
     }
   };
+
+  const handleBackImageFileClick = () => {
+    setTimeout(() => {
+      backImageInputRef.current?.click();
+    }, 100);
+  };
+
+  const handleBackImageUrlSubmit = () => {
+    const trimmedUrl = backImageUrlInput.trim();
+    if (trimmedUrl) {
+      if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://') || trimmedUrl.startsWith('data:image')) {
+        if (onDefaultBackImageChange) {
+          onDefaultBackImageChange(trimmedUrl);
+        }
+        setBackImageUrlInput('');
+        setShowBackImageModal(false);
+      } else {
+        alert(t('settings.invalidUrl'));
+      }
+    }
+  };
+
+  const handleBackImageGallerySelect = (e, item) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const url = typeof item === 'string' ? item : item.url;
+    if (onDefaultBackImageChange) {
+      onDefaultBackImageChange(url);
+    }
+    setShowBackImageGallery(false);
+    setShowBackImageModal(false);
+  };
+
+  const truncateName = (name, maxLength = 15) => {
+    if (!name) return '';
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength) + '...';
+  };
+
+  const filteredGalleryUrls = galleryUrls.filter(item => {
+    if (!backImageGallerySearch) return true;
+    const name = typeof item === 'string' ? '' : (item.name || '');
+    return name.toLowerCase().includes(backImageGallerySearch.toLowerCase());
+  });
   
   const handleTextFileSelect = (e) => {
     const file = e.target.files[0];
@@ -352,11 +414,15 @@ const SettingsBar = ({
             type="file"
             accept="image/*"
             onChange={handleBackImageSelect}
+            onClick={(e) => {
+              // Input'a tıklandığında event'i durdurma, sadece onChange'de işle
+              e.stopPropagation();
+            }}
             style={{ display: 'none' }}
           />
           <button
             className="settings-control icon-button"
-            onClick={() => backImageInputRef.current?.click()}
+            onClick={() => setShowBackImageModal(true)}
             title={t('settings.backImageHelp')}
           >
             {defaultBackImage ? '✓' : '📷'}
@@ -372,6 +438,175 @@ const SettingsBar = ({
           )}
         </div>
       </div>
+
+      {/* Default Back Image Modal */}
+      {showBackImageModal && createPortal(
+        <div 
+          className="back-image-modal-overlay"
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) {
+                        setShowBackImageModal(false);
+                        setShowBackImageGallery(false);
+                        setShowBackImageUrlInput(false);
+                        setBackImageUrlInput('');
+                      }
+                    }}
+        >
+          <div className="back-image-modal-content" onClick={(e) => e.stopPropagation()}>
+            {!showBackImageGallery ? (
+              <>
+                <div className="back-image-modal-header">
+                  <h3>{t('settings.backImageHelp')}</h3>
+                  <button
+                    className="back-image-modal-close"
+                    onClick={() => {
+                      setShowBackImageModal(false);
+                      setShowBackImageUrlInput(false);
+                      setBackImageUrlInput('');
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="back-image-modal-options">
+                  <button
+                    className="back-image-modal-option"
+                    onClick={handleBackImageFileClick}
+                  >
+                    📷 {t('settings.uploadFile')}
+                  </button>
+                  <button
+                    className="back-image-modal-option"
+                    onClick={() => {
+                      setShowBackImageUrlInput(true);
+                      setBackImageUrlInput('');
+                    }}
+                  >
+                    🔗 {t('settings.enterUrl')}
+                  </button>
+                  {galleryUrls.length > 0 && (
+                    <button
+                      className="back-image-modal-option"
+                      onClick={() => {
+                        setShowBackImageGallery(true);
+                        setBackImageGallerySearch('');
+                      }}
+                    >
+                      🖼️ {t('settings.selectFromGallery')}
+                    </button>
+                  )}
+                </div>
+                {showBackImageUrlInput && (
+                  <div className="back-image-url-input-container">
+                    <input
+                      type="text"
+                      value={backImageUrlInput}
+                      onChange={(e) => setBackImageUrlInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleBackImageUrlSubmit();
+                        } else if (e.key === 'Escape') {
+                          setShowBackImageUrlInput(false);
+                          setBackImageUrlInput('');
+                        }
+                      }}
+                      placeholder={t('settings.imageUrlPlaceholder')}
+                      className="back-image-url-input"
+                      autoFocus
+                    />
+                    <div className="back-image-url-buttons">
+                      <button
+                        className="back-image-url-btn"
+                        onClick={handleBackImageUrlSubmit}
+                        title={t('settings.apply')}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        className="back-image-url-btn"
+                        onClick={() => {
+                          setShowBackImageUrlInput(false);
+                          setBackImageUrlInput('');
+                        }}
+                        title={t('binder.cancel')}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="back-image-modal-header">
+                  <h3>{t('settings.selectFromGallery')}</h3>
+                  <button
+                    className="back-image-modal-close"
+                    onClick={() => {
+                      setShowBackImageGallery(false);
+                      setBackImageGallerySearch('');
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="back-image-gallery-search">
+                  <input
+                    type="text"
+                    value={backImageGallerySearch}
+                    onChange={(e) => setBackImageGallerySearch(e.target.value)}
+                    placeholder={t('settings.searchGallery')}
+                    className="back-image-gallery-search-input"
+                    autoFocus
+                  />
+                </div>
+                <div className="back-image-gallery-grid">
+                  {filteredGalleryUrls.map((item, index) => {
+                    const url = typeof item === 'string' ? item : item.url;
+                    const name = typeof item === 'string' ? '' : (item.name || '');
+                    const displayName = truncateName(name);
+                    
+                    return (
+                      <div
+                        key={index}
+                        className="back-image-gallery-item"
+                        onClick={(e) => handleBackImageGallerySelect(e, item)}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        title={name || `Gallery ${index + 1}`}
+                      >
+                        <img 
+                          src={url} 
+                          alt={name || `Gallery ${index + 1}`}
+                          draggable="false"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            if (e.target.nextSibling && e.target.nextSibling.className === 'back-image-gallery-item-error') {
+                              e.target.nextSibling.style.display = 'flex';
+                            }
+                          }}
+                          onLoad={(e) => {
+                            e.target.style.display = 'block';
+                          }}
+                        />
+                        {name && (
+                          <div className="back-image-gallery-item-name" title={name}>
+                            {displayName}
+                          </div>
+                        )}
+                        <div className="back-image-gallery-item-error" style={{ display: 'none' }}>
+                          {t('settings.imageLoadError')}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
       
       <div className="setting-item">
         <button
@@ -383,16 +618,15 @@ const SettingsBar = ({
         </button>
       </div>
       
-      {pagesCount > 0 && (
-        <div className="setting-item">
-          <button
-            className="settings-control action-button danger-button"
-            onClick={() => onResetAllPages && onResetAllPages()}
-          >
-            {t('settings.resetAll')}
-          </button>
-        </div>
-      )}
+      <div className="setting-item">
+        <button
+          className="settings-control action-button danger-button"
+          onClick={() => onResetAllPages && onResetAllPages()}
+          disabled={pagesCount === 0}
+        >
+          {t('settings.resetAll')}
+        </button>
+      </div>
       
       {/* localStorage durum göstergesi */}
       <div className="setting-item storage-info">

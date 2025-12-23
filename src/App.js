@@ -898,17 +898,26 @@ function App() {
     setPageType(type);
   };
 
-  const handleDefaultBackImageChange = (file) => {
-    if (file === null) {
+  const handleDefaultBackImageChange = (fileOrUrl) => {
+    if (fileOrUrl === null || !fileOrUrl) {
       setDefaultBackImage(null);
       return;
     }
-    if (file) {
+    // Eğer string ise (URL veya base64), direkt kullan
+    if (typeof fileOrUrl === 'string') {
+      setDefaultBackImage(fileOrUrl);
+      return;
+    }
+    // Eğer File objesi ise, FileReader ile oku
+    if (fileOrUrl instanceof File) {
       const reader = new FileReader();
       reader.onload = (event) => {
         setDefaultBackImage(event.target.result);
       };
-      reader.readAsDataURL(file);
+      reader.onerror = () => {
+        console.error('Dosya okuma hatası');
+      };
+      reader.readAsDataURL(fileOrUrl);
     }
   };
 
