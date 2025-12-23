@@ -79,6 +79,9 @@ const SettingsBar = ({
   const [backImageUrlInput, setBackImageUrlInput] = useState('');
   const [showBackImageGallery, setShowBackImageGallery] = useState(false);
   const [backImageGallerySearch, setBackImageGallerySearch] = useState('');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorPickerType, setColorPickerType] = useState(null); // 'binder', 'ring', 'background'
+  const [colorPickerValue, setColorPickerValue] = useState('#000000');
   
   // localStorage durumunu periyodik olarak güncelle
   useEffect(() => {
@@ -230,6 +233,14 @@ const SettingsBar = ({
             type="color"
             value={binderColor}
             onChange={(e) => onColorChange(e.target.value)}
+            onClick={(e) => {
+              if (window.innerWidth <= 1024) {
+                e.preventDefault();
+                setColorPickerType('binder');
+                setColorPickerValue(binderColor);
+                setShowColorPicker(true);
+              }
+            }}
             className="settings-control color-input"
           />
         </div>
@@ -241,6 +252,14 @@ const SettingsBar = ({
             type="color"
             value={ringColor}
             onChange={(e) => onRingColorChange(e.target.value)}
+            onClick={(e) => {
+              if (window.innerWidth <= 1024) {
+                e.preventDefault();
+                setColorPickerType('ring');
+                setColorPickerValue(ringColor);
+                setShowColorPicker(true);
+              }
+            }}
             className="settings-control color-input"
           />
         </div>
@@ -252,6 +271,14 @@ const SettingsBar = ({
             type="color"
             value={containerColor}
             onChange={(e) => onContainerColorChange(e.target.value)}
+            onClick={(e) => {
+              if (window.innerWidth <= 1024) {
+                e.preventDefault();
+                setColorPickerType('background');
+                setColorPickerValue(containerColor);
+                setShowColorPicker(true);
+              }
+            }}
             className="settings-control color-input"
           />
         </div>
@@ -259,70 +286,126 @@ const SettingsBar = ({
       
       <div className="setting-item">
         <span className="setting-label" title={t('settings.widthHelp')}>{t('settings.width')}</span>
-        <input
-          type="number"
-          value={widthRatio === '' ? '' : widthRatio}
-          onChange={(e) => {
-            const value = e.target.value;
-            // Boş string'e izin ver (tamamen silip sıfırdan yazabilmek için)
-            if (value === '') {
-              onWidthRatioChange('');
-            } else {
-              onWidthRatioChange(value);
-            }
-          }}
-          onKeyDown={(e) => {
-            // Ok tuşlarını yakala ve sayfa değiştirmeyi engelle
-            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-              e.stopPropagation();
-            }
-          }}
-          onBlur={(e) => {
-            // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
-            if (e.target.value === '') {
-              onWidthRatioChange(2);
-            }
-          }}
-          min="0.5"
-          max="5"
-          step="0.1"
-          className="settings-control ratio-input"
-          title={t('settings.widthHelp')}
-        />
+        <div className="ratio-input-wrapper">
+          <input
+            type="number"
+            value={widthRatio === '' ? '' : widthRatio}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Boş string'e izin ver (tamamen silip sıfırdan yazabilmek için)
+              if (value === '') {
+                onWidthRatioChange('');
+              } else {
+                onWidthRatioChange(value);
+              }
+            }}
+            onKeyDown={(e) => {
+              // Ok tuşlarını yakala ve sayfa değiştirmeyi engelle
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.stopPropagation();
+              }
+            }}
+            onBlur={(e) => {
+              // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
+              if (e.target.value === '') {
+                onWidthRatioChange(2);
+              }
+            }}
+            min="0.5"
+            max="5"
+            step="0.1"
+            className="settings-control ratio-input"
+            title={t('settings.widthHelp')}
+          />
+          <div className="ratio-buttons">
+            <button
+              type="button"
+              className="ratio-btn ratio-btn-up"
+              onClick={() => {
+                const current = parseFloat(widthRatio) || 2;
+                const newValue = Math.min(5, (current + 0.1).toFixed(1));
+                onWidthRatioChange(parseFloat(newValue));
+              }}
+              title={t('settings.increase')}
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              className="ratio-btn ratio-btn-down"
+              onClick={() => {
+                const current = parseFloat(widthRatio) || 2;
+                const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
+                onWidthRatioChange(parseFloat(newValue));
+              }}
+              title={t('settings.decrease')}
+            >
+              ▼
+            </button>
+          </div>
+        </div>
       </div>
       
       <div className="setting-item">
         <span className="setting-label" title={t('settings.heightHelp')}>{t('settings.height')}</span>
-        <input
-          type="number"
-          value={heightRatio === '' ? '' : heightRatio}
-          onChange={(e) => {
-            const value = e.target.value;
-            // Boş string'e izin ver (tamamen silip sıfırdan yazabilmek için)
-            if (value === '') {
-              onHeightRatioChange('');
-            } else {
-              onHeightRatioChange(value);
-            }
-          }}
-          onKeyDown={(e) => {
-            // Ok tuşlarını yakala ve sayfa değiştirmeyi engelle
-            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-              e.stopPropagation();
-            }
-          }}
-          onBlur={(e) => {
-            // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
-            if (e.target.value === '') {
-              onHeightRatioChange(1);
-            }
-          }}
-          min="0.5"
-          max="5"
-          step="0.1"
-          className="settings-control ratio-input"
-          title={t('settings.heightHelp')}
-        />
+        <div className="ratio-input-wrapper">
+          <input
+            type="number"
+            value={heightRatio === '' ? '' : heightRatio}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Boş string'e izin ver (tamamen silip sıfırdan yazabilmek için)
+              if (value === '') {
+                onHeightRatioChange('');
+              } else {
+                onHeightRatioChange(value);
+              }
+            }}
+            onKeyDown={(e) => {
+              // Ok tuşlarını yakala ve sayfa değiştirmeyi engelle
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.stopPropagation();
+              }
+            }}
+            onBlur={(e) => {
+              // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
+              if (e.target.value === '') {
+                onHeightRatioChange(1);
+              }
+            }}
+            min="0.5"
+            max="5"
+            step="0.1"
+            className="settings-control ratio-input"
+            title={t('settings.heightHelp')}
+          />
+          <div className="ratio-buttons">
+            <button
+              type="button"
+              className="ratio-btn ratio-btn-up"
+              onClick={() => {
+                const current = parseFloat(heightRatio) || 1;
+                const newValue = Math.min(5, (current + 0.1).toFixed(1));
+                onHeightRatioChange(parseFloat(newValue));
+              }}
+              title={t('settings.increase')}
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              className="ratio-btn ratio-btn-down"
+              onClick={() => {
+                const current = parseFloat(heightRatio) || 1;
+                const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
+                onHeightRatioChange(parseFloat(newValue));
+              }}
+              title={t('settings.decrease')}
+            >
+              ▼
+            </button>
+          </div>
+        </div>
       </div>
       
       <div className="setting-item">
@@ -641,6 +724,79 @@ const SettingsBar = ({
           {storageUsage.toFixed(1)}% • {t('storage.pages')}: {pagesCount} • {t('storage.images')}: {imageCount}
         </div>
       </div>
+
+      {/* Renk Seçici Modal - Mobil için */}
+      {showColorPicker && createPortal(
+        <div 
+          className="color-picker-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowColorPicker(false);
+            }
+          }}
+        >
+          <div className="color-picker-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="color-picker-header">
+              <h3>{colorPickerType === 'binder' ? t('settings.binder') : colorPickerType === 'ring' ? t('settings.ring') : t('settings.background')}</h3>
+              <button
+                className="color-picker-close"
+                onClick={() => setShowColorPicker(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="color-picker-body">
+              <div className="color-picker-main">
+                <input
+                  type="color"
+                  value={colorPickerValue}
+                  onChange={(e) => setColorPickerValue(e.target.value)}
+                  className="color-picker-input-large"
+                />
+              </div>
+              <div className="color-picker-custom">
+                <label>{t('settings.customColor')}</label>
+                <input
+                  type="text"
+                  value={colorPickerValue}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                      setColorPickerValue(value);
+                    }
+                  }}
+                  placeholder="#000000"
+                  className="color-picker-hex-input"
+                />
+              </div>
+              <div className="color-picker-actions">
+                <button
+                  className="color-picker-btn color-picker-btn-cancel"
+                  onClick={() => setShowColorPicker(false)}
+                >
+                  {t('binder.cancel')}
+                </button>
+                <button
+                  className="color-picker-btn color-picker-btn-apply"
+                  onClick={() => {
+                    if (colorPickerType === 'binder') {
+                      onColorChange(colorPickerValue);
+                    } else if (colorPickerType === 'ring') {
+                      onRingColorChange(colorPickerValue);
+                    } else if (colorPickerType === 'background') {
+                      onContainerColorChange(colorPickerValue);
+                    }
+                    setShowColorPicker(false);
+                  }}
+                >
+                  {t('settings.apply')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       
     </div>
   );

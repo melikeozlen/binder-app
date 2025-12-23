@@ -98,10 +98,10 @@
 .color-input-wrapper::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: 100%;
+  top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-bottom: 5px;
+  margin-top: 5px;
   padding: 0.3rem 0.5rem;
   background-color: #333;
   color: #fff;
@@ -117,12 +117,12 @@
 .color-input-wrapper::before {
   content: '';
   position: absolute;
-  bottom: 100%;
+  top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-bottom: 0px;
+  margin-top: 0px;
   border: 4px solid transparent;
-  border-top-color: #333;
+  border-bottom-color: #333;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.1s ease;
@@ -135,10 +135,58 @@
   transition-delay: 0.1s;
 }
 
+.ratio-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
 .ratio-input {
   width: 50px;
   padding: 0.2rem 0.25rem;
   text-align: center;
+}
+
+.ratio-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.ratio-btn {
+  width: 18px;
+  height: 12px;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  background-color: #fff;
+  color: #333;
+  font-size: 0.6rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.ratio-btn:hover {
+  background-color: #f5f5f5;
+  border-color: #999;
+}
+
+.ratio-btn:active {
+  background-color: #e0e0e0;
+}
+
+.ratio-btn-up {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ratio-btn-down {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .grid-input {
@@ -577,6 +625,170 @@
   font-size: 0.6rem;
   color: #666;
   white-space: nowrap;
+}
+
+/* Renk Seçici Modal */
+.color-picker-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999997;
+  animation: fadeIn 0.2s ease;
+}
+
+.color-picker-modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease;
+}
+
+.color-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.color-picker-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.color-picker-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.color-picker-close:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.color-picker-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.color-picker-main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.color-picker-input-large {
+  width: 200px;
+  height: 200px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.color-picker-input-large::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+}
+
+.color-picker-input-large::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+.color-picker-input-large::-moz-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+.color-picker-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.color-picker-custom label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.color-picker-hex-input {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: monospace;
+  text-transform: uppercase;
+}
+
+.color-picker-hex-input:focus {
+  outline: none;
+  border-color: #666;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.color-picker-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.color-picker-btn {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.color-picker-btn-cancel {
+  background-color: white;
+  color: #333;
+}
+
+.color-picker-btn-cancel:hover {
+  background-color: #f5f5f5;
+}
+
+.color-picker-btn-apply {
+  background-color: #333;
+  color: white;
+  border-color: #333;
+}
+
+.color-picker-btn-apply:hover {
+  background-color: #555;
+  border-color: #555;
 }
 
 

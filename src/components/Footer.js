@@ -47,6 +47,23 @@ const Footer = () => {
     setDeferredPrompt(null);
   };
 
+  const handleClearCache = () => {
+    if (window.confirm(t('footer.clearCacheConfirm'))) {
+      // Service Worker cache'ini temizle
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => {
+            caches.delete(name);
+          });
+        });
+      }
+      // localStorage'ı temizle
+      localStorage.clear();
+      // Sayfayı yenile
+      window.location.reload();
+    }
+  };
+
   return (
     <footer className="app-footer">
       <div className="footer-content">
@@ -73,6 +90,14 @@ const Footer = () => {
             <span className="footer-separator">•</span>
           </>
         )}
+        <button
+          className="footer-clear-cache-btn"
+          onClick={handleClearCache}
+          title={t('footer.clearCache')}
+        >
+          🗑️ {t('footer.clearCache')}
+        </button>
+        <span className="footer-separator">•</span>
         <select
           className="footer-language-select"
           value={language}
