@@ -53,17 +53,56 @@
   width: 100vw;
 }
 
-.App.fullscreen-mode .settings-bar,
-.App.fullscreen-mode .page-order-bar,
-.App.fullscreen-mode .app-footer {
+.App.fullscreen-mode .page-order-bar {
   display: none !important;
+}
+
+/* Fullscreen modunda Settings ve Footer minimal görünüm */
+.App.fullscreen-mode .settings-bar {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10001 !important;
+  display: flex !important;
+  padding: 0.15rem 0.3rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
+.App.fullscreen-mode .settings-bar:hover {
+  opacity: 1;
+}
+
+.App.fullscreen-mode .app-footer {
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10001 !important;
+  display: flex !important;
+  padding: 0.3rem 0.5rem;
+  background-color: rgba(248, 248, 248, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
+.App.fullscreen-mode .app-footer:hover {
+  opacity: 1;
 }
 
 .App.fullscreen-mode .binder-container {
   margin-right: 0 !important;
   width: 100vw !important;
-  height: 100vh !important;
   padding: 0 !important;
+  top: 40px !important; /* SettingsBar için yer */
+  bottom: 40px !important; /* Footer için yer */
+  height: calc(100vh - 80px) !important; /* SettingsBar + Footer yüksekliği */
 }
 
 .App > .app-footer {

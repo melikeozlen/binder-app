@@ -264,7 +264,7 @@ const Binder = ({
             onClick={onToggleFullscreen}
             title={t('binder.exitFullscreen')}
           >
-            ⛶
+            ✕
           </button>
         </div>
       )}

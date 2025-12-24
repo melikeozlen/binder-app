@@ -37,61 +37,63 @@
 
 .fullscreen-add-page-btn {
   position: absolute;
-  top: 12px;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  background-color: rgba(0, 123, 255, 0.5);
-  color: white;
-  font-size: 16px;
-  font-weight: 300;
+  width: 32px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  transition: all 0.15s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  opacity: 0.7;
+  transition: all 0.2s;
+  opacity: 0.85;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .fullscreen-add-page-btn:hover {
-  background-color: rgba(0, 123, 255, 0.8);
+  background-color: rgba(255, 255, 255, 1);
   opacity: 1;
-  transform: translateX(-50%) scale(1.05);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%) translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .fullscreen-exit-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  background-color: rgba(100, 100, 100, 0.5);
-  color: white;
-  font-size: 14px;
-  font-weight: 300;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  color: #333;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  transition: all 0.15s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  opacity: 0.7;
+  transition: all 0.2s;
+  opacity: 0.85;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .fullscreen-exit-btn:hover {
-  background-color: rgba(100, 100, 100, 0.8);
+  background-color: rgba(255, 255, 255, 1);
   opacity: 1;
-  transform: scale(1.05);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .binder-wrapper {

@@ -740,7 +740,7 @@ function App() {
   
   // localStorage'dan ayarları yükle
   const savedSettings = loadSettings();
-  const [binderColor, setBinderColor] = useState(savedSettings?.binderColor || '#E6E6FA');
+  const [binderColor, setBinderColor] = useState(savedSettings?.binderColor || '#E6E6E6');
   const [ringColor, setRingColor] = useState(savedSettings?.ringColor || '#A0A0A0');
   const [containerColor, setContainerColor] = useState(savedSettings?.containerColor || '#ffffff');
   const [binderType, setBinderType] = useState(savedSettings?.binderType || 'leather');
@@ -1521,7 +1521,7 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className={`App ${isFullscreen ? 'fullscreen-mode' : ''}`}>
       <SettingsBar
         binderColor={binderColor}
         ringColor={ringColor}

@@ -14,6 +14,25 @@
   box-sizing: border-box;
 }
 
+/* Fullscreen modunda minimal görünüm */
+.App.fullscreen-mode .app-footer {
+  padding: 0.25rem 0.5rem;
+  min-height: 28px;
+}
+
+.App.fullscreen-mode .app-footer .footer-content {
+  font-size: 0.65rem;
+  gap: 0.3rem;
+}
+
+.App.fullscreen-mode .app-footer .footer-text {
+  display: none; /* Copyright'ı gizle */
+}
+
+.App.fullscreen-mode .app-footer .footer-separator {
+  font-size: 0.6rem;
+}
+
 .footer-content {
   display: flex;
   align-items: center;
