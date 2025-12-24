@@ -41,20 +41,6 @@ code {
   position: relative;
 }
 
-.splash-icon-wrapper {
-  margin-bottom: 1.5rem;
-  display: inline-block;
-}
-
-.splash-icon {
-  width: 100px;
-  height: 100px;
-  object-fit: contain;
-  display: block;
-  opacity: 0;
-  animation: fadeIn 0.6s ease-out 0.2s forwards;
-}
-
 .splash-text {
   font-size: 2rem;
   font-weight: 500;
@@ -136,11 +122,6 @@ code {
 }
 
 @media (max-width: 768px) {
-  .splash-icon {
-    width: 80px;
-    height: 80px;
-  }
-  
   .splash-text {
     font-size: 1.75rem;
   }
