@@ -1132,6 +1132,27 @@ function App() {
     }
   };
 
+  // Sadece sayfaları sil (resimleri koru)
+  const handleDeleteAllPages = () => {
+    if (pages.length === 0) return;
+    
+    if (window.confirm(t('binder.deletePagesConfirm'))) {
+      try {
+        // Sadece sayfa verilerini sil, resimleri koru
+        pages.forEach(page => {
+          localStorage.removeItem(`binder-page-${page.id}`);
+        });
+        
+        // State'i temizle
+        setPages([]);
+        setCurrentSpreadIndex(0);
+        setSelectedPageIndex(null);
+      } catch (e) {
+        console.error('Sayfalar silinirken hata:', e);
+      }
+    }
+  };
+
   // Tüm sayfaları tek seferde sil
   const handleResetAllPages = () => {
     if (pages.length === 0) return;
@@ -1522,6 +1543,7 @@ function App() {
         onDefaultBackImageChange={handleDefaultBackImageChange}
         onAddPage={handleAddPage}
         onResetAllPages={handleResetAllPages}
+        onDeleteAllPages={handleDeleteAllPages}
         pagesCount={pages.length}
         imageInputMode={imageInputMode}
         onImageInputModeChange={setImageInputMode}

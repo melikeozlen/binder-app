@@ -52,6 +52,7 @@ const SettingsBar = ({
   onDefaultBackImageChange,
   onAddPage,
   onResetAllPages,
+  onDeleteAllPages,
   pagesCount = 0,
   imageInputMode = 'file',
   onImageInputModeChange,
@@ -842,8 +843,20 @@ const SettingsBar = ({
       <div className="setting-item">
         <button
           className="settings-control action-button danger-button"
+          onClick={() => onDeleteAllPages && onDeleteAllPages()}
+          disabled={pagesCount === 0}
+          title={t('settings.deletePages') || 'Sayfaları Sil'}
+        >
+          {t('settings.deletePages') || 'Sayfaları Sil'}
+        </button>
+      </div>
+      
+      <div className="setting-item">
+        <button
+          className="settings-control action-button danger-button"
           onClick={() => onResetAllPages && onResetAllPages()}
           disabled={pagesCount === 0}
+          title={t('settings.resetAll')}
         >
           {t('settings.resetAll')}
         </button>
