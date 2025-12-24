@@ -58,6 +58,46 @@ const saveGalleryUrls = (urls) => {
   }
 };
 
+// Varsayılan arka plan resmini localStorage'dan yükle
+const loadDefaultBackImage = () => {
+  try {
+    const saved = localStorage.getItem('binder-default-back-image');
+    if (saved) {
+      return saved; // Base64 string olarak döndür
+    }
+  } catch (e) {
+    console.error('Varsayılan arka plan resmi yüklenirken hata:', e);
+  }
+  return null;
+};
+
+// Varsayılan arka plan resmini localStorage'a kaydet
+const saveDefaultBackImage = (imageData) => {
+  try {
+    if (imageData) {
+      // Resim çok büyükse sıkıştır
+      const imageSize = imageData.length;
+      const maxSize = 200 * 1024; // 200KB max
+      
+      if (imageSize > maxSize) {
+        console.warn(`Varsayılan arka plan resmi çok büyük (${(imageSize / 1024).toFixed(2)}KB), sıkıştırılmalı.`);
+        // Şimdilik direkt kaydet, sıkıştırma Page.js'de yapılabilir
+      }
+      
+      localStorage.setItem('binder-default-back-image', imageData);
+    } else {
+      // Resim null ise localStorage'dan sil
+      localStorage.removeItem('binder-default-back-image');
+    }
+  } catch (e) {
+    if (e.name === 'QuotaExceededError') {
+      console.error('localStorage dolu! Varsayılan arka plan resmi kaydedilemedi.');
+    } else {
+      console.error('Varsayılan arka plan resmi kaydedilirken hata:', e);
+    }
+  }
+};
+
 // Eski localStorage'dan defaultBackImage'ı temizle (migration)
 const cleanupDefaultBackImage = () => {
   try {
@@ -753,9 +793,8 @@ function App() {
   const [pageType, setPageType] = useState(savedSettings?.pageType || 'mat');
   const [imageInputMode, setImageInputMode] = useState(savedSettings?.imageInputMode || 'file'); // 'file', 'url' veya 'gallery'
   const [galleryUrls, setGalleryUrls] = useState(() => loadGalleryUrls()); // Text dosyasından yüklenen URL'ler
-  // defaultBackImage localStorage'da saklanmaz (büyük olabilir), sadece state'te tutulur
-  // Sayfa yenilendiğinde kaybolur ama localStorage'da yer kaplamaz
-  const [defaultBackImage, setDefaultBackImage] = useState(null);
+  // defaultBackImage localStorage'dan yükle
+  const [defaultBackImage, setDefaultBackImage] = useState(() => loadDefaultBackImage());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pages, setPages] = useState(() => loadAllPages());
   // Sayfaları order alanına göre sırala (yoksa ID'ye göre - geriye dönük uyumluluk)
@@ -920,18 +959,22 @@ function App() {
   const handleDefaultBackImageChange = (fileOrUrl) => {
     if (fileOrUrl === null || !fileOrUrl) {
       setDefaultBackImage(null);
+      saveDefaultBackImage(null); // localStorage'dan sil
       return;
     }
     // Eğer string ise (URL veya base64), direkt kullan
     if (typeof fileOrUrl === 'string') {
       setDefaultBackImage(fileOrUrl);
+      saveDefaultBackImage(fileOrUrl); // localStorage'a kaydet
       return;
     }
     // Eğer File objesi ise, FileReader ile oku
     if (fileOrUrl instanceof File) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setDefaultBackImage(event.target.result);
+        const imageData = event.target.result;
+        setDefaultBackImage(imageData);
+        saveDefaultBackImage(imageData); // localStorage'a kaydet
       };
       reader.onerror = () => {
         console.error('Dosya okuma hatası');
@@ -1209,7 +1252,8 @@ function App() {
         // Galeri URL'lerini temizle
         localStorage.removeItem('binder-gallery-urls');
         
-        // Default back image'ı state'ten temizle (localStorage'da zaten saklanmıyor)
+        // Default back image'ı temizle
+        localStorage.removeItem('binder-default-back-image');
         setDefaultBackImage(null);
         setGalleryUrls([]);
         

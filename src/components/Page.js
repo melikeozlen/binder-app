@@ -1395,18 +1395,32 @@ const Page = ({
                         </div>
                         <div className="cell-image-controls">
                           {isDefaultImage ? (
-                            <button
-                              type="button"
-                              className="cell-control-btn cell-control-replace"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleBackCellClick(row, col);
-                              }}
-                              title={t('page.replaceImage')}
-                            >
-                              +
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="cell-control-btn cell-control-rotate"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleRotateBackImage(e, row, col);
+                                }}
+                                title={t('page.rotateImage')}
+                              >
+                                ↻
+                              </button>
+                              <button
+                                type="button"
+                                className="cell-control-btn cell-control-replace"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleBackCellClick(row, col);
+                                }}
+                                title={t('page.replaceImage')}
+                              >
+                                +
+                              </button>
+                            </>
                           ) : (
                             <>
                               <button
