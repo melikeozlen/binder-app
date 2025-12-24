@@ -1150,3 +1150,32 @@
   }
 }
 
+
+/* Döndürülmüş resimler için base stil (örnek HTML'deki gibi) */
+.cell-image.rotated {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}
+
+/* Rotation açıları */
+.cell-image.rotated-0 {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.cell-image.rotated-90 {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.cell-image.rotated-180 {
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+.cell-image.rotated-270 {
+  transform: translate(-50%, -50%) rotate(270deg);
+}
