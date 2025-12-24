@@ -6,6 +6,12 @@
   background-color: #f8f8f8;
   border-top: 1px solid #e0e0e0;
   min-height: 40px;
+  position: sticky;
+  bottom: 0;
+  z-index: 999;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .footer-content {
@@ -14,6 +20,9 @@
   gap: 0.5rem;
   font-size: 0.75rem;
   color: #666;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
 }
 
 .footer-text {
@@ -112,7 +121,28 @@
   background-color: #fff;
 }
 
-@media (max-width: 768px) {
+/* Tablet yatay ekran (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .app-footer {
+    padding: 0.4rem 0.8rem;
+    min-height: 36px;
+    position: sticky;
+    bottom: 0;
+  }
+  
+  .footer-content {
+    font-size: 0.7rem;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  
+  .footer-text {
+    display: none; /* Daha kompakt için copyright'ı gizle */
+  }
+}
+
+/* Tablet dikey ekran */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
   .app-footer {
     padding: 0.4rem 0.8rem;
     min-height: 36px;
@@ -121,6 +151,65 @@
   .footer-content {
     font-size: 0.7rem;
     gap: 0.4rem;
+  }
+}
+
+/* Mobil ekranlar */
+@media (max-width: 767px) {
+  .app-footer {
+    padding: 0.4rem 0.6rem;
+    min-height: 36px;
+    position: sticky;
+    bottom: 0;
+  }
+  
+  .footer-content {
+    font-size: 0.65rem;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+  
+  .footer-text {
+    display: none; /* Mobilde copyright'ı gizle */
+  }
+  
+  .footer-separator {
+    font-size: 0.6rem;
+  }
+  
+  .footer-install-btn,
+  .footer-clear-cache-btn {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.65rem;
+  }
+  
+  .footer-language-select {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.65rem;
+  }
+}
+
+/* Küçük mobil ekranlar */
+@media (max-width: 480px) {
+  .app-footer {
+    padding: 0.3rem 0.5rem;
+    min-height: 32px;
+  }
+  
+  .footer-content {
+    font-size: 0.6rem;
+    gap: 0.25rem;
+  }
+  
+  .footer-install-btn,
+  .footer-clear-cache-btn {
+    padding: 0.1rem 0.25rem;
+    font-size: 0.6rem;
+  }
+  
+  .footer-language-select {
+    padding: 0.1rem 0.25rem;
+    font-size: 0.6rem;
   }
 }
 

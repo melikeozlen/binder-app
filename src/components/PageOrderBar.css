@@ -3,15 +3,16 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: 60px;
-  background-color: #ffffff;
+  width: 70px;
+  background: #ffffff;
   border-left: 1px solid #e0e0e0;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  padding: 0.5rem 0.25rem;
+  padding: 0.75rem 0.4rem;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .page-order-bar-hidden {
@@ -22,14 +23,92 @@
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.page-order-header h3 {
-  margin: 0;
+.page-order-icon {
+  font-size: 1.2rem;
+  color: #666;
+  cursor: default;
+  user-select: none;
+  line-height: 1;
+}
+
+/* Swap Inputs */
+.page-order-swap {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.page-order-swap-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.page-order-swap-input {
+  width: 100%;
+  padding: 0.4rem 0.3rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
   font-size: 0.75rem;
-  font-weight: 600;
-  color: #333;
   text-align: center;
+  background: #fafafa;
+  transition: all 0.2s;
+  -moz-appearance: textfield;
+}
+
+.page-order-swap-input::-webkit-outer-spin-button,
+.page-order-swap-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.page-order-swap-input:focus {
+  outline: none;
+  border-color: #2196f3;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.page-order-swap-button {
+  width: 100%;
+  padding: 0.4rem 0.3rem;
+  border: 1px solid #2196f3;
+  border-radius: 4px;
+  background: #2196f3;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.page-order-swap-button:hover:not(:disabled) {
+  background: #1976d2;
+  border-color: #1976d2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+}
+
+.page-order-swap-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.page-order-swap-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #e0e0e0;
+  border-color: #d0d0d0;
+  color: #999;
 }
 
 .page-order-bar:empty {
@@ -44,50 +123,47 @@
 }
 
 
-.page-order-hint {
-  font-size: 0.65rem;
-  color: #999;
-  margin-top: auto;
-  padding-top: 0.75rem;
-  border-top: 1px solid #e0e0e0;
-  white-space: nowrap;
-  user-select: none;
-  text-align: center;
-}
 
 .page-order-list {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
   align-items: stretch;
   flex: 1;
+  padding: 0.25rem 0;
 }
 
 .page-order-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.25rem;
-  border-radius: 3px;
+  padding: 0.4rem 0.3rem;
+  border-radius: 6px;
   position: relative;
   cursor: grab;
-  transition: background-color 0.15s, opacity 0.15s, transform 0.15s;
+  transition: all 0.15s ease;
   font-size: 0.7rem;
   user-select: none;
-  min-height: 32px;
+  min-height: 36px;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
 }
 
 .page-order-item:hover {
-  background-color: #e8e8e8;
+  background-color: #f0f0f0;
+  border-color: #c0c0c0;
 }
 
 .page-order-item.dragging {
   opacity: 0.5;
   cursor: grabbing;
+  transform: scale(0.95);
+  z-index: 100;
 }
 
 .page-order-item.drag-over {
-  background-color: #d0e8ff;
+  background-color: #e3f2fd;
+  border-color: #2196f3;
   transform: scale(1.05);
 }
 
@@ -95,105 +171,94 @@
   cursor: grabbing;
 }
 
-.page-order-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  gap: 0.15rem;
-}
-
 .page-order-item.active {
-  background-color: #e0e0e0;
+  background-color: #e3f2fd;
+  border-color: #2196f3;
   font-weight: 600;
 }
 
-.page-order-item.active .page-order-number {
-  color: #333;
-}
-
 .page-order-number {
-  font-weight: 400;
-  color: #666;
-  font-size: 0.65rem;
+  font-weight: 500;
+  color: #555;
+  font-size: 0.75rem;
   text-align: center;
   line-height: 1;
 }
 
 .page-order-item.active .page-order-number {
-  color: #000;
-  font-weight: 600;
+  color: #1976d2;
+  font-weight: 700;
 }
 
-.page-order-controls {
-  display: none; /* Butonları gizle, minimal için */
+.page-order-active-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #2196f3;
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.page-order-button {
-  padding: 0;
-  border: none;
-  background-color: transparent;
-  color: #999;
-  font-size: 0.6rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  width: 14px;
-  height: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  border-radius: 2px;
-}
-
-.page-order-button:hover:not(:disabled) {
-  background-color: #d0d0d0;
-  color: #333;
-}
-
-.page-order-button:disabled {
-  opacity: 0.15;
-  cursor: not-allowed;
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.8);
+  }
 }
 
 .page-order-ellipsis {
   color: #999;
-  font-size: 0.6rem;
-  padding: 0.25rem 0;
+  font-size: 0.8rem;
+  padding: 0.5rem 0;
   user-select: none;
   text-align: center;
+  font-weight: 600;
+}
+
+.page-order-ellipsis.clickable {
+  cursor: pointer;
+  color: #2196f3;
+  transition: all 0.2s;
+  border-radius: 4px;
+  padding: 0.3rem 0;
+  margin: 0.1rem 0;
+}
+
+.page-order-ellipsis.clickable:hover {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  transform: scale(1.1);
 }
 
 @media (max-width: 768px) {
   .page-order-bar {
-    padding: 0.25rem 0.4rem;
-    min-height: 28px;
+    width: 65px;
+    padding: 0.6rem 0.3rem;
   }
   
-  .page-order-hint {
-    font-size: 0.6rem;
-    margin-right: 0.3rem;
+  .page-order-swap-input {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.2rem;
+  }
+  
+  .page-order-swap-button {
+    font-size: 0.65rem;
+    padding: 0.35rem 0.25rem;
   }
   
   .page-order-item {
-    padding: 0.1rem 0.25rem;
-    font-size: 0.65rem;
+    min-height: 32px;
+    padding: 0.3rem 0.25rem;
   }
   
   .page-order-number {
-    font-size: 0.65rem;
-    min-width: 14px;
-  }
-  
-  .page-order-button {
-    font-size: 0.55rem;
-    width: 12px;
-    height: 12px;
-  }
-  
-  .page-order-ellipsis {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
   }
 }
 

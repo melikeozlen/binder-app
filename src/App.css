@@ -13,12 +13,32 @@
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     min-height: 100vh;
+    height: auto;
   }
   
   .App > .settings-bar {
     position: sticky;
     top: 0;
     z-index: 1000;
+  }
+  
+  .App > .app-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 999;
+  }
+}
+
+/* Tablet yatay ekran için özel ayarlar */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .App {
+    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  
+  .App > .binder-container {
+    min-height: calc(100vh - 80px); /* Footer ve SettingsBar için yer bırak */
   }
   
   .App > .app-footer {
@@ -56,7 +76,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  margin-right: 60px; /* PageOrderBar için yer bırak */
+  margin-right: 70px; /* PageOrderBar için yer bırak */
 }
 
 @media (max-width: 1024px) {
