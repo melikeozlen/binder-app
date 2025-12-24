@@ -495,8 +495,8 @@
   /* isolation: isolate kaldırıldı - z-index'in inherit edilmesi için */
   /* Belirgin beyaz kesikli dikiş izleri (----) - sadece sağ ve alt kenarlarda, üst kenar açık */
   border-top: none;
-  border-right: 3px dashed rgba(240, 240, 240, 0.95);
-  border-bottom: 3px dashed rgba(240, 240, 240, 0.95);
+  border-right: 3px dashed rgba(207, 207, 207, 0.95);
+  border-bottom: 3px dashed rgba(203, 203, 203, 0.95);
   border-left: none;
   /* Dikiş izlerine hafif shadow - dikiş efekti bozulmadan */
   box-shadow: 

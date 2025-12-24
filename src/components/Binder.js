@@ -9,7 +9,7 @@ const Binder = ({
   ringColor,
   containerColor = '#ffffff',
   binderType = 'leather',
-  widthRatio = 2, 
+  widthRatio = 1.8, 
   heightRatio = 1, 
   pages = [], 
   pageType = 'mat',
@@ -120,13 +120,13 @@ const Binder = ({
   // Dikiş rengini hesapla: binder rengi açıksa koyu, koyuysa açık
   const stitchColor = useMemo(() => {
     // Varsayılan binder rengi
-    const defaultColor = binderColor || '#E6E6FA';
+    const defaultColor = binderColor || '#E6E6E6';
     
     // Hex rengi RGB'ye çevir
     const hex = defaultColor.replace('#', '');
     if (hex.length !== 6) {
       // Fallback: varsayılan renkten hesapla
-      const defaultR = 230, defaultG = 230, defaultB = 250;
+      const defaultR = 230, defaultG = 230, defaultB = 230;
       return `rgb(${Math.round(defaultR * 0.7)}, ${Math.round(defaultG * 0.7)}, ${Math.round(defaultB * 0.7)})`;
     }
     
@@ -136,7 +136,7 @@ const Binder = ({
     
     if (isNaN(r) || isNaN(g) || isNaN(b)) {
       // Fallback: varsayılan renkten hesapla
-      const defaultR = 230, defaultG = 230, defaultB = 250;
+      const defaultR = 230, defaultG = 230, defaultB = 230;
       return `rgb(${Math.round(defaultR * 0.7)}, ${Math.round(defaultG * 0.7)}, ${Math.round(defaultB * 0.7)})`;
     }
     
@@ -157,11 +157,11 @@ const Binder = ({
 
   // Ring rengini hesapla: hex'ten RGB'ye çevir ve farklı tonlar oluştur
   const ringColorRGB = useMemo(() => {
-    const defaultRingColor = ringColor || '#A0A0A0';
+    const defaultRingColor = ringColor || '#878787';
     const hex = defaultRingColor.replace('#', '');
     
     if (hex.length !== 6) {
-      return { r: 160, g: 160, b: 160 };
+      return { r: 135, g: 135, b: 135 };
     }
     
     const r = parseInt(hex.substring(0, 2), 16);
@@ -169,7 +169,7 @@ const Binder = ({
     const b = parseInt(hex.substring(4, 6), 16);
     
     if (isNaN(r) || isNaN(g) || isNaN(b)) {
-      return { r: 160, g: 160, b: 160 };
+      return { r: 135, g: 135, b: 135 };
     }
     
     return { r, g, b };
