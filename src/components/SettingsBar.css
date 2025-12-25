@@ -30,9 +30,6 @@
   display: none; /* Label'ları gizle, sadece kontroller görünsün */
 }
 
-.App.fullscreen-mode .settings-bar .storage-info {
-  display: none; /* Storage bilgisini gizle */
-}
 
 @media (max-width: 1024px) {
   .settings-bar {
@@ -605,51 +602,6 @@
   opacity: 0.7;
 }
 
-.storage-info {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.2rem;
-  padding: 0.3rem 0.5rem;
-  background-color: #f8f8f8;
-  border-radius: 4px;
-  min-width: 150px;
-}
-
-.storage-label {
-  font-size: 0.65rem;
-  color: #666;
-  font-weight: 500;
-}
-
-.storage-bar-container {
-  width: 100%;
-  height: 8px;
-  background-color: #e0e0e0;
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-
-.storage-bar {
-  height: 100%;
-  background-color: #4caf50;
-  transition: width 0.3s ease, background-color 0.3s ease;
-  border-radius: 4px;
-}
-
-.storage-bar.storage-warning {
-  background-color: #ff9800;
-}
-
-.storage-bar.storage-critical {
-  background-color: #f44336;
-}
-
-.storage-text {
-  font-size: 0.6rem;
-  color: #666;
-  white-space: nowrap;
-}
 
 /* Renk Seçici Modal */
 .color-picker-modal-overlay {
@@ -855,5 +807,266 @@
   .action-button {
     padding: 0.25rem 0.4rem;
     font-size: 0.65rem;
+  }
+}
+
+/* Binder seçici ve menü stilleri */
+.binder-selector {
+  position: relative;
+}
+
+.binder-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.binder-select {
+  min-width: 120px;
+  max-width: 200px;
+}
+
+.binder-menu-btn {
+  padding: 0.2rem 0.35rem;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background-color: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.binder-menu-btn:hover {
+  border-color: #666;
+  background-color: #f8f8f8;
+}
+
+.binder-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  min-width: 180px;
+  max-width: 280px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.binder-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #333;
+  transition: background-color 0.15s;
+}
+
+.binder-menu-item:hover {
+  background-color: #f8f8f8;
+}
+
+.binder-menu-item-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  margin: 0.1rem 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+
+.binder-menu-item-wrapper:hover {
+  background-color: #f8f8f8;
+}
+
+.binder-menu-item-wrapper:last-child {
+  border-bottom: none;
+}
+
+.binder-menu-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.binder-menu-item-text {
+  flex: 1;
+  font-size: 0.75rem;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.binder-menu-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.binder-menu-item-wrapper:hover .binder-menu-item-actions {
+  opacity: 1;
+}
+
+.binder-menu-action-btn {
+  padding: 0.25rem 0.35rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.7rem;
+  line-height: 1;
+  border-radius: 3px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+}
+
+.binder-menu-edit-btn {
+  color: #666;
+}
+
+.binder-menu-edit-btn:hover {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.binder-menu-delete-btn {
+  color: #999;
+}
+
+.binder-menu-delete-btn:hover {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.binder-edit-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.5rem;
+  margin: 0.1rem 0.25rem;
+  width: calc(100% - 0.5rem);
+}
+
+.binder-edit-input {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  transition: all 0.15s;
+}
+
+.binder-edit-input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.binder-edit-action-btn {
+  padding: 0.3rem 0.4rem;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+}
+
+.binder-edit-save-btn {
+  color: #4caf50;
+}
+
+.binder-edit-save-btn:hover {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.binder-edit-cancel-btn {
+  color: #999;
+}
+
+.binder-edit-cancel-btn:hover {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.binder-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .binder-select {
+    min-width: 100px;
+    max-width: 150px;
+  }
+  
+  .binder-menu {
+    min-width: 160px;
+    max-width: 220px;
+    padding: 0.2rem 0;
+  }
+  
+  .binder-menu-item-wrapper {
+    padding: 0.3rem 0.4rem;
+    margin: 0.08rem 0.2rem;
+  }
+  
+  .binder-menu-item-text {
+    font-size: 0.7rem;
+  }
+  
+  .binder-menu-action-btn {
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.3rem;
+  }
+  
+  .binder-edit-input-wrapper {
+    padding: 0.3rem 0.4rem;
+    margin: 0.08rem 0.2rem;
+  }
+  
+  .binder-edit-input {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.4rem;
+  }
+  
+  .binder-edit-action-btn {
+    min-width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.35rem;
   }
 }

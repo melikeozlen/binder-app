@@ -51,7 +51,6 @@ const SettingsBar = ({
   onPageTypeChange,
   onDefaultBackImageChange,
   onAddPage,
-  onResetAllPages,
   onDeleteAllPages,
   pagesCount = 0,
   imageInputMode = 'file',
@@ -59,7 +58,13 @@ const SettingsBar = ({
   galleryUrls = [],
   onGalleryUrlsChange,
   isFullscreen = false,
-  onToggleFullscreen
+  onToggleFullscreen,
+  binders = [],
+  selectedBinderId = null,
+  onSelectBinder,
+  onCreateBinder,
+  onDeleteBinder,
+  onRenameBinder
 }) => {
   const { language } = useLanguage();
   const t = (key, params) => {
@@ -79,8 +84,6 @@ const SettingsBar = ({
   const heightDownIntervalRef = useRef(null);
   const widthRatioRef = useRef(widthRatio);
   const heightRatioRef = useRef(heightRatio);
-  const [storageUsage, setStorageUsage] = useState(0);
-  const [imageCount, setImageCount] = useState(0);
   const [showBackImageModal, setShowBackImageModal] = useState(false);
   const [showBackImageUrlInput, setShowBackImageUrlInput] = useState(false);
   const [backImageUrlInput, setBackImageUrlInput] = useState('');
@@ -89,6 +92,9 @@ const SettingsBar = ({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPickerType, setColorPickerType] = useState(null); // 'binder', 'ring', 'background'
   const [colorPickerValue, setColorPickerValue] = useState('#000000');
+  const [showBinderMenu, setShowBinderMenu] = useState(false);
+  const [editingBinderId, setEditingBinderId] = useState(null);
+  const [editingBinderName, setEditingBinderName] = useState('');
   
   // widthRatio ve heightRatio ref'lerini güncelle
   useEffect(() => {
@@ -99,18 +105,6 @@ const SettingsBar = ({
     heightRatioRef.current = heightRatio;
   }, [heightRatio]);
 
-  // localStorage durumunu periyodik olarak güncelle
-  useEffect(() => {
-    const updateStorageInfo = () => {
-      setStorageUsage(getLocalStorageUsagePercent());
-      setImageCount(getTotalImageCount());
-    };
-    
-    updateStorageInfo();
-    const interval = setInterval(updateStorageInfo, 2000); // Her 2 saniyede bir güncelle
-    
-    return () => clearInterval(interval);
-  }, []);
 
   // Interval'ları temizle
   useEffect(() => {
@@ -315,6 +309,29 @@ const SettingsBar = ({
     // Input'un value'sunu temizle ki aynı dosya tekrar seçilebilsin
     e.target.value = '';
   };
+  const handleBinderNameSave = () => {
+    if (editingBinderId && editingBinderName.trim()) {
+      onRenameBinder && onRenameBinder(editingBinderId, editingBinderName.trim());
+      setEditingBinderId(null);
+      setEditingBinderName('');
+    }
+  };
+  
+  const handleBinderNameCancel = () => {
+    setEditingBinderId(null);
+    setEditingBinderName('');
+  };
+  
+  const handleBinderNameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleBinderNameSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleBinderNameCancel();
+    }
+  };
+
   return (
     <div className="settings-bar">
       {/* Fullscreen butonu - En solda */}
@@ -329,6 +346,108 @@ const SettingsBar = ({
           </button>
         </div>
       )}
+      
+      {/* Binder seçimi ve yönetimi */}
+      <div className="setting-item binder-selector">
+        <div className="binder-selector-wrapper">
+          <select
+            value={selectedBinderId || ''}
+            onChange={(e) => onSelectBinder && onSelectBinder(e.target.value)}
+            className="settings-control binder-select"
+            title={t('binder.selectBinder')}
+          >
+            {binders.map(binder => (
+              <option key={binder.id} value={binder.id}>
+                {binder.name}
+              </option>
+            ))}
+          </select>
+          <button
+            className="binder-menu-btn"
+            onClick={() => setShowBinderMenu(!showBinderMenu)}
+            title={t('binder.selectBinder')}
+          >
+            ⋮
+          </button>
+        </div>
+        
+        {/* Binder menüsü */}
+        {showBinderMenu && (
+          <div className="binder-menu">
+            <button
+              className="binder-menu-item"
+              onClick={() => {
+                onCreateBinder && onCreateBinder();
+                setShowBinderMenu(false);
+              }}
+            >
+              + {t('binder.newBinder')}
+            </button>
+            {binders.map(binder => (
+              <div key={binder.id} className="binder-menu-item-wrapper">
+                {editingBinderId === binder.id ? (
+                  <div className="binder-edit-input-wrapper">
+                    <input
+                      type="text"
+                      value={editingBinderName}
+                      onChange={(e) => setEditingBinderName(e.target.value)}
+                      onKeyDown={handleBinderNameKeyDown}
+                      onBlur={handleBinderNameSave}
+                      className="binder-edit-input"
+                      placeholder={t('binder.binderNamePlaceholder')}
+                      autoFocus
+                    />
+                    <button
+                      className="binder-edit-action-btn binder-edit-save-btn"
+                      onClick={handleBinderNameSave}
+                      title={t('binder.save')}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      className="binder-edit-action-btn binder-edit-cancel-btn"
+                      onClick={handleBinderNameCancel}
+                      title={t('binder.cancel')}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className="binder-menu-item-content">
+                    <span className="binder-menu-item-text">{binder.name}</span>
+                    <div className="binder-menu-item-actions">
+                      <button
+                        className="binder-menu-action-btn binder-menu-edit-btn"
+                        onClick={() => {
+                          setEditingBinderId(binder.id);
+                          setEditingBinderName(binder.name);
+                        }}
+                        title={t('binder.renameBinder')}
+                      >
+                        ✎
+                      </button>
+                      {binders.length > 1 && (
+                        <button
+                          className="binder-menu-action-btn binder-menu-delete-btn"
+                          onClick={() => {
+                            if (window.confirm(t('binder.deleteBinderConfirm'))) {
+                              onDeleteBinder && onDeleteBinder(binder.id);
+                              setShowBinderMenu(false);
+                            }
+                          }}
+                          title={t('binder.deleteBinder')}
+                        >
+                          🗑
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="setting-item">
         <select
           value={binderType}
@@ -851,30 +970,6 @@ const SettingsBar = ({
         </button>
       </div>
       
-      <div className="setting-item">
-        <button
-          className="settings-control action-button danger-button"
-          onClick={() => onResetAllPages && onResetAllPages()}
-          disabled={pagesCount === 0}
-          title={t('settings.resetAll')}
-        >
-          {t('settings.resetAll')}
-        </button>
-      </div>
-      
-      {/* localStorage durum göstergesi */}
-      <div className="setting-item storage-info">
-        <div className="storage-label">{t('storage.usage')}:</div>
-        <div className="storage-bar-container">
-          <div 
-            className={`storage-bar ${storageUsage >= 90 ? 'storage-critical' : storageUsage >= 75 ? 'storage-warning' : ''}`}
-            style={{ width: `${Math.min(100, storageUsage)}%` }}
-          ></div>
-        </div>
-        <div className="storage-text">
-          {storageUsage.toFixed(1)}% • {t('storage.pages')}: {pagesCount} • {t('storage.images')}: {imageCount}
-        </div>
-      </div>
 
       {/* Renk Seçici Modal - Mobil için */}
       {showColorPicker && createPortal(
@@ -949,6 +1044,13 @@ const SettingsBar = ({
         document.body
       )}
       
+      {/* Binder menüsü dışına tıklandığında kapat */}
+      {showBinderMenu && (
+        <div 
+          className="binder-menu-backdrop"
+          onClick={() => setShowBinderMenu(false)}
+        />
+      )}
     </div>
   );
 };

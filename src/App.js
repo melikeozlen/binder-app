@@ -7,10 +7,153 @@ import Footer from './components/Footer';
 import { useLanguage } from './contexts/LanguageContext';
 import { getTranslation } from './utils/translations';
 import { Analytics } from '@vercel/analytics/react';
-// localStorage helper fonksiyonları
-const loadSettings = () => {
+// Binder yönetimi için localStorage helper fonksiyonları
+const BINDERS_LIST_KEY = 'binders-list';
+const SELECTED_BINDER_KEY = 'selected-binder-id';
+
+// Binder listesini yükle
+const loadBindersList = () => {
   try {
-    const saved = localStorage.getItem('binder-settings');
+    const saved = localStorage.getItem(BINDERS_LIST_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Binder listesi yüklenirken hata:', e);
+  }
+  return [];
+};
+
+// Binder listesini kaydet
+const saveBindersList = (binders) => {
+  try {
+    localStorage.setItem(BINDERS_LIST_KEY, JSON.stringify(binders));
+  } catch (e) {
+    console.error('Binder listesi kaydedilirken hata:', e);
+  }
+};
+
+// Seçili binder ID'sini yükle
+const loadSelectedBinderId = () => {
+  try {
+    return localStorage.getItem(SELECTED_BINDER_KEY);
+  } catch (e) {
+    console.error('Seçili binder ID yüklenirken hata:', e);
+  }
+  return null;
+};
+
+// Seçili binder ID'sini kaydet
+const saveSelectedBinderId = (binderId) => {
+  try {
+    if (binderId) {
+      localStorage.setItem(SELECTED_BINDER_KEY, binderId);
+    } else {
+      localStorage.removeItem(SELECTED_BINDER_KEY);
+    }
+  } catch (e) {
+    console.error('Seçili binder ID kaydedilirken hata:', e);
+  }
+};
+
+// Binder için key prefix oluştur
+const getBinderKeyPrefix = (binderId) => {
+  return `binder-${binderId}-`;
+};
+
+// Eski localStorage verilerini yeni sisteme migrate et
+const migrateToMultiBinder = () => {
+  try {
+    // Eğer zaten binder listesi varsa, migration yapma
+    const existingBinders = loadBindersList();
+    if (existingBinders.length > 0) {
+      return;
+    }
+
+    // Eski verileri kontrol et
+    const oldPagesList = localStorage.getItem('binder-pages-list');
+    const oldSettings = localStorage.getItem('binder-settings');
+    
+    if (oldPagesList || oldSettings) {
+      // Yeni bir binder oluştur ve eski verileri ona taşı
+      const defaultBinderId = `binder-${Date.now()}`;
+      const defaultBinderName = 'Binder 1';
+      
+      // Binder listesine ekle
+      const newBinder = {
+        id: defaultBinderId,
+        name: defaultBinderName,
+        createdAt: Date.now()
+      };
+      saveBindersList([newBinder]);
+      saveSelectedBinderId(defaultBinderId);
+      
+      // Eski sayfa listesini yeni key'e taşı
+      if (oldPagesList) {
+        localStorage.setItem(`${getBinderKeyPrefix(defaultBinderId)}pages-list`, oldPagesList);
+        localStorage.removeItem('binder-pages-list');
+      }
+      
+      // Eski ayarları yeni key'e taşı
+      if (oldSettings) {
+        localStorage.setItem(`${getBinderKeyPrefix(defaultBinderId)}settings`, oldSettings);
+        localStorage.removeItem('binder-settings');
+      }
+      
+      // Eski sayfa verilerini yeni key'lere taşı
+      const pageIds = oldPagesList ? JSON.parse(oldPagesList) : [];
+      pageIds.forEach(pageId => {
+        const oldPageKey = `binder-page-${pageId}`;
+        const oldPageData = localStorage.getItem(oldPageKey);
+        if (oldPageData) {
+          localStorage.setItem(`${getBinderKeyPrefix(defaultBinderId)}page-${pageId}`, oldPageData);
+          localStorage.removeItem(oldPageKey);
+        }
+      });
+      
+      // Eski resim verilerini yeni key'lere taşı
+      const imageKeys = [];
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key) && key.startsWith('binder-image-')) {
+          imageKeys.push(key);
+        }
+      }
+      imageKeys.forEach(oldImageKey => {
+        const imageData = localStorage.getItem(oldImageKey);
+        if (imageData) {
+          // Resim key'ini binder prefix ile güncelle
+          const imageKey = oldImageKey.replace('binder-image-', '');
+          localStorage.setItem(`${getBinderKeyPrefix(defaultBinderId)}image-${imageKey}`, imageData);
+          localStorage.removeItem(oldImageKey);
+        }
+      });
+      
+      // Eski galeri URL'lerini yeni key'e taşı
+      const oldGalleryUrls = localStorage.getItem('binder-gallery-urls');
+      if (oldGalleryUrls) {
+        localStorage.setItem(`${getBinderKeyPrefix(defaultBinderId)}gallery-urls`, oldGalleryUrls);
+        localStorage.removeItem('binder-gallery-urls');
+      }
+      
+      // Eski default back image'ı yeni key'e taşı
+      const oldDefaultBackImage = localStorage.getItem('binder-default-back-image');
+      if (oldDefaultBackImage) {
+        localStorage.setItem(`${getBinderKeyPrefix(defaultBinderId)}default-back-image`, oldDefaultBackImage);
+        localStorage.removeItem('binder-default-back-image');
+      }
+      
+      console.log('Eski veriler yeni binder sistemine taşındı:', defaultBinderId);
+    }
+  } catch (e) {
+    console.error('Migration sırasında hata:', e);
+  }
+};
+
+// localStorage helper fonksiyonları
+const loadSettings = (binderId) => {
+  try {
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}settings` : 'binder-settings';
+    const saved = localStorage.getItem(key);
     if (saved) {
       return JSON.parse(saved);
     }
@@ -20,21 +163,23 @@ const loadSettings = () => {
   return null;
 };
 
-const saveSettings = (settings) => {
+const saveSettings = (settings, binderId) => {
   try {
     // defaultBackImage'ı localStorage'a kaydetme (büyük olabilir)
     const settingsToSave = { ...settings };
     delete settingsToSave.defaultBackImage;
-    localStorage.setItem('binder-settings', JSON.stringify(settingsToSave));
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}settings` : 'binder-settings';
+    localStorage.setItem(key, JSON.stringify(settingsToSave));
   } catch (e) {
     console.error('Ayarlar kaydedilirken hata:', e);
   }
 };
 
 // Galeri URL'lerini localStorage'dan yükle
-const loadGalleryUrls = () => {
+const loadGalleryUrls = (binderId) => {
   try {
-    const saved = localStorage.getItem('binder-gallery-urls');
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}gallery-urls` : 'binder-gallery-urls';
+    const saved = localStorage.getItem(key);
     if (saved) {
       const parsed = JSON.parse(saved);
       // Eski format (sadece URL array) için migration
@@ -50,18 +195,20 @@ const loadGalleryUrls = () => {
 };
 
 // Galeri URL'lerini localStorage'a kaydet
-const saveGalleryUrls = (urls) => {
+const saveGalleryUrls = (urls, binderId) => {
   try {
-    localStorage.setItem('binder-gallery-urls', JSON.stringify(urls));
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}gallery-urls` : 'binder-gallery-urls';
+    localStorage.setItem(key, JSON.stringify(urls));
   } catch (e) {
     console.error('Galeri URL\'leri kaydedilirken hata:', e);
   }
 };
 
 // Varsayılan arka plan resmini localStorage'dan yükle
-const loadDefaultBackImage = () => {
+const loadDefaultBackImage = (binderId) => {
   try {
-    const saved = localStorage.getItem('binder-default-back-image');
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}default-back-image` : 'binder-default-back-image';
+    const saved = localStorage.getItem(key);
     if (saved) {
       return saved; // Base64 string olarak döndür
     }
@@ -72,8 +219,9 @@ const loadDefaultBackImage = () => {
 };
 
 // Varsayılan arka plan resmini localStorage'a kaydet
-const saveDefaultBackImage = (imageData) => {
+const saveDefaultBackImage = (imageData, binderId) => {
   try {
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}default-back-image` : 'binder-default-back-image';
     if (imageData) {
       // Resim çok büyükse sıkıştır
       const imageSize = imageData.length;
@@ -84,10 +232,10 @@ const saveDefaultBackImage = (imageData) => {
         // Şimdilik direkt kaydet, sıkıştırma Page.js'de yapılabilir
       }
       
-      localStorage.setItem('binder-default-back-image', imageData);
+      localStorage.setItem(key, imageData);
     } else {
       // Resim null ise localStorage'dan sil
-      localStorage.removeItem('binder-default-back-image');
+      localStorage.removeItem(key);
     }
   } catch (e) {
     if (e.name === 'QuotaExceededError') {
@@ -116,56 +264,18 @@ const cleanupDefaultBackImage = () => {
   }
 };
 
-// Eski localStorage yapısından yeni yapıya geçiş (migration)
-const migrateOldStorage = () => {
-  try {
-    // Eski yapıyı kontrol et (binder-pages tek key'de dizi olarak)
-    const oldPagesData = localStorage.getItem('binder-pages');
-    if (oldPagesData) {
-      try {
-        const pages = JSON.parse(oldPagesData);
-        if (Array.isArray(pages) && pages.length > 0) {
-          // Her sayfayı ayrı key'e kaydet
-          const pageIds = [];
-          pages.forEach(page => {
-            const pageData = {
-              id: page.id,
-              cover: page.cover || 'right',
-              isCover: page.isCover || false,
-              gridSize: page.gridSize || '2x2',
-              content: page.content || {},
-              backContent: page.backContent || {},
-              rotatedImages: page.rotatedImages || {},
-              transparent: page.transparent !== undefined ? page.transparent : false
-            };
-            localStorage.setItem(`binder-page-${page.id}`, JSON.stringify(pageData));
-            pageIds.push(page.id);
-          });
-          // Sayfa listesini kaydet
-          localStorage.setItem('binder-pages-list', JSON.stringify(pageIds));
-          // Eski key'i temizle
-          localStorage.removeItem('binder-pages');
-        }
-      } catch (e) {
-        console.error('Migration sırasında hata:', e);
-      }
-    }
-  } catch (e) {
-    console.error('Migration sırasında hata:', e);
-  }
-};
-
 // Tek bir sayfayı localStorage'dan yükle
-const loadPage = (pageId) => {
+const loadPage = (pageId, binderId) => {
   // Önce yeni formatı dene (resimler ayrı key'lerde)
-  const page = loadPageWithSeparateImages(pageId);
+  const page = loadPageWithSeparateImages(pageId, binderId);
   if (page) {
     return page;
   }
   
   // Eski formatı dene (geriye dönük uyumluluk)
   try {
-    const saved = localStorage.getItem(`binder-page-${pageId}`);
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}page-${pageId}` : `binder-page-${pageId}`;
+    const saved = localStorage.getItem(key);
     if (saved) {
       const pageData = JSON.parse(saved);
       return {
@@ -274,7 +384,7 @@ const getOptimalImageSettings = () => {
 };
 
 // Resimleri ayrı key'lere kaydet (sayfa verisini küçük tutmak için)
-const saveImageToStorage = (imageKey, imageData) => {
+const saveImageToStorage = (imageKey, imageData, binderId) => {
   try {
     const imageSize = imageData.length;
     const availableSpace = getAvailableLocalStorageSpace();
@@ -294,10 +404,11 @@ const saveImageToStorage = (imageKey, imageData) => {
     
     // localStorage %85'ten fazla doluysa otomatik temizleme yap
     if (usagePercent >= 85) {
-      autoCleanupLocalStorage();
+      autoCleanupLocalStorage(binderId);
     }
     
-    localStorage.setItem(`binder-image-${imageKey}`, imageData);
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}image-${imageKey}` : `binder-image-${imageKey}`;
+    localStorage.setItem(key, imageData);
   } catch (e) {
     if (e.name === 'QuotaExceededError') {
       console.error(`Resim ${imageKey} kaydedilemedi: localStorage dolu.`);
@@ -308,9 +419,10 @@ const saveImageToStorage = (imageKey, imageData) => {
 };
 
 // Resmi localStorage'dan yükle
-const loadImageFromStorage = (imageKey) => {
+const loadImageFromStorage = (imageKey, binderId) => {
   try {
-    return localStorage.getItem(`binder-image-${imageKey}`);
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}image-${imageKey}` : `binder-image-${imageKey}`;
+    return localStorage.getItem(key);
   } catch (e) {
     console.error(`Resim ${imageKey} yüklenirken hata:`, e);
     return null;
@@ -318,16 +430,17 @@ const loadImageFromStorage = (imageKey) => {
 };
 
 // Resmi localStorage'dan sil
-const removeImageFromStorage = (imageKey) => {
+const removeImageFromStorage = (imageKey, binderId) => {
   try {
-    localStorage.removeItem(`binder-image-${imageKey}`);
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}image-${imageKey}` : `binder-image-${imageKey}`;
+    localStorage.removeItem(key);
   } catch (e) {
     console.error(`Resim ${imageKey} silinirken hata:`, e);
   }
 };
 
 // Otomatik localStorage temizleme (kullanıcıya uyarı göstermeden)
-const autoCleanupLocalStorage = (aggressive = false) => {
+const autoCleanupLocalStorage = (binderId, aggressive = false) => {
   try {
     const usagePercent = getLocalStorageUsagePercent();
     const targetPercent = aggressive ? 70 : 80; // Agresif modda %70'e, normalde %80'e düşür
@@ -336,17 +449,22 @@ const autoCleanupLocalStorage = (aggressive = false) => {
       return; // Zaten yeterli alan var
     }
     
+    if (!binderId) return; // Binder ID yoksa temizleme yapma
+    
     // Tüm sayfa ID'lerini al
-    const pagesList = localStorage.getItem('binder-pages-list');
+    const pagesListKey = `${getBinderKeyPrefix(binderId)}pages-list`;
+    const pagesList = localStorage.getItem(pagesListKey);
     if (!pagesList) return;
     
     const pageIds = JSON.parse(pagesList);
     const usedImageKeys = new Set();
+    const imagePrefix = getBinderKeyPrefix(binderId);
     
     // Kullanılan resim referanslarını topla
     pageIds.forEach(pageId => {
       try {
-        const pageData = localStorage.getItem(`binder-page-${pageId}`);
+        const pageDataKey = `${imagePrefix}page-${pageId}`;
+        const pageData = localStorage.getItem(pageDataKey);
         if (pageData) {
           const page = JSON.parse(pageData);
           const content = page.content || {};
@@ -371,9 +489,10 @@ const autoCleanupLocalStorage = (aggressive = false) => {
     
     // Tüm resim key'lerini bul ve kullanılmayanları topla
     const allImageKeys = [];
+    const imageKeyPrefix = `${imagePrefix}image-`;
     for (let key in localStorage) {
-      if (localStorage.hasOwnProperty(key) && key.startsWith('binder-image-')) {
-        const imageKey = key.replace('binder-image-', '');
+      if (localStorage.hasOwnProperty(key) && key.startsWith(imageKeyPrefix)) {
+        const imageKey = key.replace(imageKeyPrefix, '');
         if (!usedImageKeys.has(imageKey)) {
           const imageData = localStorage.getItem(key);
           if (imageData) {
@@ -398,7 +517,7 @@ const autoCleanupLocalStorage = (aggressive = false) => {
     const needToFree = currentSize - targetSize;
     
     for (let i = 0; i < allImageKeys.length && freedSpace < needToFree; i++) {
-      removeImageFromStorage(allImageKeys[i].key);
+      removeImageFromStorage(allImageKeys[i].key, binderId);
       freedSpace += allImageKeys[i].size;
     }
     
@@ -407,11 +526,11 @@ const autoCleanupLocalStorage = (aggressive = false) => {
       // Kullanılan resimleri de timestamp'e göre sırala
       const usedImages = [];
       usedImageKeys.forEach(imageKey => {
-        const imageData = localStorage.getItem(`binder-image-${imageKey}`);
+        const imageData = loadImageFromStorage(imageKey, binderId);
         if (imageData) {
           usedImages.push({
             key: imageKey,
-            fullKey: `binder-image-${imageKey}`,
+            fullKey: `${imageKeyPrefix}${imageKey}`,
             size: imageData.length,
             timestamp: parseInt(imageKey.split('-')[0]) || 0
           });
@@ -424,7 +543,7 @@ const autoCleanupLocalStorage = (aggressive = false) => {
       // En eski %10 resmi sil (agresif temizleme)
       const toDelete = Math.ceil(usedImages.length * 0.1);
       for (let i = 0; i < toDelete && getLocalStorageUsagePercent() >= 80; i++) {
-        removeImageFromStorage(usedImages[i].key);
+        removeImageFromStorage(usedImages[i].key, binderId);
       }
     }
   } catch (e) {
@@ -433,10 +552,11 @@ const autoCleanupLocalStorage = (aggressive = false) => {
 };
 
 // Sayfadaki kullanılmayan resimleri temizle
-const cleanupUnusedImages = (pageId, newContentRefs, newBackContentRefs) => {
+const cleanupUnusedImages = (pageId, newContentRefs, newBackContentRefs, binderId) => {
   try {
     // Eski sayfa verisini yükle
-    const oldPageData = localStorage.getItem(`binder-page-${pageId}`);
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}page-${pageId}` : `binder-page-${pageId}`;
+    const oldPageData = localStorage.getItem(key);
     if (!oldPageData) return;
     
     const oldPage = JSON.parse(oldPageData);
@@ -478,7 +598,7 @@ const cleanupUnusedImages = (pageId, newContentRefs, newBackContentRefs) => {
     // Kullanılmayan resimleri sil
     oldImageKeys.forEach(imageKey => {
       if (!newImageKeys.has(imageKey)) {
-        removeImageFromStorage(imageKey);
+        removeImageFromStorage(imageKey, binderId);
       }
     });
   } catch (e) {
@@ -487,7 +607,7 @@ const cleanupUnusedImages = (pageId, newContentRefs, newBackContentRefs) => {
 };
 
 // Sayfa içeriğindeki resimleri ayrı key'lere kaydet ve referansları değiştir
-const savePageWithSeparateImages = (page) => {
+const savePageWithSeparateImages = (page, binderId) => {
   try {
     const availableSpace = getAvailableLocalStorageSpace();
     const usagePercent = getLocalStorageUsagePercent();
@@ -509,7 +629,7 @@ const savePageWithSeparateImages = (page) => {
           contentWithRefs[key] = null; // Resim kaydedilmedi, null olarak işaretle
         } else {
           try {
-            saveImageToStorage(imageKey, value);
+            saveImageToStorage(imageKey, value, binderId);
             // Referans olarak sakla
             contentWithRefs[key] = `__IMAGE_REF__${imageKey}`;
           } catch (e) {
@@ -543,7 +663,7 @@ const savePageWithSeparateImages = (page) => {
           backContentWithRefs[key] = null; // Resim kaydedilmedi, null olarak işaretle
         } else {
           try {
-            saveImageToStorage(imageKey, value);
+            saveImageToStorage(imageKey, value, binderId);
             // Referans olarak sakla
             backContentWithRefs[key] = `__IMAGE_REF__${imageKey}`;
           } catch (e) {
@@ -575,7 +695,7 @@ const savePageWithSeparateImages = (page) => {
     };
     
     // Önce eski resimleri temizle (sayfada artık kullanılmayan resimler)
-    cleanupUnusedImages(page.id, contentWithRefs, backContentWithRefs);
+    cleanupUnusedImages(page.id, contentWithRefs, backContentWithRefs, binderId);
     
     const pageDataString = JSON.stringify(pageData);
     const dataSize = pageDataString.length;
@@ -587,19 +707,20 @@ const savePageWithSeparateImages = (page) => {
     
     // localStorage %85'ten fazla doluysa otomatik temizleme yap
     if (usagePercent >= 85) {
-      autoCleanupLocalStorage();
+      autoCleanupLocalStorage(binderId);
     }
     
     // Her sayfa için ayrı key'e kaydet
+    const pageKey = binderId ? `${getBinderKeyPrefix(binderId)}page-${page.id}` : `binder-page-${page.id}`;
     try {
-      localStorage.setItem(`binder-page-${page.id}`, pageDataString);
+      localStorage.setItem(pageKey, pageDataString);
     } catch (e) {
       if (e.name === 'QuotaExceededError') {
         // Otomatik temizleme dene
-        autoCleanupLocalStorage(true); // Agresif temizleme
+        autoCleanupLocalStorage(binderId, true); // Agresif temizleme
         try {
           // Tekrar dene
-          localStorage.setItem(`binder-page-${page.id}`, pageDataString);
+          localStorage.setItem(pageKey, pageDataString);
         } catch (e2) {
           console.error('localStorage dolu! Sayfa kaydedilemedi.');
           throw e2;
@@ -618,9 +739,10 @@ const savePageWithSeparateImages = (page) => {
 };
 
 // Sayfa verisini yükle ve resim referanslarını geri yükle
-const loadPageWithSeparateImages = (pageId) => {
+const loadPageWithSeparateImages = (pageId, binderId) => {
   try {
-    const saved = localStorage.getItem(`binder-page-${pageId}`);
+    const key = binderId ? `${getBinderKeyPrefix(binderId)}page-${pageId}` : `binder-page-${pageId}`;
+    const saved = localStorage.getItem(key);
     if (saved) {
       const pageData = JSON.parse(saved);
       
@@ -635,7 +757,7 @@ const loadPageWithSeparateImages = (pageId) => {
         if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
           // Bu bir referans, resmi yükle
           const imageKey = value.replace('__IMAGE_REF__', '');
-          const imageData = loadImageFromStorage(imageKey);
+          const imageData = loadImageFromStorage(imageKey, binderId);
           if (imageData) {
             content[key] = imageData;
           }
@@ -655,7 +777,7 @@ const loadPageWithSeparateImages = (pageId) => {
         if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
           // Bu bir referans, resmi yükle
           const imageKey = value.replace('__IMAGE_REF__', '');
-          const imageData = loadImageFromStorage(imageKey);
+          const imageData = loadImageFromStorage(imageKey, binderId);
           if (imageData) {
             backContent[key] = imageData;
           }
@@ -683,23 +805,23 @@ const loadPageWithSeparateImages = (pageId) => {
 };
 
 // Tek bir sayfayı localStorage'a kaydet
-const savePage = (page) => {
+const savePage = (page, binderId) => {
   // Resimleri ayrı key'lere kaydet
-  savePageWithSeparateImages(page);
+  savePageWithSeparateImages(page, binderId);
 };
 
 // Tüm sayfaları localStorage'dan yükle - her sayfa için ayrı key'den
-const loadAllPages = () => {
+const loadAllPages = (binderId) => {
   try {
-    // Önce eski yapıdan migration yap
-    migrateOldStorage();
+    if (!binderId) return [];
     
     // Sayfa listesini yükle
-    const savedList = localStorage.getItem('binder-pages-list');
+    const pagesListKey = `${getBinderKeyPrefix(binderId)}pages-list`;
+    const savedList = localStorage.getItem(pagesListKey);
     if (savedList) {
       const pageIds = JSON.parse(savedList);
       // Her sayfayı ayrı key'den yükle
-      let pages = pageIds.map(id => loadPage(id)).filter(Boolean);
+      let pages = pageIds.map(id => loadPage(id, binderId)).filter(Boolean);
       
       // Eğer sayfalarda order yoksa, ID'ye göre sıralayıp order ekle (migration)
       let hasOrder = pages.some(p => p.order !== undefined);
@@ -712,7 +834,7 @@ const loadAllPages = () => {
           order: index + 1
         }));
         // Order'ı kaydet
-        pages.forEach(page => savePage(page));
+        pages.forEach(page => savePage(page, binderId));
       }
       
       return pages;
@@ -724,16 +846,19 @@ const loadAllPages = () => {
 };
 
 // Tüm sayfaları localStorage'a kaydet - her sayfa için ayrı key'e
-const saveAllPages = (pages) => {
+const saveAllPages = (pages, binderId) => {
   try {
+    if (!binderId) return;
+    
     // Her sayfayı ayrı key'e kaydet
     pages.forEach(page => {
-      savePage(page);
+      savePage(page, binderId);
     });
     
     // Sayfa listesini kaydet (sadece ID'ler)
     const pageIds = pages.map(p => p.id);
-    localStorage.setItem('binder-pages-list', JSON.stringify(pageIds));
+    const pagesListKey = `${getBinderKeyPrefix(binderId)}pages-list`;
+    localStorage.setItem(pagesListKey, JSON.stringify(pageIds));
   } catch (e) {
     console.error('Sayfalar kaydedilirken hata:', e);
     if (e.name === 'QuotaExceededError') {
@@ -754,8 +879,9 @@ function App() {
     return translation;
   };
   
-  // Eski localStorage'dan defaultBackImage'ı temizle (migration)
+  // Migration: Eski verileri yeni sisteme taşı
   useEffect(() => {
+    migrateToMultiBinder();
     cleanupDefaultBackImage();
   }, []);
 
@@ -778,8 +904,52 @@ function App() {
     }
   }, []);
   
-  // localStorage'dan ayarları yükle
-  const savedSettings = loadSettings();
+  // Binder yönetimi
+  const [binders, setBinders] = useState(() => {
+    const bindersList = loadBindersList();
+    if (bindersList.length === 0) {
+      // Hiç binder yoksa, yeni bir tane oluştur
+      const newBinderId = `binder-${Date.now()}`;
+      const newBinder = {
+        id: newBinderId,
+        name: t('binder.defaultBinderName', { number: 1 }),
+        createdAt: Date.now()
+      };
+      saveBindersList([newBinder]);
+      saveSelectedBinderId(newBinderId);
+      return [newBinder];
+    }
+    return bindersList;
+  });
+  
+  const [selectedBinderId, setSelectedBinderId] = useState(() => {
+    const saved = loadSelectedBinderId();
+    if (saved) {
+      // Seçili binder hala listede var mı kontrol et
+      const bindersList = loadBindersList();
+      if (bindersList.find(b => b.id === saved)) {
+        return saved;
+      }
+    }
+    // Seçili binder yoksa veya bulunamazsa, ilk binder'ı seç
+    const bindersList = loadBindersList();
+    if (bindersList.length > 0) {
+      const firstBinderId = bindersList[0].id;
+      saveSelectedBinderId(firstBinderId);
+      return firstBinderId;
+    }
+    return null;
+  });
+  
+  // Seçili binder değiştiğinde kaydet
+  useEffect(() => {
+    if (selectedBinderId) {
+      saveSelectedBinderId(selectedBinderId);
+    }
+  }, [selectedBinderId]);
+  
+  // localStorage'dan ayarları yükle (seçili binder'a göre)
+  const savedSettings = selectedBinderId ? loadSettings(selectedBinderId) : null;
   const [binderColor, setBinderColor] = useState(savedSettings?.binderColor || '#E6E6E6');
   const [ringColor, setRingColor] = useState(savedSettings?.ringColor || '#A0A0A0');
   const [containerColor, setContainerColor] = useState(savedSettings?.containerColor || '#ffffff');
@@ -792,11 +962,34 @@ function App() {
   const [gridSize, setGridSize] = useState(savedSettings?.gridSize || '2x2');
   const [pageType, setPageType] = useState(savedSettings?.pageType || 'mat');
   const [imageInputMode, setImageInputMode] = useState(savedSettings?.imageInputMode || 'file'); // 'file', 'url' veya 'gallery'
-  const [galleryUrls, setGalleryUrls] = useState(() => loadGalleryUrls()); // Text dosyasından yüklenen URL'ler
+  const [galleryUrls, setGalleryUrls] = useState(() => selectedBinderId ? loadGalleryUrls(selectedBinderId) : []); // Text dosyasından yüklenen URL'ler
   // defaultBackImage localStorage'dan yükle
-  const [defaultBackImage, setDefaultBackImage] = useState(() => loadDefaultBackImage());
+  const [defaultBackImage, setDefaultBackImage] = useState(() => selectedBinderId ? loadDefaultBackImage(selectedBinderId) : null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [pages, setPages] = useState(() => loadAllPages());
+  const [pages, setPages] = useState(() => selectedBinderId ? loadAllPages(selectedBinderId) : []);
+  
+  // Binder değiştiğinde ayarları ve sayfaları yükle
+  useEffect(() => {
+    if (selectedBinderId) {
+      const settings = loadSettings(selectedBinderId);
+      if (settings) {
+        setBinderColor(settings.binderColor || '#E6E6E6');
+        setRingColor(settings.ringColor || '#A0A0A0');
+        setContainerColor(settings.containerColor || '#ffffff');
+        setBinderType(settings.binderType || 'leather');
+        setWidthRatio(settings.widthRatio || 2);
+        setHeightRatio(settings.heightRatio || 1);
+        setGridSize(settings.gridSize || '2x2');
+        setPageType(settings.pageType || 'mat');
+        setImageInputMode(settings.imageInputMode || 'file');
+      }
+      setGalleryUrls(loadGalleryUrls(selectedBinderId));
+      setDefaultBackImage(loadDefaultBackImage(selectedBinderId));
+      setPages(loadAllPages(selectedBinderId));
+      setCurrentSpreadIndex(0);
+      setSelectedPageIndex(null);
+    }
+  }, [selectedBinderId]);
   // Sayfaları order alanına göre sırala (yoksa ID'ye göre - geriye dönük uyumluluk)
   const sortedPages = useMemo(() => {
     return [...pages].sort((a, b) => {
@@ -853,6 +1046,8 @@ function App() {
 
   // Ayarları localStorage'a kaydet (defaultBackImage hariç - localStorage'da yer kaplamasın)
   useEffect(() => {
+    if (!selectedBinderId) return;
+    
     // Boş string değerleri varsayılan değerlerle değiştir
     const widthRatioToSave = widthRatio === '' ? 2 : widthRatio;
     const heightRatioToSave = heightRatio === '' ? 1 : heightRatio;
@@ -871,11 +1066,13 @@ function App() {
       binderType
     };
     
-    saveSettings(settingsToSave);
-  }, [binderColor, ringColor, widthRatio, heightRatio, gridSize, pageType, imageInputMode, containerColor, binderType]); // defaultBackImage dependency'den çıkarıldı
+    saveSettings(settingsToSave, selectedBinderId);
+  }, [binderColor, ringColor, widthRatio, heightRatio, gridSize, pageType, imageInputMode, containerColor, binderType, selectedBinderId]); // defaultBackImage dependency'den çıkarıldı
 
   // Sayfaları localStorage'a kaydet - debounce ile optimize edilmiş
   useEffect(() => {
+    if (!selectedBinderId) return;
+    
     // Önceki timeout'u temizle
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -886,11 +1083,12 @@ function App() {
       if (pages.length > 0) {
         // Tüm sayfaları güncel sırasıyla ve tam detaylı verilerle kaydet
         // Her sayfa için ayrı key'e kaydedilecek
-        saveAllPages(pages);
+        saveAllPages(pages, selectedBinderId);
       } else {
         // Sayfa yoksa localStorage'dan temizle
         try {
-          localStorage.removeItem('binder-pages-list');
+          const pagesListKey = `${getBinderKeyPrefix(selectedBinderId)}pages-list`;
+          localStorage.removeItem(pagesListKey);
         } catch (e) {
           console.error('Sayfa listesi silinirken hata:', e);
         }
@@ -903,7 +1101,7 @@ function App() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [pages]);
+  }, [pages, selectedBinderId]);
 
   const handleColorChange = (color) => {
     setBinderColor(color);
@@ -957,15 +1155,17 @@ function App() {
   };
 
   const handleDefaultBackImageChange = (fileOrUrl) => {
+    if (!selectedBinderId) return;
+    
     if (fileOrUrl === null || !fileOrUrl) {
       setDefaultBackImage(null);
-      saveDefaultBackImage(null); // localStorage'dan sil
+      saveDefaultBackImage(null, selectedBinderId); // localStorage'dan sil
       return;
     }
     // Eğer string ise (URL veya base64), direkt kullan
     if (typeof fileOrUrl === 'string') {
       setDefaultBackImage(fileOrUrl);
-      saveDefaultBackImage(fileOrUrl); // localStorage'a kaydet
+      saveDefaultBackImage(fileOrUrl, selectedBinderId); // localStorage'a kaydet
       return;
     }
     // Eğer File objesi ise, FileReader ile oku
@@ -974,13 +1174,69 @@ function App() {
       reader.onload = (event) => {
         const imageData = event.target.result;
         setDefaultBackImage(imageData);
-        saveDefaultBackImage(imageData); // localStorage'a kaydet
+        saveDefaultBackImage(imageData, selectedBinderId); // localStorage'a kaydet
       };
       reader.onerror = () => {
         console.error('Dosya okuma hatası');
       };
       reader.readAsDataURL(fileOrUrl);
     }
+  };
+  
+  // Binder yönetimi fonksiyonları
+  const handleCreateBinder = () => {
+    const newBinderId = `binder-${Date.now()}`;
+    const binderNumber = binders.length + 1;
+    const newBinder = {
+      id: newBinderId,
+      name: t('binder.defaultBinderName', { number: binderNumber }),
+      createdAt: Date.now()
+    };
+    const updatedBinders = [...binders, newBinder];
+    setBinders(updatedBinders);
+    saveBindersList(updatedBinders);
+    setSelectedBinderId(newBinderId);
+  };
+  
+  const handleDeleteBinder = (binderId) => {
+    if (window.confirm(t('binder.deleteBinderConfirm'))) {
+      // Binder'ın tüm verilerini sil
+      const prefix = getBinderKeyPrefix(binderId);
+      const keysToRemove = [];
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key) && key.startsWith(prefix)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Binder'ı listeden çıkar
+      const updatedBinders = binders.filter(b => b.id !== binderId);
+      setBinders(updatedBinders);
+      saveBindersList(updatedBinders);
+      
+      // Eğer silinen binder seçiliyse, başka bir binder seç
+      if (selectedBinderId === binderId) {
+        if (updatedBinders.length > 0) {
+          setSelectedBinderId(updatedBinders[0].id);
+        } else {
+          // Hiç binder kalmadıysa yeni bir tane oluştur
+          handleCreateBinder();
+        }
+      }
+    }
+  };
+  
+  const handleRenameBinder = (binderId, newName) => {
+    const updatedBinders = binders.map(b => 
+      b.id === binderId ? { ...b, name: newName.trim() || t('binder.defaultBinderName', { number: 1 }) } : b
+    );
+    setBinders(updatedBinders);
+    saveBindersList(updatedBinders);
+  };
+  
+  const handleSelectBinder = (binderId) => {
+    setSelectedBinderId(binderId);
   };
 
   // Spread değiştiğinde selectedPageIndex'i güncelle
@@ -1100,7 +1356,9 @@ function App() {
     }
     
     // Hemen kaydet (yeni sayfa eklendiğinde)
-    saveAllPages(newPages);
+    if (selectedBinderId) {
+      saveAllPages(newPages, selectedBinderId);
+    }
   };
 
   const handleDeletePage = (pageId) => {
@@ -1113,39 +1371,44 @@ function App() {
     
     // localStorage'dan sayfayı sil
     try {
-      localStorage.removeItem(`binder-page-${pageId}`);
-      
-      // Sayfanın resimlerini de sil
-      const page = pages[pageIndex];
-      if (page) {
-        // Content'teki resimleri sil
-        Object.keys(page.content || {}).forEach(key => {
-          const value = page.content[key];
-          if (value && typeof value === 'string' && value.startsWith('data:image')) {
-            const imageKey = `${pageId}-content-${key}`;
-            removeImageFromStorage(imageKey);
-          }
-        });
+      if (selectedBinderId) {
+        const pageKey = `${getBinderKeyPrefix(selectedBinderId)}page-${pageId}`;
+        localStorage.removeItem(pageKey);
         
-        // BackContent'teki resimleri sil
-        Object.keys(page.backContent || {}).forEach(key => {
-          const value = page.backContent[key];
-          if (value && typeof value === 'string' && value.startsWith('data:image')) {
-            const imageKey = `${pageId}-back-${key}`;
-            removeImageFromStorage(imageKey);
-          }
-        });
+        // Sayfanın resimlerini de sil
+        const page = pages[pageIndex];
+        if (page) {
+          // Content'teki resimleri sil
+          Object.keys(page.content || {}).forEach(key => {
+            const value = page.content[key];
+            if (value && typeof value === 'string' && value.startsWith('data:image')) {
+              const imageKey = `${pageId}-content-${key}`;
+              removeImageFromStorage(imageKey, selectedBinderId);
+            }
+          });
+          
+          // BackContent'teki resimleri sil
+          Object.keys(page.backContent || {}).forEach(key => {
+            const value = page.backContent[key];
+            if (value && typeof value === 'string' && value.startsWith('data:image')) {
+              const imageKey = `${pageId}-back-${key}`;
+              removeImageFromStorage(imageKey, selectedBinderId);
+            }
+          });
+        }
+        
+        // Sayfa listesini güncelle
+        if (newPages.length > 0) {
+          const pageIds = newPages.map(p => p.id);
+          const pagesListKey = `${getBinderKeyPrefix(selectedBinderId)}pages-list`;
+          localStorage.setItem(pagesListKey, JSON.stringify(pageIds));
+        } else {
+          const pagesListKey = `${getBinderKeyPrefix(selectedBinderId)}pages-list`;
+          localStorage.removeItem(pagesListKey);
+        }
       }
     } catch (e) {
       console.error(`Sayfa ${pageId} silinirken hata:`, e);
-    }
-    
-    // Sayfa listesini güncelle
-    if (newPages.length > 0) {
-      const pageIds = newPages.map(p => p.id);
-      localStorage.setItem('binder-pages-list', JSON.stringify(pageIds));
-    } else {
-      localStorage.removeItem('binder-pages-list');
     }
     
     // Seçili sayfa indeksini güncelle
@@ -1177,14 +1440,20 @@ function App() {
 
   // Sadece sayfaları sil (resimleri koru)
   const handleDeleteAllPages = () => {
-    if (pages.length === 0) return;
+    if (pages.length === 0 || !selectedBinderId) return;
     
     if (window.confirm(t('binder.deletePagesConfirm'))) {
       try {
+        const prefix = getBinderKeyPrefix(selectedBinderId);
         // Sadece sayfa verilerini sil, resimleri koru
         pages.forEach(page => {
-          localStorage.removeItem(`binder-page-${page.id}`);
+          const pageKey = `${prefix}page-${page.id}`;
+          localStorage.removeItem(pageKey);
         });
+        
+        // Sayfa listesini sil
+        const pagesListKey = `${prefix}pages-list`;
+        localStorage.removeItem(pagesListKey);
         
         // State'i temizle
         setPages([]);
@@ -1203,10 +1472,15 @@ function App() {
     if (window.confirm(t('binder.resetConfirm'))) {
       // Tüm sayfaları ve resimlerini localStorage'dan sil
       try {
+        if (!selectedBinderId) return;
+        
+        const prefix = getBinderKeyPrefix(selectedBinderId);
+        
         // Önce tüm sayfaların resimlerini sil
         pages.forEach(page => {
           // Sayfa verisini yükle (resim referanslarını bulmak için)
-          const pageData = localStorage.getItem(`binder-page-${page.id}`);
+          const pageDataKey = `${prefix}page-${page.id}`;
+          const pageData = localStorage.getItem(pageDataKey);
           if (pageData) {
             try {
               const pageObj = JSON.parse(pageData);
@@ -1217,7 +1491,7 @@ function App() {
               Object.values(content).forEach(value => {
                 if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
                   const imageKey = value.replace('__IMAGE_REF__', '');
-                  removeImageFromStorage(imageKey);
+                  removeImageFromStorage(imageKey, selectedBinderId);
                 }
               });
               
@@ -1225,7 +1499,7 @@ function App() {
               Object.values(backContent).forEach(value => {
                 if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
                   const imageKey = value.replace('__IMAGE_REF__', '');
-                  removeImageFromStorage(imageKey);
+                  removeImageFromStorage(imageKey, selectedBinderId);
                 }
               });
             } catch (e) {
@@ -1234,26 +1508,29 @@ function App() {
           }
           
           // Sayfa verisini sil
-          localStorage.removeItem(`binder-page-${page.id}`);
+          localStorage.removeItem(pageDataKey);
         });
         
-        // Tüm binder-image- ile başlayan key'leri sil (güvenlik için)
+        // Tüm binder-image- ile başlayan key'leri sil (sadece bu binder'a ait olanlar)
         const keysToRemove = [];
         for (let key in localStorage) {
-          if (localStorage.hasOwnProperty(key) && key.startsWith('binder-image-')) {
+          if (localStorage.hasOwnProperty(key) && key.startsWith(`${prefix}image-`)) {
             keysToRemove.push(key);
           }
         }
         keysToRemove.forEach(key => localStorage.removeItem(key));
         
         // Sayfa listesini sil
-        localStorage.removeItem('binder-pages-list');
+        const pagesListKey = `${prefix}pages-list`;
+        localStorage.removeItem(pagesListKey);
         
         // Galeri URL'lerini temizle
-        localStorage.removeItem('binder-gallery-urls');
+        const galleryUrlsKey = `${prefix}gallery-urls`;
+        localStorage.removeItem(galleryUrlsKey);
         
         // Default back image'ı temizle
-        localStorage.removeItem('binder-default-back-image');
+        const defaultBackImageKey = `${prefix}default-back-image`;
+        localStorage.removeItem(defaultBackImageKey);
         setDefaultBackImage(null);
         setGalleryUrls([]);
         
@@ -1331,10 +1608,13 @@ function App() {
       
       // Hemen kaydet - sadece güncellenen sayfayı kaydet
       try {
-        savePage(fullPageData);
-        // Sayfa listesini de güncelle
-        const pageIds = newPages.map(p => p.id);
-        localStorage.setItem('binder-pages-list', JSON.stringify(pageIds));
+        if (selectedBinderId) {
+          savePage(fullPageData, selectedBinderId);
+          // Sayfa listesini de güncelle
+          const pageIds = newPages.map(p => p.id);
+          const pagesListKey = `${getBinderKeyPrefix(selectedBinderId)}pages-list`;
+          localStorage.setItem(pagesListKey, JSON.stringify(pageIds));
+        }
       } catch (e) {
         console.error('Sayfa kaydedilirken hata:', e);
       }
@@ -1586,13 +1866,23 @@ function App() {
         onPageTypeChange={handlePageTypeChange}
         onDefaultBackImageChange={handleDefaultBackImageChange}
         onAddPage={handleAddPage}
-        onResetAllPages={handleResetAllPages}
         onDeleteAllPages={handleDeleteAllPages}
         pagesCount={pages.length}
         imageInputMode={imageInputMode}
         onImageInputModeChange={setImageInputMode}
         galleryUrls={galleryUrls}
-        onGalleryUrlsChange={setGalleryUrls}
+        onGalleryUrlsChange={(urls) => {
+          setGalleryUrls(urls);
+          if (selectedBinderId) {
+            saveGalleryUrls(urls, selectedBinderId);
+          }
+        }}
+        binders={binders}
+        selectedBinderId={selectedBinderId}
+        onSelectBinder={handleSelectBinder}
+        onCreateBinder={handleCreateBinder}
+        onDeleteBinder={handleDeleteBinder}
+        onRenameBinder={handleRenameBinder}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       />
@@ -1635,7 +1925,7 @@ function App() {
         onToggleFullscreen={toggleFullscreen}
         onAddPage={handleAddPage}
       />
-      <Footer />
+      <Footer pagesCount={pages.length} />
       <Analytics />
     </div>
   );

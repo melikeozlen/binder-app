@@ -3,11 +3,40 @@ import './Footer.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 
-const Footer = () => {
+// localStorage kullanım yüzdesini hesapla
+const getLocalStorageUsagePercent = () => {
+  try {
+    let total = 0;
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        total += localStorage[key].length + key.length;
+      }
+    }
+    const estimatedLimit = 5 * 1024 * 1024; // 5MB
+    return (total / estimatedLimit) * 100;
+  } catch (e) {
+    return 0;
+  }
+};
+
+// Toplam resim sayısını hesapla
+const getTotalImageCount = () => {
+  let count = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key) && key.startsWith('binder-') && key.includes('image-')) {
+      count++;
+    }
+  }
+  return count;
+};
+
+const Footer = ({ pagesCount = 0 }) => {
   const { language, setLanguage } = useLanguage();
   const t = (key) => getTranslation(key, language);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [storageUsage, setStorageUsage] = useState(0);
+  const [imageCount, setImageCount] = useState(0);
 
   useEffect(() => {
     // Check if app is already installed
@@ -32,6 +61,19 @@ const Footer = () => {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
+  }, []);
+
+  // localStorage durumunu periyodik olarak güncelle
+  useEffect(() => {
+    const updateStorageInfo = () => {
+      setStorageUsage(getLocalStorageUsagePercent());
+      setImageCount(getTotalImageCount());
+    };
+    
+    updateStorageInfo();
+    const interval = setInterval(updateStorageInfo, 2000); // Her 2 saniyede bir güncelle
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleInstallClick = async () => {
@@ -108,6 +150,19 @@ const Footer = () => {
           <option value="en">EN</option>
           <option value="kr">KR</option>
         </select>
+        <span className="footer-separator">•</span>
+        <div className="footer-storage-info">
+          <div className="footer-storage-bar-container">
+            <div 
+              className={`footer-storage-bar ${storageUsage >= 90 ? 'storage-critical' : storageUsage >= 75 ? 'storage-warning' : ''}`}
+              style={{ width: `${Math.min(100, storageUsage)}%` }}
+              title={`${storageUsage.toFixed(1)}% ${t('storage.usage')}`}
+            ></div>
+          </div>
+          <span className="footer-storage-text">
+            {storageUsage.toFixed(1)}% • {t('storage.pages')}: {pagesCount} • {t('storage.images')}: {imageCount}
+          </span>
+        </div>
       </div>
     </footer>
   );

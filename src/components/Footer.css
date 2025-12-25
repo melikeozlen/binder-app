@@ -232,3 +232,90 @@
   }
 }
 
+/* Storage bilgisi stilleri */
+.footer-storage-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+}
+
+.footer-storage-bar-container {
+  width: 60px;
+  height: 6px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.footer-storage-bar {
+  height: 100%;
+  background-color: #4caf50;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 3px;
+}
+
+.footer-storage-bar.storage-warning {
+  background-color: #ff9800;
+}
+
+.footer-storage-bar.storage-critical {
+  background-color: #f44336;
+}
+
+.footer-storage-text {
+  font-size: 0.7rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* Fullscreen modunda storage bilgisi */
+.App.fullscreen-mode .footer-storage-info {
+  font-size: 0.65rem;
+  gap: 0.3rem;
+}
+
+.App.fullscreen-mode .footer-storage-bar-container {
+  width: 50px;
+  height: 5px;
+}
+
+.App.fullscreen-mode .footer-storage-text {
+  font-size: 0.65rem;
+}
+
+/* Mobil ekranlar için storage bilgisi */
+@media (max-width: 767px) {
+  .footer-storage-info {
+    font-size: 0.65rem;
+    gap: 0.3rem;
+  }
+  
+  .footer-storage-bar-container {
+    width: 50px;
+    height: 5px;
+  }
+  
+  .footer-storage-text {
+    font-size: 0.65rem;
+  }
+}
+
+/* Küçük mobil ekranlar */
+@media (max-width: 480px) {
+  .footer-storage-info {
+    font-size: 0.6rem;
+    gap: 0.25rem;
+  }
+  
+  .footer-storage-bar-container {
+    width: 40px;
+    height: 4px;
+  }
+  
+  .footer-storage-text {
+    font-size: 0.6rem;
+  }
+}
+
