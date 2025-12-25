@@ -6,7 +6,7 @@ import Binder from './components/Binder';
 import Footer from './components/Footer';
 import { useLanguage } from './contexts/LanguageContext';
 import { getTranslation } from './utils/translations';
-import { Analytics } from '@vercel/analytics/react';
+
 // Binder yönetimi için localStorage helper fonksiyonları
 const BINDERS_LIST_KEY = 'binders-list';
 const SELECTED_BINDER_KEY = 'selected-binder-id';
@@ -1926,7 +1926,7 @@ function App() {
         onAddPage={handleAddPage}
       />
       <Footer pagesCount={pages.length} />
-      <Analytics />
+    
     </div>
   );
 }
