@@ -6,7 +6,7 @@ import Binder from './components/Binder';
 import Footer from './components/Footer';
 import { useLanguage } from './contexts/LanguageContext';
 import { getTranslation } from './utils/translations';
-
+import { Analytics } from '@vercel/analytics/react';
 // localStorage helper fonksiyonları
 const loadSettings = () => {
   try {
@@ -1636,6 +1636,7 @@ function App() {
         onAddPage={handleAddPage}
       />
       <Footer />
+      <Analytics />
     </div>
   );
 }
