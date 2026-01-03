@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './Footer.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
-import { getTotalImageCountFromIndexedDB } from '../utils/indexedDB';
+import { getTotalImageCountFromIndexedDB } from '../utils/indexedDB.js';
 
 // localStorage kullanım yüzdesini hesapla
 const getLocalStorageUsagePercent = () => {

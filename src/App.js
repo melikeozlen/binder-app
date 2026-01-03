@@ -16,7 +16,7 @@ import {
   removeDefaultBackImageFromIndexedDB,
   migrateImagesFromLocalStorage,
   cleanupAllImagesFromLocalStorage
-} from './utils/indexedDB';
+} from './utils/indexedDB.js';
 
 // Binder yönetimi için localStorage helper fonksiyonları
 const BINDERS_LIST_KEY = 'binders-list';
