@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import './Page.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { loadDefaultGallery } from '../utils/defaultGallery';
 
 const Page = ({
   page,
@@ -36,6 +37,10 @@ const Page = ({
   const [showGallery, setShowGallery] = useState(false);
   const [gallerySearchTerm, setGallerySearchTerm] = useState('');
   const [galleryCell, setGalleryCell] = useState(null); // {row, col, side: 'front'|'back'}
+  const [defaultGalleryUrls, setDefaultGalleryUrls] = useState([]);
+  const [showDefaultGallery, setShowDefaultGallery] = useState(false);
+  const [defaultGallerySearchTerm, setDefaultGallerySearchTerm] = useState('');
+  const [defaultGalleryCell, setDefaultGalleryCell] = useState(null); // {row, col, side: 'front'|'back'}
   const fileInputRefs = useRef({});
   const backFileInputRefs = useRef({});
 
@@ -98,9 +103,18 @@ const Page = ({
     waitForElement();
   })();
 
+  // Default gallery'yi yükle
+  useEffect(() => {
+    const loadGallery = async () => {
+      const items = await loadDefaultGallery('cortis-pc.txt');
+      setDefaultGalleryUrls(items);
+    };
+    loadGallery();
+  }, []);
+
   // Galeri açıkken body'ye class ekle (sürükle bırak ile sayfa değiştirmeyi engellemek için)
   useEffect(() => {
-    if (showGallery) {
+    if (showGallery || showDefaultGallery) {
       document.body.classList.add('gallery-modal-open');
     } else {
       document.body.classList.remove('gallery-modal-open');
@@ -108,7 +122,7 @@ const Page = ({
     return () => {
       document.body.classList.remove('gallery-modal-open');
     };
-  }, [showGallery]);
+  }, [showGallery, showDefaultGallery]);
 
   // Güncel state'leri ref'lerde sakla (closure sorunlarını önlemek için)
   const contentRef = useRef(content);
@@ -348,6 +362,10 @@ const Page = ({
         // Galeri modu: Galeri modalını göster
         setGalleryCell({ row, col, side: 'front' });
         setShowGallery(true);
+      } else if (imageInputMode === 'defaultGallery' && defaultGalleryUrls.length > 0) {
+        // Default gallery modu: Default gallery modalını göster
+        setDefaultGalleryCell({ row, col, side: 'front' });
+        setShowDefaultGallery(true);
       } else {
         // File modu: Dosya seçiciyi aç
         const inputKey = `${page.id}-${row}-${col}`;
@@ -393,6 +411,35 @@ const Page = ({
     }
     setShowGallery(false);
     setGalleryCell(null);
+  };
+
+  const handleDefaultGalleryImageSelect = (e, item) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!defaultGalleryCell) return;
+
+    // item string ise (eski format), object'e çevir
+    const url = typeof item === 'string' ? item : item.url;
+
+    const { row, col, side } = defaultGalleryCell;
+    if (side === 'front') {
+      const key = `${row}-${col}`;
+      updatePageWithState(
+        (prevContent) => ({ ...prevContent, [key]: url }),
+        undefined,
+        undefined
+      );
+    } else {
+      const key = `${row}-${col}`;
+      updatePageWithState(
+        undefined,
+        (prevBackContent) => ({ ...prevBackContent, [key]: url }),
+        undefined
+      );
+    }
+    setShowDefaultGallery(false);
+    setDefaultGalleryCell(null);
   };
 
   // Resim adını kısalt
@@ -736,6 +783,10 @@ const Page = ({
       // Galeri modu: Galeri modalını göster
       setGalleryCell({ row, col, side: 'front' });
       setShowGallery(true);
+    } else if (imageInputMode === 'defaultGallery' && defaultGalleryUrls.length > 0) {
+      // Default gallery modu: Default gallery modalını göster
+      setDefaultGalleryCell({ row, col, side: 'front' });
+      setShowDefaultGallery(true);
     } else {
       // File modu: Dosya seçiciyi aç
       const inputKey = `${page.id}-${row}-${col}`;
@@ -883,6 +934,10 @@ const Page = ({
         // Galeri modu: Galeri modalını göster
         setGalleryCell({ row, col, side: 'back' });
         setShowGallery(true);
+      } else if (imageInputMode === 'defaultGallery' && defaultGalleryUrls.length > 0) {
+        // Default gallery modu: Default gallery modalını göster
+        setDefaultGalleryCell({ row, col, side: 'back' });
+        setShowDefaultGallery(true);
       } else {
         // File modu: Dosya seçiciyi aç
         const inputKey = `${page.id}-back-${row}-${col}`;
@@ -1020,6 +1075,10 @@ const Page = ({
       // Galeri modu: Galeri modalını göster
       setGalleryCell({ row, col, side: 'back' });
       setShowGallery(true);
+    } else if (imageInputMode === 'defaultGallery' && defaultGalleryUrls.length > 0) {
+      // Default gallery modu: Default gallery modalını göster
+      setDefaultGalleryCell({ row, col, side: 'back' });
+      setShowDefaultGallery(true);
     } else {
       // File modu: Dosya seçiciyi aç
       const inputKey = `${page.id}-back-${row}-${col}`;
@@ -1588,6 +1647,97 @@ const Page = ({
                       <img
                         src={url}
                         alt={name || `Gallery ${index + 1}`}
+                        draggable="false"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          if (e.target.nextSibling && e.target.nextSibling.className === 'gallery-item-error') {
+                            e.target.nextSibling.style.display = 'flex';
+                          }
+                        }}
+                        onLoad={(e) => {
+                          e.target.style.display = 'block';
+                        }}
+                      />
+                      {name && (
+                        <div className="gallery-item-name" title={name}>
+                          {displayName}
+                        </div>
+                      )}
+                      <div className="gallery-item-error" style={{ display: 'none' }}>
+                        {t('settings.imageLoadError')}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      
+      {/* Default Gallery Modalı - Portal ile body'ye render ediliyor */}
+      {showDefaultGallery && defaultGalleryUrls.length > 0 && createPortal(
+        <div className="gallery-modal" onClick={() => { setShowDefaultGallery(false); setDefaultGalleryCell(null); }}>
+          <div className="gallery-content" onClick={(e) => e.stopPropagation()}>
+            <div className="gallery-header">
+              <h3>{t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</h3>
+              <div className="gallery-search-container">
+                <div className="gallery-search-wrapper">
+                  <input
+                    type="text"
+                    className="gallery-search-input"
+                    placeholder={t('settings.searchGallery')}
+                    value={defaultGallerySearchTerm}
+                    onChange={(e) => setDefaultGallerySearchTerm(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  />
+                  {defaultGallerySearchTerm && (
+                    <button
+                      className="gallery-search-clear"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDefaultGallerySearchTerm('');
+                      }}
+                      title={t('settings.clear')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </div>
+              <button
+                className="gallery-close"
+                onClick={() => { setShowDefaultGallery(false); setDefaultGalleryCell(null); }}
+                title={t('binder.cancel')}
+              >
+                ×
+              </button>
+            </div>
+            <div className="gallery-grid">
+              {defaultGalleryUrls
+                .filter((item) => {
+                  if (!defaultGallerySearchTerm.trim()) return true;
+                  const name = typeof item === 'string' ? '' : (item.name || '');
+                  return name.toLowerCase().includes(defaultGallerySearchTerm.toLowerCase());
+                })
+                .map((item, index) => {
+                  // Eski format desteği (sadece URL string)
+                  const url = typeof item === 'string' ? item : item.url;
+                  const name = typeof item === 'string' ? '' : (item.name || '');
+                  const displayName = truncateName(name);
+
+                  return (
+                    <div
+                      key={index}
+                      className="gallery-item"
+                      onClick={(e) => handleDefaultGalleryImageSelect(e, item)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      title={name || `Default Gallery ${index + 1}`}
+                    >
+                      <img
+                        src={url}
+                        alt={name || `Default Gallery ${index + 1}`}
                         draggable="false"
                         onError={(e) => {
                           e.target.style.display = 'none';

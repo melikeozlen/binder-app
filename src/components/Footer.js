@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './Footer.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { getTotalImageCountFromIndexedDB } from '../utils/indexedDB';
 
 // localStorage kullanım yüzdesini hesapla
 const getLocalStorageUsagePercent = () => {
@@ -17,17 +18,6 @@ const getLocalStorageUsagePercent = () => {
   } catch (e) {
     return 0;
   }
-};
-
-// Toplam resim sayısını hesapla
-const getTotalImageCount = () => {
-  let count = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key) && key.startsWith('binder-') && key.includes('image-')) {
-      count++;
-    }
-  }
-  return count;
 };
 
 const Footer = ({ pagesCount = 0 }) => {
@@ -65,9 +55,11 @@ const Footer = ({ pagesCount = 0 }) => {
 
   // localStorage durumunu periyodik olarak güncelle
   useEffect(() => {
-    const updateStorageInfo = () => {
+    const updateStorageInfo = async () => {
       setStorageUsage(getLocalStorageUsagePercent());
-      setImageCount(getTotalImageCount());
+      // IndexedDB'den resim sayısını al
+      const count = await getTotalImageCountFromIndexedDB();
+      setImageCount(count);
     };
     
     updateStorageInfo();

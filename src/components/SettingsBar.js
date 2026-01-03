@@ -723,6 +723,7 @@ const SettingsBar = ({
           <option value="file">📷 {t('settings.uploadFile')}</option>
           <option value="url">🔗 {t('settings.enterUrl')}</option>
           {galleryUrls.length > 0 && <option value="gallery">🖼️ {t('settings.selectFromGallery')}</option>}
+          <option value="defaultGallery">⭐ {t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</option>
         </select>
         {galleryUrls.length > 0 && (
           <span className="gallery-count" title={t('settings.galleryCount', { count: galleryUrls.length })}>
