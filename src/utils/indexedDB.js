@@ -316,6 +316,40 @@ export const migrateImagesFromLocalStorage = async (binderId) => {
   }
 };
 
+// IndexedDB'deki tüm verileri temizle
+export const clearAllIndexedDB = async () => {
+  try {
+    const database = await initIndexedDB();
+    
+    // Tüm resimleri sil
+    const imageTransaction = database.transaction([STORE_IMAGES], 'readwrite');
+    const imageStore = imageTransaction.objectStore(STORE_IMAGES);
+    const imageClearRequest = imageStore.clear();
+    
+    // Tüm default back image'ları sil
+    const backImageTransaction = database.transaction([STORE_DEFAULT_BACK_IMAGE], 'readwrite');
+    const backImageStore = backImageTransaction.objectStore(STORE_DEFAULT_BACK_IMAGE);
+    const backImageClearRequest = backImageStore.clear();
+    
+    // Her iki işlemin de tamamlanmasını bekle
+    await Promise.all([
+      new Promise((resolve, reject) => {
+        imageClearRequest.onsuccess = () => resolve();
+        imageClearRequest.onerror = () => reject(imageClearRequest.error);
+      }),
+      new Promise((resolve, reject) => {
+        backImageClearRequest.onsuccess = () => resolve();
+        backImageClearRequest.onerror = () => reject(backImageClearRequest.error);
+      })
+    ]);
+    
+    return true;
+  } catch (error) {
+    console.error('IndexedDB temizlenirken hata:', error);
+    return false;
+  }
+};
+
 // localStorage'da kalan tüm resimleri temizle (migration sonrası)
 export const cleanupAllImagesFromLocalStorage = () => {
   try {

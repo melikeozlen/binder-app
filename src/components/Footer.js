@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import './Footer.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
-import { getTotalImageCountFromIndexedDB } from '../utils/indexedDB.js';
+import { getTotalImageCountFromIndexedDB, clearAllIndexedDB } from '../utils/indexedDB.js';
 
 // localStorage kullanım yüzdesini hesapla
 const getLocalStorageUsagePercent = () => {
@@ -83,20 +83,32 @@ const Footer = ({ pagesCount = 0 }) => {
     setDeferredPrompt(null);
   };
 
-  const handleClearCache = () => {
+  const handleClearCache = async () => {
     if (window.confirm(t('footer.clearCacheConfirm'))) {
-      // Service Worker cache'ini temizle
-      if ('caches' in window) {
-        caches.keys().then((names) => {
-          names.forEach((name) => {
-            caches.delete(name);
+      try {
+        // IndexedDB'yi temizle
+        await clearAllIndexedDB();
+        
+        // Service Worker cache'ini temizle
+        if ('caches' in window) {
+          caches.keys().then((names) => {
+            names.forEach((name) => {
+              caches.delete(name);
+            });
           });
-        });
+        }
+        
+        // localStorage'ı temizle
+        localStorage.clear();
+        
+        // Sayfayı yenile
+        window.location.reload();
+      } catch (error) {
+        console.error('Önbellek temizlenirken hata:', error);
+        // Hata olsa bile localStorage'ı temizle ve sayfayı yenile
+        localStorage.clear();
+        window.location.reload();
       }
-      // localStorage'ı temizle
-      localStorage.clear();
-      // Sayfayı yenile
-      window.location.reload();
     }
   };
 

@@ -1462,23 +1462,43 @@ function App() {
         const page = pages[pageIndex];
         if (page) {
           // Content'teki resimleri kontrol et
-          Object.keys(page.content || {}).forEach(key => {
-            const value = page.content[key];
-            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-              const imageKey = value.replace('__IMAGE_REF__', '');
-              if (!imageKeysToDelete.includes(imageKey)) {
-                imageKeysToDelete.push(imageKey);
+          Object.values(page.content || {}).forEach(value => {
+            if (value && typeof value === 'string') {
+              if (value.startsWith('__IMAGE_REF__')) {
+                const imageKey = value.replace('__IMAGE_REF__', '');
+                if (!imageKeysToDelete.includes(imageKey)) {
+                  imageKeysToDelete.push(imageKey);
+                }
+              } else if (value.startsWith('data:image')) {
+                // Direkt base64 ise, key oluştur
+                const key = Object.keys(page.content || {}).find(k => page.content[k] === value);
+                if (key) {
+                  const imageKey = `${pageId}-content-${key}`;
+                  if (!imageKeysToDelete.includes(imageKey)) {
+                    imageKeysToDelete.push(imageKey);
+                  }
+                }
               }
             }
           });
           
           // BackContent'teki resimleri kontrol et
-          Object.keys(page.backContent || {}).forEach(key => {
-            const value = page.backContent[key];
-            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-              const imageKey = value.replace('__IMAGE_REF__', '');
-              if (!imageKeysToDelete.includes(imageKey)) {
-                imageKeysToDelete.push(imageKey);
+          Object.values(page.backContent || {}).forEach(value => {
+            if (value && typeof value === 'string') {
+              if (value.startsWith('__IMAGE_REF__')) {
+                const imageKey = value.replace('__IMAGE_REF__', '');
+                if (!imageKeysToDelete.includes(imageKey)) {
+                  imageKeysToDelete.push(imageKey);
+                }
+              } else if (value.startsWith('data:image')) {
+                // Direkt base64 ise, key oluştur
+                const key = Object.keys(page.backContent || {}).find(k => page.backContent[k] === value);
+                if (key) {
+                  const imageKey = `${pageId}-back-${key}`;
+                  if (!imageKeysToDelete.includes(imageKey)) {
+                    imageKeysToDelete.push(imageKey);
+                  }
+                }
               }
             }
           });

@@ -26,6 +26,7 @@ const translations = {
     'settings.backImage': 'Arka Görüntü:',
     'settings.backImageHelp': 'Tüm sayfaların arka yüzünde görünecek varsayılan resim',
     'settings.addPage': 'Sayfa +',
+    'settings.deletePages': 'Sayfaları Sil',
     'settings.resetAll': 'RESET',
     'settings.select': 'Seç',
     'settings.change': 'Değiştir',
