@@ -1059,24 +1059,6 @@ function App() {
   const [editingGridSize, setEditingGridSize] = useState('');
   const saveTimeoutRef = useRef(null); // Debounce için timeout ref'i
   
-  // PageOrderBar görünürlük durumu
-  const [isPageOrderBarVisible, setIsPageOrderBarVisible] = useState(() => {
-    try {
-      const saved = localStorage.getItem('page-order-bar-visible');
-      return saved !== null ? JSON.parse(saved) : true;
-    } catch {
-      return true;
-    }
-  });
-
-  // Görünürlük durumunu localStorage'a kaydet
-  useEffect(() => {
-    try {
-      localStorage.setItem('page-order-bar-visible', JSON.stringify(isPageOrderBarVisible));
-    } catch (e) {
-      console.error('Görünürlük durumu kaydedilemedi:', e);
-    }
-  }, [isPageOrderBarVisible]);
   
   // Mevcut spread'deki sayfaları hesapla
   const currentSpread = useMemo(() => {
@@ -1551,18 +1533,70 @@ function App() {
     }
   };
 
-  // Sadece sayfaları sil (resimleri koru)
-  const handleDeleteAllPages = () => {
+  // Tüm sayfaları sil (resimleri de sil)
+  const handleDeleteAllPages = async () => {
     if (pages.length === 0 || !selectedBinderId) return;
     
     if (window.confirm(t('binder.deletePagesConfirm'))) {
       try {
         const prefix = getBinderKeyPrefix(selectedBinderId);
-        // Sadece sayfa verilerini sil, resimleri koru
-        pages.forEach(page => {
+        
+        // Tüm sayfaların resimlerini topla ve sil
+        const imageKeysToDelete = new Set();
+        for (const page of pages) {
           const pageKey = `${prefix}page-${page.id}`;
+          const pageDataString = localStorage.getItem(pageKey);
+          
+          if (pageDataString) {
+            try {
+              const pageData = JSON.parse(pageDataString);
+              const content = pageData.content || {};
+              const backContent = pageData.backContent || {};
+              
+              // Content'teki resim referanslarını bul
+              Object.values(content).forEach(value => {
+                if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
+                  const imageKey = value.replace('__IMAGE_REF__', '');
+                  imageKeysToDelete.add(imageKey);
+                }
+              });
+              
+              // BackContent'teki resim referanslarını bul
+              Object.values(backContent).forEach(value => {
+                if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
+                  const imageKey = value.replace('__IMAGE_REF__', '');
+                  imageKeysToDelete.add(imageKey);
+                }
+              });
+            } catch (e) {
+              console.error(`Sayfa ${page.id} verisi parse edilemedi:`, e);
+            }
+          }
+          
+          // State'teki sayfa verisinden de kontrol et
+          const content = page.content || {};
+          const backContent = page.backContent || {};
+          Object.values(content).forEach(value => {
+            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
+              const imageKey = value.replace('__IMAGE_REF__', '');
+              imageKeysToDelete.add(imageKey);
+            }
+          });
+          Object.values(backContent).forEach(value => {
+            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
+              const imageKey = value.replace('__IMAGE_REF__', '');
+              imageKeysToDelete.add(imageKey);
+            }
+          });
+          
+          // Sayfa verisini sil
           localStorage.removeItem(pageKey);
-        });
+        }
+        
+        // Tüm resimleri IndexedDB'den sil
+        if (imageKeysToDelete.size > 0) {
+          await Promise.all(Array.from(imageKeysToDelete).map(key => removeImageFromStorage(key, selectedBinderId)));
+        }
         
         // Sayfa listesini sil
         const pagesListKey = `${prefix}pages-list`;

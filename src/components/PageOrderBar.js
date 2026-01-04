@@ -36,8 +36,6 @@ const PageOrderBar = ({
     setExpandedRange(null);
   }, [activePageIndex]);
 
-  if (pages.length === 0) return null;
-
   // İki sayfayı yer değiştir
   const handleSwap = () => {
     const page1Num = parseInt(swapPage1);
@@ -210,6 +208,12 @@ const PageOrderBar = ({
       </div>
 
       <div className="page-order-list">
+        {pages.length === 0 ? (
+          <div className="page-order-empty">
+            <div className="page-order-empty-text">{t('pageOrder.noPages')}</div>
+          </div>
+        ) : (
+          <>
         {showStartEllipsis && (
           <>
             <div className="page-order-item" title={`${t('pageOrder.page')} 1`}>
@@ -282,6 +286,8 @@ const PageOrderBar = ({
             <div className="page-order-item" title={`${t('pageOrder.page')} ${pages.length}`}>
               <span className="page-order-number">{pages.length}</span>
             </div>
+          </>
+        )}
           </>
         )}
       </div>
