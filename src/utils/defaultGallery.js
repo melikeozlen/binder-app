@@ -1,5 +1,5 @@
 // Default gallery dosyalarını yükle
-export const loadDefaultGallery = async (filename = 'cortis-pc.txt') => {
+export const loadDefaultGallery = async (filename = 'cortis-pc2.txt') => {
   try {
     const response = await fetch(`/data/${filename}`);
     if (!response.ok) {
@@ -34,7 +34,7 @@ export const loadDefaultGallery = async (filename = 'cortis-pc.txt') => {
 
 // Tüm default gallery dosyalarını listele
 export const getDefaultGalleryFiles = () => {
-  // Şimdilik sadece cortis-pc.txt var, ileride daha fazla eklenebilir
-  return ['cortis-pc.txt'];
+  // Şimdilik sadece cortis-pc2.txt var, ileride daha fazla eklenebilir
+  return ['cortis-pc2.txt'];
 };
 

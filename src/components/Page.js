@@ -106,7 +106,7 @@ const Page = ({
   // Default gallery'yi yükle
   useEffect(() => {
     const loadGallery = async () => {
-      const items = await loadDefaultGallery('cortis-pc.txt');
+      const items = await loadDefaultGallery('cortis-pc2.txt');
       setDefaultGalleryUrls(items);
     };
     loadGallery();
