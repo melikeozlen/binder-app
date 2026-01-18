@@ -968,7 +968,7 @@ function App() {
   // localStorage'a kaydederken sayısal değerleri kullan
   const [gridSize, setGridSize] = useState(savedSettings?.gridSize || '2x2');
   const [pageType, setPageType] = useState(savedSettings?.pageType || 'mat');
-  const [imageInputMode, setImageInputMode] = useState(savedSettings?.imageInputMode || 'file'); // 'file', 'url' veya 'gallery'
+  const [imageInputMode, setImageInputMode] = useState(savedSettings?.imageInputMode || 'defaultGallery'); // 'file', 'url', 'gallery' veya 'defaultGallery'
   const [galleryUrls, setGalleryUrls] = useState(() => selectedBinderId ? loadGalleryUrls(selectedBinderId) : []); // Text dosyasından yüklenen URL'ler
   // defaultBackImage IndexedDB'den yükle (async olduğu için başlangıçta null)
   const [defaultBackImage, setDefaultBackImage] = useState(null);
@@ -989,7 +989,7 @@ function App() {
           setHeightRatio(settings.heightRatio || 1);
           setGridSize(settings.gridSize || '2x2');
           setPageType(settings.pageType || 'mat');
-          setImageInputMode(settings.imageInputMode || 'file');
+          setImageInputMode(settings.imageInputMode || 'defaultGallery');
         }
         setGalleryUrls(loadGalleryUrls(selectedBinderId));
         const loadedDefaultBackImage = await loadDefaultBackImage(selectedBinderId);
