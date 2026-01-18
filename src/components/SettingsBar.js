@@ -4,33 +4,6 @@ import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 
-// localStorage kullanım yüzdesini hesapla
-const getLocalStorageUsagePercent = () => {
-  try {
-    let total = 0;
-    for (let key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
-        total += localStorage[key].length + key.length;
-      }
-    }
-    const estimatedLimit = 5 * 1024 * 1024; // 5MB
-    return (total / estimatedLimit) * 100;
-  } catch (e) {
-    return 0;
-  }
-};
-
-// Toplam resim sayısını hesapla
-const getTotalImageCount = () => {
-  let count = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key) && key.startsWith('binder-image-')) {
-      count++;
-    }
-  }
-  return count;
-};
-
 const SettingsBar = ({ 
   binderColor, 
   ringColor,

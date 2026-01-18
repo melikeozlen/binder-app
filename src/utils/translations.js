@@ -350,7 +350,6 @@ const translations = {
     'info.tips5': '• You can make each page\'s grid size different: Main grid setting applies to all new pages, to change a single page\'s grid, click the ○ button on that page',
     'info.tips6': '• To rotate images, hover over the cell and use the 🔄 button that appears',
     'info.tips7': '• In the page order bar, you can reorder pages by drag & drop or enter page numbers and swap them with the ⇄ button',
-    'info.tips7': '• In the page order bar, you can reorder pages by drag & drop or enter page numbers and swap them with the ⇄ button',
   },
   kr: {
     'app.title': '바인더 앱',
@@ -440,8 +439,6 @@ const translations = {
     'settings.apply': '적용',
     'settings.invalidUrl': '잘못된 URL',
     'settings.imageUrlPlaceholder': '이미지 URL 입력...',
-    'footer.install': '설치',
-    'footer.installApp': '앱으로 설치',
     'info.title': '상세 사용 가이드',
     'info.button': '정보',
     'info.close': '닫기',

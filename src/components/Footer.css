@@ -298,6 +298,14 @@
   white-space: nowrap;
 }
 
+.footer-version {
+  font-size: 0.65rem;
+  color: #999;
+  opacity: 0.6;
+  user-select: none;
+  font-weight: 300;
+}
+
 /* Fullscreen modunda storage bilgisi */
 .App.fullscreen-mode .footer-storage-info {
   font-size: 0.65rem;

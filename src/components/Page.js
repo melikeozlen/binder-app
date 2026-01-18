@@ -45,7 +45,6 @@ const Page = ({
   const backFileInputRefs = useRef({});
 
   const wrapperRef = useRef(null);
-  const [width, setWidth] = useState(0);
 
   (function () {
     let el = null;
@@ -106,7 +105,7 @@ const Page = ({
   // Default gallery'yi yükle
   useEffect(() => {
     const loadGallery = async () => {
-      const items = await loadDefaultGallery('cortis-pc2.txt');
+      const items = await loadDefaultGallery('cortis-pc.txt');
       setDefaultGalleryUrls(items);
     };
     loadGallery();
@@ -271,7 +270,7 @@ const Page = ({
         return newRotatedImages;
       });
     }
-  }, [page.id, page.gridSize, page.cover, page.isCover, page.transparent, gridSize, onUpdate]);
+  }, [page.id, page.gridSize, page.cover, page.isCover, page.transparent, page.order, gridSize, onUpdate]);
 
   // Default arka yüz resmini çevir (eğer ön yüzdeki resim çevrilmişse)
   useEffect(() => {
@@ -296,7 +295,7 @@ const Page = ({
       // Çevrilmiş resim yoksa cache'i temizle
       setRotatedDefaultBackImage(null);
     }
-  }, [defaultBackImage, rotatedImages]);
+  }, [defaultBackImage, rotatedImages, applyRoundedCorners, rotatedDefaultBackImage]);
 
   // Resim içeriğini normalize et - hem obje hem string formatını destekle (base64 veya URL)
   const getImageUrl = (cellContent) => {
@@ -315,25 +314,6 @@ const Page = ({
     return null;
   };
 
-  // Resmin çevrilmiş olup olmadığını kontrol et (resmin boyutlarına göre)
-  const isImageRotated = (imageUrl, callback) => {
-    if (!imageUrl) {
-      callback(false);
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      // Eğer resim yatay formatlıysa (genişlik > yükseklik), çevrilmiş olabilir
-      // Ama daha kesin bir kontrol için: çevrilmiş resimler genellikle dikey formatlıdır
-      // Bu yüzden orijinal resmin boyutlarını kontrol etmek yerine,
-      // resmin çevrilmiş olup olmadığını saklamak için metadata kullanmalıyız
-      // Şimdilik basit bir kontrol: eğer resim yatay formatlıysa çevrilmiş olabilir
-      const isRotated = img.width < img.height; // Dikey resimler çevrilmiş olabilir
-      callback(isRotated);
-    };
-    img.onerror = () => callback(false);
-    img.src = imageUrl;
-  };
 
   const isImageContent = (cellContent) => {
     return getImageUrl(cellContent) !== null;
@@ -617,7 +597,7 @@ const Page = ({
     img.src = imageDataUrl;
   };
 
-  const applyRoundedCorners = (imageDataUrl, callback) => {
+  const applyRoundedCorners = useCallback((imageDataUrl, callback) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -666,7 +646,7 @@ const Page = ({
       callback(roundedImageDataUrl);
     };
     img.src = imageDataUrl;
-  };
+  }, []);
 
   // Resmi 90 derece saat yönünde çevir ve base64 olarak kaydet
   const rotateImage = (imageDataUrl, callback) => {
@@ -804,15 +784,7 @@ const Page = ({
     }
   };
 
-  // Resim döndürme: Basit mantık (örnek HTML'deki gibi)
-  const updateRotatedImageClass = (img, angle) => {
-    // Tüm rotation class'larını temizle
-    img.classList.remove('rotated', 'rotated-0', 'rotated-90', 'rotated-180', 'rotated-270');
-    // Yeni açıyı uygula (0° dahil)
-    img.classList.add('rotated', `rotated-${angle}`);
-  };
-
-  const updateRotatedImageSize = (img, wrapperWidth, wrapperHeight) => {
+  const updateRotatedImageSize = useCallback((img, wrapperWidth, wrapperHeight) => {
     // Resmin orijinal boyutlarını al
     const imgW = img.naturalWidth || img.width || 1;
     const imgH = img.naturalHeight || img.height || 1;
@@ -851,7 +823,7 @@ const Page = ({
     // Resmin boyutunu scale ile ayarla
     img.style.width = imgW * scale + "px";
     img.style.height = imgH * scale + "px";
-  };
+  }, []);
 
   const handleRotateImage = (e, row, col) => {
     e.stopPropagation();
@@ -978,7 +950,7 @@ const Page = ({
     wrappers.forEach(w => observer.observe(w));
 
     return () => observer.disconnect();
-  }, [content, backContent]);
+  }, [content, backContent, updateRotatedImageSize]);
 
   const handleBackImageSelect = (e, row, col) => {
     // Alttaki sayfalar için işlemi engelle
@@ -1021,8 +993,6 @@ const Page = ({
             updatePageWithState(
               undefined,
               (prevBackContent) => {
-                // Önceki backContent'i kontrol et - eğer başka bir sayfadan geliyorsa temizle
-                const currentPageId = page.id;
                 // Sadece bu sayfanın backContent'ini güncelle
                 return { ...prevBackContent, [key]: roundedImageDataUrl };
               },

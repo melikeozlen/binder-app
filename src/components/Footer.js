@@ -177,6 +177,12 @@ const Footer = ({ pagesCount = 0 }) => {
             {storageUsage.toFixed(1)}% • {t('storage.pages')}: {pagesCount} • {t('storage.images')}: {imageCount}
           </span>
         </div>
+        {process.env.REACT_APP_BUILD_TIME && (
+          <>
+            <span className="footer-separator">•</span>
+            <span className="footer-version">{process.env.REACT_APP_BUILD_TIME}</span>
+          </>
+        )}
       </div>
 
       {/* Info Modal */}
