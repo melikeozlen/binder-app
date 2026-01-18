@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { loadDefaultGallery } from '../utils/defaultGallery';
 
 const SettingsBar = ({ 
   binderColor, 
@@ -62,6 +63,9 @@ const SettingsBar = ({
   const [backImageUrlInput, setBackImageUrlInput] = useState('');
   const [showBackImageGallery, setShowBackImageGallery] = useState(false);
   const [backImageGallerySearch, setBackImageGallerySearch] = useState('');
+  const [showBackImageDefaultGallery, setShowBackImageDefaultGallery] = useState(false);
+  const [backImageDefaultGallerySearch, setBackImageDefaultGallerySearch] = useState('');
+  const [defaultGalleryUrls, setDefaultGalleryUrls] = useState([]);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPickerType, setColorPickerType] = useState(null); // 'binder', 'ring', 'background'
   const [colorPickerValue, setColorPickerValue] = useState('#000000');
@@ -87,6 +91,15 @@ const SettingsBar = ({
       if (heightUpIntervalRef.current) clearInterval(heightUpIntervalRef.current);
       if (heightDownIntervalRef.current) clearInterval(heightDownIntervalRef.current);
     };
+  }, []);
+
+  // Default gallery'yi yükle
+  useEffect(() => {
+    const loadGallery = async () => {
+      const items = await loadDefaultGallery('cortis-pc.txt');
+      setDefaultGalleryUrls(items);
+    };
+    loadGallery();
   }, []);
 
   // Basılı tutma için yardımcı fonksiyonlar
@@ -238,6 +251,24 @@ const SettingsBar = ({
     const name = typeof item === 'string' ? '' : (item.name || '');
     return name.toLowerCase().includes(backImageGallerySearch.toLowerCase());
   });
+
+  const filteredDefaultGalleryUrls = defaultGalleryUrls.filter(item => {
+    if (!backImageDefaultGallerySearch) return true;
+    const name = typeof item === 'string' ? '' : (item.name || '');
+    return name.toLowerCase().includes(backImageDefaultGallerySearch.toLowerCase());
+  });
+
+  const handleBackImageDefaultGallerySelect = (e, item) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const url = typeof item === 'string' ? item : item.url;
+    if (onDefaultBackImageChange) {
+      onDefaultBackImageChange(url);
+    }
+    setShowBackImageDefaultGallery(false);
+    setShowBackImageModal(false);
+  };
   
   const handleTextFileSelect = (e) => {
     const file = e.target.files[0];
@@ -762,13 +793,14 @@ const SettingsBar = ({
                       if (e.target === e.currentTarget) {
                         setShowBackImageModal(false);
                         setShowBackImageGallery(false);
+                        setShowBackImageDefaultGallery(false);
                         setShowBackImageUrlInput(false);
                         setBackImageUrlInput('');
                       }
                     }}
         >
           <div className="back-image-modal-content" onClick={(e) => e.stopPropagation()}>
-            {!showBackImageGallery ? (
+            {!showBackImageGallery && !showBackImageDefaultGallery ? (
               <>
                 <div className="back-image-modal-header">
                   <h3>{t('settings.backImageHelp')}</h3>
@@ -777,6 +809,8 @@ const SettingsBar = ({
                     onClick={() => {
                       setShowBackImageModal(false);
                       setShowBackImageUrlInput(false);
+                      setShowBackImageGallery(false);
+                      setShowBackImageDefaultGallery(false);
                       setBackImageUrlInput('');
                     }}
                   >
@@ -808,6 +842,17 @@ const SettingsBar = ({
                       }}
                     >
                       🖼️ {t('settings.selectFromGallery')}
+                    </button>
+                  )}
+                  {defaultGalleryUrls.length > 0 && (
+                    <button
+                      className="back-image-modal-option"
+                      onClick={() => {
+                        setShowBackImageDefaultGallery(true);
+                        setBackImageDefaultGallerySearch('');
+                      }}
+                    >
+                      ⭐ {t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}
                     </button>
                   )}
                 </div>
@@ -852,7 +897,7 @@ const SettingsBar = ({
                   </div>
                 )}
               </>
-            ) : (
+            ) : showBackImageGallery ? (
               <>
                 <div className="back-image-modal-header">
                   <h3>{t('settings.selectFromGallery')}</h3>
@@ -893,6 +938,71 @@ const SettingsBar = ({
                         <img 
                           src={url} 
                           alt={name || `Gallery ${index + 1}`}
+                          draggable="false"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            if (e.target.nextSibling && e.target.nextSibling.className === 'back-image-gallery-item-error') {
+                              e.target.nextSibling.style.display = 'flex';
+                            }
+                          }}
+                          onLoad={(e) => {
+                            e.target.style.display = 'block';
+                          }}
+                        />
+                        {name && (
+                          <div className="back-image-gallery-item-name" title={name}>
+                            {displayName}
+                          </div>
+                        )}
+                        <div className="back-image-gallery-item-error" style={{ display: 'none' }}>
+                          {t('settings.imageLoadError')}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="back-image-modal-header">
+                  <h3>{t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</h3>
+                  <button
+                    className="back-image-modal-close"
+                    onClick={() => {
+                      setShowBackImageDefaultGallery(false);
+                      setBackImageDefaultGallerySearch('');
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="back-image-gallery-search">
+                  <input
+                    type="text"
+                    value={backImageDefaultGallerySearch}
+                    onChange={(e) => setBackImageDefaultGallerySearch(e.target.value)}
+                    placeholder={t('settings.searchGallery')}
+                    className="back-image-gallery-search-input"
+                    autoFocus
+                  />
+                </div>
+                <div className="back-image-gallery-grid">
+                  {filteredDefaultGalleryUrls.map((item, index) => {
+                    const url = typeof item === 'string' ? item : item.url;
+                    const name = typeof item === 'string' ? '' : (item.name || '');
+                    const displayName = truncateName(name);
+                    
+                    return (
+                      <div
+                        key={index}
+                        className="back-image-gallery-item"
+                        onClick={(e) => handleBackImageDefaultGallerySelect(e, item)}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        title={name || `Default Gallery ${index + 1}`}
+                      >
+                        <img 
+                          src={url} 
+                          alt={name || `Default Gallery ${index + 1}`}
                           draggable="false"
                           onError={(e) => {
                             e.target.style.display = 'none';
