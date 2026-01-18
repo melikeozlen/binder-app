@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, version } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import './Page.css';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -272,6 +272,100 @@ const Page = ({
     }
   }, [page.id, page.gridSize, page.cover, page.isCover, page.transparent, page.order, gridSize, onUpdate]);
 
+  // localStorage kullanım yüzdesini hesapla
+  const getLocalStorageUsagePercent = () => {
+    try {
+      let total = 0;
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+          total += localStorage[key].length + key.length;
+        }
+      }
+      const estimatedLimit = 5 * 1024 * 1024; // 5MB
+      return (total / estimatedLimit) * 100;
+    } catch (e) {
+      return 0;
+    }
+  };
+
+  const applyRoundedCorners = useCallback((imageDataUrl, callback) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Yüksek kaliteli çizim için imageSmoothingEnabled ayarla
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      const radius = 10;
+      const width = img.width;
+      const height = img.height;
+
+      // Oval kenarlar için path oluştur
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(width - radius, 0);
+      ctx.quadraticCurveTo(width, 0, width, radius);
+      ctx.lineTo(width, height - radius);
+      ctx.quadraticCurveTo(width, height, width - radius, height);
+      ctx.lineTo(radius, height);
+      ctx.quadraticCurveTo(0, height, 0, height - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.clip();
+
+      // Resmi çiz
+      ctx.drawImage(img, 0, 0);
+
+      // localStorage durumuna göre kalite ayarla
+      const usagePercent = getLocalStorageUsagePercent();
+      let quality = 0.85; // Varsayılan
+      if (usagePercent >= 90) {
+        quality = 0.6;
+      } else if (usagePercent >= 75) {
+        quality = 0.7;
+      } else if (usagePercent >= 50) {
+        quality = 0.8;
+      }
+
+      // Base64'e çevir - JPEG formatında optimize edilmiş kalite ile kaydet
+      const roundedImageDataUrl = canvas.toDataURL('image/jpeg', quality);
+      callback(roundedImageDataUrl);
+    };
+    img.src = imageDataUrl;
+  }, []);
+
+  // Resmi 90 derece saat yönünde çevir ve base64 olarak kaydet
+  const rotateImage = (imageDataUrl, callback) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Yüksek kaliteli çizim için imageSmoothingEnabled ayarla
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Canvas boyutlarını çevir (genişlik ↔ yükseklik)
+      canvas.width = img.height;
+      canvas.height = img.width;
+
+      // Canvas'ı merkeze taşı ve çevir
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2); // 90 derece saat yönünde
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+      // Base64'e çevir - PNG formatı kaliteyi korur
+      const rotatedImageDataUrl = canvas.toDataURL('image/png');
+      callback(rotatedImageDataUrl);
+    };
+    img.src = imageDataUrl;
+  };
+
   // Default arka yüz resmini çevir (eğer ön yüzdeki resim çevrilmişse)
   useEffect(() => {
     if (!defaultBackImage) {
@@ -457,22 +551,6 @@ const Page = ({
     }
   };
 
-  // localStorage kullanım yüzdesini hesapla
-  const getLocalStorageUsagePercent = () => {
-    try {
-      let total = 0;
-      for (let key in localStorage) {
-        if (localStorage.hasOwnProperty(key)) {
-          total += localStorage[key].length + key.length;
-        }
-      }
-      const estimatedLimit = 5 * 1024 * 1024; // 5MB
-      return (total / estimatedLimit) * 100;
-    } catch (e) {
-      return 0;
-    }
-  };
-
   // Çeviri fonksiyonu için params desteği
   const tWithParams = (key, params) => {
     let translation = t(key);
@@ -593,84 +671,6 @@ const Page = ({
     img.onerror = () => {
       // Hata durumunda orijinal resmi döndür
       callback(imageDataUrl);
-    };
-    img.src = imageDataUrl;
-  };
-
-  const applyRoundedCorners = useCallback((imageDataUrl, callback) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      // Yüksek kaliteli çizim için imageSmoothingEnabled ayarla
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-
-      const radius = 10;
-      const width = img.width;
-      const height = img.height;
-
-      // Oval kenarlar için path oluştur
-      ctx.beginPath();
-      ctx.moveTo(radius, 0);
-      ctx.lineTo(width - radius, 0);
-      ctx.quadraticCurveTo(width, 0, width, radius);
-      ctx.lineTo(width, height - radius);
-      ctx.quadraticCurveTo(width, height, width - radius, height);
-      ctx.lineTo(radius, height);
-      ctx.quadraticCurveTo(0, height, 0, height - radius);
-      ctx.lineTo(0, radius);
-      ctx.quadraticCurveTo(0, 0, radius, 0);
-      ctx.closePath();
-      ctx.clip();
-
-      // Resmi çiz
-      ctx.drawImage(img, 0, 0);
-
-      // localStorage durumuna göre kalite ayarla
-      const usagePercent = getLocalStorageUsagePercent();
-      let quality = 0.85; // Varsayılan
-      if (usagePercent >= 90) {
-        quality = 0.6;
-      } else if (usagePercent >= 75) {
-        quality = 0.7;
-      } else if (usagePercent >= 50) {
-        quality = 0.8;
-      }
-
-      // Base64'e çevir - JPEG formatında optimize edilmiş kalite ile kaydet
-      const roundedImageDataUrl = canvas.toDataURL('image/jpeg', quality);
-      callback(roundedImageDataUrl);
-    };
-    img.src = imageDataUrl;
-  }, []);
-
-  // Resmi 90 derece saat yönünde çevir ve base64 olarak kaydet
-  const rotateImage = (imageDataUrl, callback) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      // Yüksek kaliteli çizim için imageSmoothingEnabled ayarla
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-
-      // Canvas boyutlarını çevir (genişlik ↔ yükseklik)
-      canvas.width = img.height;
-      canvas.height = img.width;
-
-      // Canvas'ı merkeze taşı ve çevir
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(Math.PI / 2); // 90 derece saat yönünde
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-
-      // Base64'e çevir - PNG formatı kaliteyi korur
-      const rotatedImageDataUrl = canvas.toDataURL('image/png');
-      callback(rotatedImageDataUrl);
     };
     img.src = imageDataUrl;
   };

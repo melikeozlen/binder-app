@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import './App.css';
 import SettingsBar from './components/SettingsBar';
 import PageOrderBar from './components/PageOrderBar';
@@ -347,7 +347,8 @@ const getLocalStorageSize = () => {
   return total;
 };
 
-// localStorage'ın kullanılabilir alanını tahmin et
+// localStorage'ın kullanılabilir alanını tahmin et - Şu an kullanılmıyor
+// eslint-disable-next-line no-unused-vars
 const getAvailableLocalStorageSpace = () => {
   try {
     // Test için küçük bir veri ekle
@@ -376,53 +377,8 @@ const getLocalStorageUsagePercent = () => {
   return (currentSize / estimatedLimit) * 100;
 };
 
-// Toplam resim sayısını hesapla
-const getTotalImageCount = () => {
-  let count = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key) && key.startsWith('binder-image-')) {
-      count++;
-    }
-  }
-  return count;
-};
-
-// Sayfa başına resim sayısını hesapla
-const getImageCountForPage = (pageId) => {
-  let count = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key) && key.startsWith(`binder-image-${pageId}-`)) {
-      count++;
-    }
-  }
-  return count;
-};
-
 // Resim limitleri
-const MAX_IMAGES_PER_PAGE = 20; // Sayfa başına maksimum resim (ön + arka yüz toplam)
-const MAX_TOTAL_IMAGES = 100; // Toplam maksimum resim sayısı
 const MAX_PAGES = 50; // Maksimum sayfa sayısı
-
-// localStorage durumuna göre optimal resim kalitesi ve boyutu hesapla
-const getOptimalImageSettings = () => {
-  const usagePercent = getLocalStorageUsagePercent();
-  const availableSpace = getAvailableLocalStorageSpace();
-  
-  // localStorage dolmaya yaklaştıkça daha agresif sıkıştırma
-  if (usagePercent >= 90) {
-    // %90+ dolu: Çok agresif sıkıştırma
-    return { maxWidth: 800, maxHeight: 800, quality: 0.6 };
-  } else if (usagePercent >= 75) {
-    // %75-90 dolu: Agresif sıkıştırma
-    return { maxWidth: 1200, maxHeight: 1200, quality: 0.7 };
-  } else if (usagePercent >= 50) {
-    // %50-75 dolu: Orta sıkıştırma
-    return { maxWidth: 1600, maxHeight: 1600, quality: 0.8 };
-  } else {
-    // %50'den az dolu: Yüksek kalite (ama yine de optimize)
-    return { maxWidth: 1920, maxHeight: 1920, quality: 0.85 };
-  }
-};
 
 // Resimleri IndexedDB'ye kaydet (sayfa verisini küçük tutmak için)
 const saveImageToStorage = async (imageKey, imageData, binderId) => {
@@ -487,7 +443,8 @@ const removeImageFromStorage = async (imageKey, binderId) => {
   }
 };
 
-// Otomatik localStorage temizleme (kullanıcıya uyarı göstermeden)
+// Otomatik localStorage temizleme (kullanıcıya uyarı göstermeden) - Şu an kullanılmıyor
+// eslint-disable-next-line no-unused-vars
 const autoCleanupLocalStorage = (binderId, aggressive = false) => {
   try {
     const usagePercent = getLocalStorageUsagePercent();
@@ -915,12 +872,8 @@ function App() {
       }
       
       // İlk yüklemede sayfaları ve defaultBackImage'ı yükle
-      if (selectedBinderId) {
-        const loadedPages = await loadAllPages(selectedBinderId);
-        setPages(loadedPages);
-        const loadedDefaultBackImage = await loadDefaultBackImage(selectedBinderId);
-        setDefaultBackImage(loadedDefaultBackImage);
-      }
+      // selectedBinderId henüz tanımlanmadığı için burada kullanılamaz
+      // Bu kısım selectedBinderId tanımlandıktan sonraki useEffect'te yapılacak
     };
     
     runMigrations();
@@ -987,6 +940,19 @@ function App() {
     if (selectedBinderId) {
       saveSelectedBinderId(selectedBinderId);
     }
+  }, [selectedBinderId]);
+
+  // Seçili binder değiştiğinde sayfaları ve defaultBackImage'ı yükle
+  useEffect(() => {
+    const loadBinderData = async () => {
+      if (selectedBinderId) {
+        const loadedPages = await loadAllPages(selectedBinderId);
+        setPages(loadedPages);
+        const loadedDefaultBackImage = await loadDefaultBackImage(selectedBinderId);
+        setDefaultBackImage(loadedDefaultBackImage);
+      }
+    };
+    loadBinderData();
   }, [selectedBinderId]);
   
   // localStorage'dan ayarları yükle (seçili binder'a göre)
@@ -1622,17 +1588,18 @@ function App() {
         const pagesListKey = `${prefix}pages-list`;
         localStorage.removeItem(pagesListKey);
         
-        // State'i temizle
+        // State'leri temizle
         setPages([]);
-        setCurrentSpreadIndex(0);
         setSelectedPageIndex(null);
+        setCurrentSpreadIndex(0);
       } catch (e) {
         console.error('Sayfalar silinirken hata:', e);
       }
     }
   };
 
-  // Tüm sayfaları tek seferde sil
+  // Tüm sayfaları tek seferde sil - Şu an kullanılmıyor
+  // eslint-disable-next-line no-unused-vars
   const handleResetAllPages = async () => {
     if (pages.length === 0) return;
     
@@ -1790,7 +1757,8 @@ function App() {
     });
   };
 
-  // Tüm sayfaları birleştir (sol ve sağ)
+  // Tüm sayfaları birleştir (sol ve sağ) - Şu an kullanılmıyor
+  // eslint-disable-next-line no-unused-vars
   const allPages = pages.map((page, index) => ({ ...page, index }));
 
   const handlePageSelect = (pageId) => {
@@ -1824,23 +1792,23 @@ function App() {
     setEditingGridSize('');
   };
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     if (pages.length === 0) return;
     
     // Bir sonraki spread'e geç
     if (currentSpreadIndex < maxSpreadIndex) {
       setCurrentSpreadIndex(prev => prev + 1);
     }
-  };
+  }, [pages.length, currentSpreadIndex, maxSpreadIndex]);
 
-  const handlePrevPage = () => {
+  const handlePrevPage = useCallback(() => {
     if (pages.length === 0) return;
     
     // Bir önceki spread'e geç
     if (currentSpreadIndex > 0) {
       setCurrentSpreadIndex(prev => prev - 1);
     }
-  };
+  }, [pages.length, currentSpreadIndex]);
 
   // Sayfayı yukarı taşı (order'ı azalt)
   const handleMovePageUp = (pageId) => {
@@ -1962,7 +1930,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentSpreadIndex, maxSpreadIndex, pages]);
+  }, [currentSpreadIndex, maxSpreadIndex, pages, handleNextPage, handlePrevPage]);
 
   // Fullscreen fonksiyonları
   const enterFullscreen = () => {

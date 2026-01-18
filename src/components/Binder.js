@@ -116,7 +116,7 @@ const Binder = ({
         height: `${(containerAspectRatio / binderAspectRatio) * scale * 100}%`
       };
     }
-  }, [useFullWidth, containerSize, binderAspectRatio]);
+  }, [useFullWidth, containerSize, binderAspectRatio, containerAspectRatio]);
   // Dikiş rengini hesapla: binder rengi açıksa koyu, koyuysa açık
   const stitchColor = useMemo(() => {
     // Varsayılan binder rengi
