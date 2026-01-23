@@ -106,14 +106,14 @@ const SettingsBar = ({
   const startWidthIncrease = () => {
     // İlk tıklamada hemen çalış
     const current = parseFloat(widthRatioRef.current) || 2;
-    const newValue = Math.min(5, (current + 0.1).toFixed(1));
-    onWidthRatioChange(parseFloat(newValue));
+    const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
+    onWidthRatioChange(newValue);
     
     // Sonra hızlı tekrarla
     widthUpIntervalRef.current = setInterval(() => {
       const current = parseFloat(widthRatioRef.current) || 2;
-      const newValue = Math.min(5, (current + 0.1).toFixed(1));
-      onWidthRatioChange(parseFloat(newValue));
+      const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
+      onWidthRatioChange(newValue);
     }, 50); // 50ms = çok hızlı
   };
 
@@ -127,14 +127,14 @@ const SettingsBar = ({
   const startWidthDecrease = () => {
     // İlk tıklamada hemen çalış
     const current = parseFloat(widthRatioRef.current) || 2;
-    const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
-    onWidthRatioChange(parseFloat(newValue));
+    const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
+    onWidthRatioChange(newValue);
     
     // Sonra hızlı tekrarla
     widthDownIntervalRef.current = setInterval(() => {
       const current = parseFloat(widthRatioRef.current) || 2;
-      const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
-      onWidthRatioChange(parseFloat(newValue));
+      const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
+      onWidthRatioChange(newValue);
     }, 50); // 50ms = çok hızlı
   };
 
@@ -148,14 +148,14 @@ const SettingsBar = ({
   const startHeightIncrease = () => {
     // İlk tıklamada hemen çalış
     const current = parseFloat(heightRatioRef.current) || 1;
-    const newValue = Math.min(5, (current + 0.1).toFixed(1));
-    onHeightRatioChange(parseFloat(newValue));
+    const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
+    onHeightRatioChange(newValue);
     
     // Sonra hızlı tekrarla
     heightUpIntervalRef.current = setInterval(() => {
       const current = parseFloat(heightRatioRef.current) || 1;
-      const newValue = Math.min(5, (current + 0.1).toFixed(1));
-      onHeightRatioChange(parseFloat(newValue));
+      const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
+      onHeightRatioChange(newValue);
     }, 50); // 50ms = çok hızlı
   };
 
@@ -169,14 +169,14 @@ const SettingsBar = ({
   const startHeightDecrease = () => {
     // İlk tıklamada hemen çalış
     const current = parseFloat(heightRatioRef.current) || 1;
-    const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
-    onHeightRatioChange(parseFloat(newValue));
+    const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
+    onHeightRatioChange(newValue);
     
     // Sonra hızlı tekrarla
     heightDownIntervalRef.current = setInterval(() => {
       const current = parseFloat(heightRatioRef.current) || 1;
-      const newValue = Math.max(0.5, (current - 0.1).toFixed(1));
-      onHeightRatioChange(parseFloat(newValue));
+      const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
+      onHeightRatioChange(newValue);
     }, 50); // 50ms = çok hızlı
   };
 
@@ -547,11 +547,18 @@ const SettingsBar = ({
               // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
               if (e.target.value === '') {
                 onWidthRatioChange(2);
+              } else {
+                // Değeri 2 ondalık basamağa yuvarla
+                const numValue = parseFloat(e.target.value);
+                if (!isNaN(numValue)) {
+                  const rounded = parseFloat(numValue.toFixed(2));
+                  onWidthRatioChange(Math.max(0.5, Math.min(5, rounded)));
+                }
               }
             }}
             min="0.5"
             max="5"
-            step="0.1"
+            step="0.01"
             className="settings-control ratio-input"
             title={t('settings.widthHelp')}
           />
@@ -621,11 +628,18 @@ const SettingsBar = ({
               // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
               if (e.target.value === '') {
                 onHeightRatioChange(1);
+              } else {
+                // Değeri 2 ondalık basamağa yuvarla
+                const numValue = parseFloat(e.target.value);
+                if (!isNaN(numValue)) {
+                  const rounded = parseFloat(numValue.toFixed(2));
+                  onHeightRatioChange(Math.max(0.5, Math.min(5, rounded)));
+                }
               }
             }}
             min="0.5"
             max="5"
-            step="0.1"
+            step="0.01"
             className="settings-control ratio-input"
             title={t('settings.heightHelp')}
           />
