@@ -521,9 +521,11 @@
 
 /* Ring tarafında dikiş izi olmamalı - dinamik class'lar ile kontrol ediliyor */
 .grid-cell.no-left-border {
-  border-left: none;
+  border-left: 3px dashed rgb(201 201 201 / 95%) !important;
   box-shadow: 
     0 1px 1px rgba(0, 0, 0, 0.06);
+
+    
 }
 
 .grid-cell.no-right-border {

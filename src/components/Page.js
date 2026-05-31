@@ -4,6 +4,7 @@ import './Page.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
+import GalleryWithFolders from './GalleryWithFolders';
 
 const Page = ({
   page,
@@ -35,11 +36,9 @@ const Page = ({
   const [urlInputValue, setUrlInputValue] = useState('');
   const [urlInputCell, setUrlInputCell] = useState(null); // {row, col, side: 'front'|'back'}
   const [showGallery, setShowGallery] = useState(false);
-  const [gallerySearchTerm, setGallerySearchTerm] = useState('');
   const [galleryCell, setGalleryCell] = useState(null); // {row, col, side: 'front'|'back'}
   const [defaultGalleryUrls, setDefaultGalleryUrls] = useState([]);
   const [showDefaultGallery, setShowDefaultGallery] = useState(false);
-  const [defaultGallerySearchTerm, setDefaultGallerySearchTerm] = useState('');
   const [defaultGalleryCell, setDefaultGalleryCell] = useState(null); // {row, col, side: 'front'|'back'}
   const fileInputRefs = useRef({});
   const backFileInputRefs = useRef({});
@@ -517,12 +516,6 @@ const Page = ({
   };
 
   // Resim adını kısalt
-  const truncateName = (name, maxLength = 15) => {
-    if (!name) return '';
-    if (name.length <= maxLength) return name;
-    return name.substring(0, maxLength) + '...';
-  };
-
   const handleUrlSubmit = (row, col, side) => {
     const trimmedUrl = urlInputValue.trim();
     if (trimmedUrl) {
@@ -1558,88 +1551,12 @@ const Page = ({
       {showGallery && galleryUrls.length > 0 && createPortal(
         <div className="gallery-modal" onClick={() => { setShowGallery(false); setGalleryCell(null); }}>
           <div className="gallery-content" onClick={(e) => e.stopPropagation()}>
-            <div className="gallery-header">
-              <h3>{t('settings.selectFromGallery')}</h3>
-              <div className="gallery-search-container">
-                <div className="gallery-search-wrapper">
-                  <input
-                    type="text"
-                    className="gallery-search-input"
-                    placeholder={t('settings.searchGallery')}
-                    value={gallerySearchTerm}
-                    onChange={(e) => setGallerySearchTerm(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  />
-                  {gallerySearchTerm && (
-                    <button
-                      className="gallery-search-clear"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setGallerySearchTerm('');
-                      }}
-                      title={t('settings.clear')}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              </div>
-              <button
-                className="gallery-close"
-                onClick={() => { setShowGallery(false); setGalleryCell(null); }}
-                title={t('binder.cancel')}
-              >
-                ×
-              </button>
-            </div>
-            <div className="gallery-grid">
-              {galleryUrls
-                .filter((item) => {
-                  if (!gallerySearchTerm.trim()) return true;
-                  const name = typeof item === 'string' ? '' : (item.name || '');
-                  return name.toLowerCase().includes(gallerySearchTerm.toLowerCase());
-                })
-                .map((item, index) => {
-                  // Eski format desteği (sadece URL string)
-                  const url = typeof item === 'string' ? item : item.url;
-                  const name = typeof item === 'string' ? '' : (item.name || '');
-                  const displayName = truncateName(name);
-
-                  return (
-                    <div
-                      key={index}
-                      className="gallery-item"
-                      onClick={(e) => handleGalleryImageSelect(e, item)}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      title={name || `Gallery ${index + 1}`}
-                    >
-                      <img
-                        src={url}
-                        alt={name || `Gallery ${index + 1}`}
-                        draggable="false"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          if (e.target.nextSibling && e.target.nextSibling.className === 'gallery-item-error') {
-                            e.target.nextSibling.style.display = 'flex';
-                          }
-                        }}
-                        onLoad={(e) => {
-                          e.target.style.display = 'block';
-                        }}
-                      />
-                      {name && (
-                        <div className="gallery-item-name" title={name}>
-                          {displayName}
-                        </div>
-                      )}
-                      <div className="gallery-item-error" style={{ display: 'none' }}>
-                        {t('settings.imageLoadError')}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
+            <GalleryWithFolders
+              items={galleryUrls}
+              onSelect={handleGalleryImageSelect}
+              title={t('settings.selectFromGallery')}
+              onClose={() => { setShowGallery(false); setGalleryCell(null); }}
+            />
           </div>
         </div>,
         document.body
@@ -1649,88 +1566,12 @@ const Page = ({
       {showDefaultGallery && defaultGalleryUrls.length > 0 && createPortal(
         <div className="gallery-modal" onClick={() => { setShowDefaultGallery(false); setDefaultGalleryCell(null); }}>
           <div className="gallery-content" onClick={(e) => e.stopPropagation()}>
-            <div className="gallery-header">
-              <h3>{t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</h3>
-              <div className="gallery-search-container">
-                <div className="gallery-search-wrapper">
-                  <input
-                    type="text"
-                    className="gallery-search-input"
-                    placeholder={t('settings.searchGallery')}
-                    value={defaultGallerySearchTerm}
-                    onChange={(e) => setDefaultGallerySearchTerm(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  />
-                  {defaultGallerySearchTerm && (
-                    <button
-                      className="gallery-search-clear"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDefaultGallerySearchTerm('');
-                      }}
-                      title={t('settings.clear')}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              </div>
-              <button
-                className="gallery-close"
-                onClick={() => { setShowDefaultGallery(false); setDefaultGalleryCell(null); }}
-                title={t('binder.cancel')}
-              >
-                ×
-              </button>
-            </div>
-            <div className="gallery-grid">
-              {defaultGalleryUrls
-                .filter((item) => {
-                  if (!defaultGallerySearchTerm.trim()) return true;
-                  const name = typeof item === 'string' ? '' : (item.name || '');
-                  return name.toLowerCase().includes(defaultGallerySearchTerm.toLowerCase());
-                })
-                .map((item, index) => {
-                  // Eski format desteği (sadece URL string)
-                  const url = typeof item === 'string' ? item : item.url;
-                  const name = typeof item === 'string' ? '' : (item.name || '');
-                  const displayName = truncateName(name);
-
-                  return (
-                    <div
-                      key={index}
-                      className="gallery-item"
-                      onClick={(e) => handleDefaultGalleryImageSelect(e, item)}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      title={name || `Default Gallery ${index + 1}`}
-                    >
-                      <img
-                        src={url}
-                        alt={name || `Default Gallery ${index + 1}`}
-                        draggable="false"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          if (e.target.nextSibling && e.target.nextSibling.className === 'gallery-item-error') {
-                            e.target.nextSibling.style.display = 'flex';
-                          }
-                        }}
-                        onLoad={(e) => {
-                          e.target.style.display = 'block';
-                        }}
-                      />
-                      {name && (
-                        <div className="gallery-item-name" title={name}>
-                          {displayName}
-                        </div>
-                      )}
-                      <div className="gallery-item-error" style={{ display: 'none' }}>
-                        {t('settings.imageLoadError')}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
+            <GalleryWithFolders
+              items={defaultGalleryUrls}
+              onSelect={handleDefaultGalleryImageSelect}
+              title={t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}
+              onClose={() => { setShowDefaultGallery(false); setDefaultGalleryCell(null); }}
+            />
           </div>
         </div>,
         document.body

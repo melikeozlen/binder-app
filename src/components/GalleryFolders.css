@@ -1,0 +1,115 @@
+.gallery-content > .gallery-folder-grid,
+.back-image-modal-content .gallery-folder-grid {
+  flex: 1;
+  min-height: 0;
+  max-height: calc(85vh - 120px);
+}
+
+.gallery-folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+
+.gallery-folder-search-embedded {
+  position: relative;
+  padding: 0 1.5rem 1rem;
+}
+
+.gallery-folder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f8f8f8;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.gallery-folder-card:hover {
+  border-color: #333;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.gallery-folder-card--all {
+  border-color: #333;
+  background: #f0f0f0;
+}
+
+.gallery-folder-card-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222;
+  word-break: break-word;
+}
+
+.gallery-folder-card-count {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.gallery-folder-back {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0.35rem 0;
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  color: #444;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.gallery-folder-back:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+.gallery-item-file-badge {
+  display: block;
+  font-size: 0.55rem;
+  color: #666;
+  margin-bottom: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.back-image-gallery-search .gallery-search-wrapper,
+.back-image-gallery-search {
+  position: relative;
+}
+
+.gallery-folder-search-clear-embedded {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.gallery-search-container .gallery-search-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}

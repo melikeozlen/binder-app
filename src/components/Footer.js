@@ -329,6 +329,13 @@ const Footer = ({ pagesCount = 0 }) => {
                 <div className="info-subsection">
                   <h4>{t('info.txtFormat2')}</h4>
                   <pre className="info-code-block">{t('info.txtFormat2Example')}</pre>
+                  <p>{t('info.txtFormat2Note')}</p>
+                </div>
+
+                <div className="info-subsection">
+                  <h4>{t('info.txtFormat3')}</h4>
+                  <pre className="info-code-block">{t('info.txtFormat3Example')}</pre>
+                  <p>{t('info.txtFormat3Note')}</p>
                 </div>
                 
                 <div className="info-subsection">

@@ -4,6 +4,8 @@ import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
+import { parseGalleryText } from '../utils/galleryParse';
+import GalleryWithFolders from './GalleryWithFolders';
 
 const SettingsBar = ({ 
   binderColor, 
@@ -62,9 +64,7 @@ const SettingsBar = ({
   const [showBackImageUrlInput, setShowBackImageUrlInput] = useState(false);
   const [backImageUrlInput, setBackImageUrlInput] = useState('');
   const [showBackImageGallery, setShowBackImageGallery] = useState(false);
-  const [backImageGallerySearch, setBackImageGallerySearch] = useState('');
   const [showBackImageDefaultGallery, setShowBackImageDefaultGallery] = useState(false);
-  const [backImageDefaultGallerySearch, setBackImageDefaultGallerySearch] = useState('');
   const [defaultGalleryUrls, setDefaultGalleryUrls] = useState([]);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPickerType, setColorPickerType] = useState(null); // 'binder', 'ring', 'background'
@@ -240,23 +240,6 @@ const SettingsBar = ({
     setShowBackImageModal(false);
   };
 
-  const truncateName = (name, maxLength = 15) => {
-    if (!name) return '';
-    if (name.length <= maxLength) return name;
-    return name.substring(0, maxLength) + '...';
-  };
-
-  const filteredGalleryUrls = galleryUrls.filter(item => {
-    if (!backImageGallerySearch) return true;
-    const name = typeof item === 'string' ? '' : (item.name || '');
-    return name.toLowerCase().includes(backImageGallerySearch.toLowerCase());
-  });
-
-  const filteredDefaultGalleryUrls = defaultGalleryUrls.filter(item => {
-    if (!backImageDefaultGallerySearch) return true;
-    const name = typeof item === 'string' ? '' : (item.name || '');
-    return name.toLowerCase().includes(backImageDefaultGallerySearch.toLowerCase());
-  });
 
   const handleBackImageDefaultGallerySelect = (e, item) => {
     e.stopPropagation();
@@ -276,22 +259,7 @@ const SettingsBar = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target.result;
-        // Her satırı parse et: URL | Resim Adı formatı
-        const items = text.split('\n')
-          .map(line => line.trim())
-          .filter(line => {
-            // Boş satırları filtrele ve URL kontrolü yap
-            if (!line) return false;
-            // URL | Name formatında veya sadece URL olabilir
-            const urlPart = line.split('|')[0].trim();
-            return urlPart && (urlPart.startsWith('http://') || urlPart.startsWith('https://'));
-          })
-          .map(line => {
-            const parts = line.split('|').map(p => p.trim());
-            const url = parts[0].trim();
-            const name = parts.slice(1).join('|').trim(); // Birden fazla | varsa birleştir
-            return { url, name };
-          });
+        const items = parseGalleryText(text);
         if (onGalleryUrlsChange) {
           onGalleryUrlsChange(items);
           // localStorage'a kaydet
@@ -852,7 +820,6 @@ const SettingsBar = ({
                       className="back-image-modal-option"
                       onClick={() => {
                         setShowBackImageGallery(true);
-                        setBackImageGallerySearch('');
                       }}
                     >
                       🖼️ {t('settings.selectFromGallery')}
@@ -863,7 +830,6 @@ const SettingsBar = ({
                       className="back-image-modal-option"
                       onClick={() => {
                         setShowBackImageDefaultGallery(true);
-                        setBackImageDefaultGallerySearch('');
                       }}
                     >
                       ⭐ {t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}
@@ -919,62 +885,17 @@ const SettingsBar = ({
                     className="back-image-modal-close"
                     onClick={() => {
                       setShowBackImageGallery(false);
-                      setBackImageGallerySearch('');
                     }}
                   >
                     ×
                   </button>
                 </div>
-                <div className="back-image-gallery-search">
-                  <input
-                    type="text"
-                    value={backImageGallerySearch}
-                    onChange={(e) => setBackImageGallerySearch(e.target.value)}
-                    placeholder={t('settings.searchGallery')}
-                    className="back-image-gallery-search-input"
-                    autoFocus
-                  />
-                </div>
-                <div className="back-image-gallery-grid">
-                  {filteredGalleryUrls.map((item, index) => {
-                    const url = typeof item === 'string' ? item : item.url;
-                    const name = typeof item === 'string' ? '' : (item.name || '');
-                    const displayName = truncateName(name);
-                    
-                    return (
-                      <div
-                        key={index}
-                        className="back-image-gallery-item"
-                        onClick={(e) => handleBackImageGallerySelect(e, item)}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        title={name || `Gallery ${index + 1}`}
-                      >
-                        <img 
-                          src={url} 
-                          alt={name || `Gallery ${index + 1}`}
-                          draggable="false"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            if (e.target.nextSibling && e.target.nextSibling.className === 'back-image-gallery-item-error') {
-                              e.target.nextSibling.style.display = 'flex';
-                            }
-                          }}
-                          onLoad={(e) => {
-                            e.target.style.display = 'block';
-                          }}
-                        />
-                        {name && (
-                          <div className="back-image-gallery-item-name" title={name}>
-                            {displayName}
-                          </div>
-                        )}
-                        <div className="back-image-gallery-item-error" style={{ display: 'none' }}>
-                          {t('settings.imageLoadError')}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <GalleryWithFolders
+                  embedded
+                  variant="back-image"
+                  items={galleryUrls}
+                  onSelect={handleBackImageGallerySelect}
+                />
               </>
             ) : (
               <>
@@ -984,62 +905,17 @@ const SettingsBar = ({
                     className="back-image-modal-close"
                     onClick={() => {
                       setShowBackImageDefaultGallery(false);
-                      setBackImageDefaultGallerySearch('');
                     }}
                   >
                     ×
                   </button>
                 </div>
-                <div className="back-image-gallery-search">
-                  <input
-                    type="text"
-                    value={backImageDefaultGallerySearch}
-                    onChange={(e) => setBackImageDefaultGallerySearch(e.target.value)}
-                    placeholder={t('settings.searchGallery')}
-                    className="back-image-gallery-search-input"
-                    autoFocus
-                  />
-                </div>
-                <div className="back-image-gallery-grid">
-                  {filteredDefaultGalleryUrls.map((item, index) => {
-                    const url = typeof item === 'string' ? item : item.url;
-                    const name = typeof item === 'string' ? '' : (item.name || '');
-                    const displayName = truncateName(name);
-                    
-                    return (
-                      <div
-                        key={index}
-                        className="back-image-gallery-item"
-                        onClick={(e) => handleBackImageDefaultGallerySelect(e, item)}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        title={name || `Default Gallery ${index + 1}`}
-                      >
-                        <img 
-                          src={url} 
-                          alt={name || `Default Gallery ${index + 1}`}
-                          draggable="false"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            if (e.target.nextSibling && e.target.nextSibling.className === 'back-image-gallery-item-error') {
-                              e.target.nextSibling.style.display = 'flex';
-                            }
-                          }}
-                          onLoad={(e) => {
-                            e.target.style.display = 'block';
-                          }}
-                        />
-                        {name && (
-                          <div className="back-image-gallery-item-name" title={name}>
-                            {displayName}
-                          </div>
-                        )}
-                        <div className="back-image-gallery-item-error" style={{ display: 'none' }}>
-                          {t('settings.imageLoadError')}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <GalleryWithFolders
+                  embedded
+                  variant="back-image"
+                  items={defaultGalleryUrls}
+                  onSelect={handleBackImageDefaultGallerySelect}
+                />
               </>
             )}
           </div>
