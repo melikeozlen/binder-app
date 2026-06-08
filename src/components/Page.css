@@ -654,12 +654,30 @@
   justify-content: flex-start;
 }
 
+.grid-cell.cell-draggable {
+  cursor: grab;
+}
+
+.grid-cell.cell-draggable:active {
+  cursor: grabbing;
+}
+
+.grid-cell.cell-dragging {
+  opacity: 0.45;
+}
+
+.grid-cell.cell-drag-over {
+  outline: 2px dashed #333;
+  outline-offset: -2px;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
 .cell-image {
   width: 100%;
   height: 100%;
   object-fit: cover; /* Taşan kısımları kesmek için contain yerine cover */
   object-position: center;
-  cursor: default; /* Resme tıklama ile işlem yapılmaz, sadece butonlarla */
+  cursor: inherit;
   box-sizing: border-box;
   flex-shrink: 0;
   opacity: 1 !important;

@@ -31,6 +31,8 @@ const Binder = ({
   onDeletePage,
   imageInputMode = 'file',
   galleryUrls = [],
+  binderUsedImages = null,
+  binderId = null,
   isFullscreen = false,
   onToggleFullscreen,
   onAddPage
@@ -69,8 +71,11 @@ const Binder = ({
   };
 
   const onTouchEnd = () => {
-    // Galeri açıkken sürükle bırak ile sayfa değiştirmeyi engelle
-    if (document.body.classList.contains('gallery-modal-open')) {
+    // Galeri veya photocard sürüklenirken sayfa değiştirmeyi engelle
+    if (
+      document.body.classList.contains('gallery-modal-open') ||
+      document.body.classList.contains('cell-drag-active')
+    ) {
       return;
     }
     
@@ -399,6 +404,8 @@ const Binder = ({
                 isTopPage={true}
                 imageInputMode={imageInputMode}
                 galleryUrls={galleryUrls}
+                binderUsedImages={binderUsedImages}
+                binderId={binderId}
                 onUpdate={onPageUpdate}
                 onGridEdit={() => onPageGridEdit && onPageGridEdit(leftPage.id, leftPage.gridSize || '2x2')}
               />
@@ -458,6 +465,8 @@ const Binder = ({
                 pageZIndex={1001}
                 imageInputMode={imageInputMode}
                 galleryUrls={galleryUrls}
+                binderUsedImages={binderUsedImages}
+                binderId={binderId}
                 frontPageNumber={rightPageNumber}
                 backPageNumber={null}
                 leafNumber={currentSpreadIndex + 1}

@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
 import GalleryWithFolders from './GalleryWithFolders';
+import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
 
 const Page = ({
   page,
@@ -25,7 +26,9 @@ const Page = ({
   leafNumber = null,
   isTopPage = true,
   imageInputMode = 'defaultGallery',
-  galleryUrls = []
+  galleryUrls = [],
+  binderUsedImages = null,
+  binderId = null
 }) => {
   const { language } = useLanguage();
   const t = (key) => getTranslation(key, language);
@@ -40,6 +43,8 @@ const Page = ({
   const [defaultGalleryUrls, setDefaultGalleryUrls] = useState([]);
   const [showDefaultGallery, setShowDefaultGallery] = useState(false);
   const [defaultGalleryCell, setDefaultGalleryCell] = useState(null); // {row, col, side: 'front'|'back'}
+  const [draggedCell, setDraggedCell] = useState(null); // {side, row, col}
+  const [dragOverCell, setDragOverCell] = useState(null); // {side, row, col}
   const fileInputRefs = useRef({});
   const backFileInputRefs = useRef({});
 
@@ -121,6 +126,16 @@ const Page = ({
       document.body.classList.remove('gallery-modal-open');
     };
   }, [showGallery, showDefaultGallery]);
+
+  // Photocard sürüklenirken sayfa kaydırmayı engelle
+  useEffect(() => {
+    if (draggedCell) {
+      document.body.classList.add('cell-drag-active');
+    } else {
+      document.body.classList.remove('cell-drag-active');
+    }
+    return () => document.body.classList.remove('cell-drag-active');
+  }, [draggedCell]);
 
   // Güncel state'leri ref'lerde sakla (closure sorunlarını önlemek için)
   const contentRef = useRef(content);
@@ -401,12 +416,46 @@ const Page = ({
         return cellContent;
       }
     }
-    if (typeof cellContent === 'object' && cellContent.image) {
-      return cellContent.image;
+    if (typeof cellContent === 'object') {
+      const url = cellContent.url || cellContent.image;
+      if (
+        url &&
+        (url.startsWith('data:image') ||
+          url.startsWith('http://') ||
+          url.startsWith('https://'))
+      ) {
+        return url;
+      }
     }
     return null;
   };
 
+  const lookupGalleryImageName = (url) => {
+    if (!url) return '';
+    const sources = [...galleryUrls, ...defaultGalleryUrls];
+    for (const item of sources) {
+      const itemUrl = typeof item === 'string' ? item : item.url;
+      if (itemUrl === url) {
+        return typeof item === 'string' ? '' : (item.name || '').trim();
+      }
+    }
+    return '';
+  };
+
+  const getCellImageName = (cellContent) => {
+    if (cellContent && typeof cellContent === 'object' && cellContent.name) {
+      return cellContent.name.trim();
+    }
+    return lookupGalleryImageName(getImageUrl(cellContent));
+  };
+
+  const createImageCellValue = (url, name = '') => {
+    const trimmedName = (name || '').trim();
+    if (trimmedName) {
+      return { url, name: trimmedName };
+    }
+    return url;
+  };
 
   const isImageContent = (cellContent) => {
     return getImageUrl(cellContent) !== null;
@@ -463,14 +512,15 @@ const Page = ({
 
     if (!galleryCell) return;
 
-    // item string ise (eski format), object'e çevir
     const url = typeof item === 'string' ? item : item.url;
+    const name = typeof item === 'string' ? '' : (item.name || '');
+    const cellValue = createImageCellValue(url, name);
 
     const { row, col, side } = galleryCell;
     if (side === 'front') {
       const key = `${row}-${col}`;
       updatePageWithState(
-        (prevContent) => ({ ...prevContent, [key]: url }),
+        (prevContent) => ({ ...prevContent, [key]: cellValue }),
         undefined,
         undefined
       );
@@ -478,7 +528,7 @@ const Page = ({
       const key = `${row}-${col}`;
       updatePageWithState(
         undefined,
-        (prevBackContent) => ({ ...prevBackContent, [key]: url }),
+        (prevBackContent) => ({ ...prevBackContent, [key]: cellValue }),
         undefined
       );
     }
@@ -492,14 +542,15 @@ const Page = ({
 
     if (!defaultGalleryCell) return;
 
-    // item string ise (eski format), object'e çevir
     const url = typeof item === 'string' ? item : item.url;
+    const name = typeof item === 'string' ? '' : (item.name || '');
+    const cellValue = createImageCellValue(url, name);
 
     const { row, col, side } = defaultGalleryCell;
     if (side === 'front') {
       const key = `${row}-${col}`;
       updatePageWithState(
-        (prevContent) => ({ ...prevContent, [key]: url }),
+        (prevContent) => ({ ...prevContent, [key]: cellValue }),
         undefined,
         undefined
       );
@@ -507,7 +558,7 @@ const Page = ({
       const key = `${row}-${col}`;
       updatePageWithState(
         undefined,
-        (prevBackContent) => ({ ...prevBackContent, [key]: url }),
+        (prevBackContent) => ({ ...prevBackContent, [key]: cellValue }),
         undefined
       );
     }
@@ -817,6 +868,134 @@ const Page = ({
     img.style.width = imgW * scale + "px";
     img.style.height = imgH * scale + "px";
   }, []);
+
+  const getCellKey = (row, col) => `${row}-${col}`;
+
+  const getRotationKey = (side, row, col) =>
+    side === 'back' ? `back-${getCellKey(row, col)}` : getCellKey(row, col);
+
+  const swapContentCells = (prevContent, fromKey, toKey) => {
+    const newContent = { ...prevContent };
+    const fromVal = newContent[fromKey];
+    const toVal = newContent[toKey];
+    const toHasImage = isImageContent(toVal);
+
+    if (!toHasImage) {
+      newContent[toKey] = fromVal;
+      delete newContent[fromKey];
+    } else {
+      newContent[fromKey] = toVal;
+      newContent[toKey] = fromVal;
+    }
+    return newContent;
+  };
+
+  const swapRotationCells = (prevRotated, fromRotKey, toRotKey, toHasImage) => {
+    const newRotated = { ...prevRotated };
+    const hasFrom = fromRotKey in prevRotated;
+    const hasTo = toRotKey in prevRotated;
+
+    if (!toHasImage) {
+      if (hasFrom) {
+        newRotated[toRotKey] = prevRotated[fromRotKey];
+        delete newRotated[fromRotKey];
+      } else {
+        delete newRotated[toRotKey];
+      }
+    } else if (hasFrom || hasTo) {
+      if (hasTo) newRotated[fromRotKey] = prevRotated[toRotKey];
+      else delete newRotated[fromRotKey];
+
+      if (hasFrom) newRotated[toRotKey] = prevRotated[fromRotKey];
+      else delete newRotated[toRotKey];
+    }
+
+    return newRotated;
+  };
+
+  const performCellMoveOrSwap = (from, to) => {
+    if (!page.id || from.side !== to.side) return;
+    if (from.row === to.row && from.col === to.col) return;
+
+    const fromKey = getCellKey(from.row, from.col);
+    const toKey = getCellKey(to.row, to.col);
+    const fromRotKey = getRotationKey(from.side, from.row, from.col);
+    const toRotKey = getRotationKey(to.side, to.row, to.col);
+    const sourceContent = from.side === 'front' ? contentRef.current : backContentRef.current;
+    const toHasImage = isImageContent(sourceContent[toKey]);
+
+    if (from.side === 'front') {
+      updatePageWithState(
+        (prevContent) => swapContentCells(prevContent, fromKey, toKey),
+        undefined,
+        (prevRotated) => swapRotationCells(prevRotated, fromRotKey, toRotKey, toHasImage)
+      );
+    } else {
+      updatePageWithState(
+        undefined,
+        (prevBackContent) => swapContentCells(prevBackContent, fromKey, toKey),
+        (prevRotated) => swapRotationCells(prevRotated, fromRotKey, toRotKey, toHasImage)
+      );
+    }
+  };
+
+  const handleImageDragStart = (e, side, row, col) => {
+    if (pointerEvents === 'none' || !isTopPage) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    setDraggedCell({ side, row, col });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', `${side}-${row}-${col}`);
+  };
+
+  const handleImageDragOver = (e, side, row, col) => {
+    if (!draggedCell || draggedCell.side !== side) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedCell.row !== row || draggedCell.col !== col) {
+      setDragOverCell({ side, row, col });
+    }
+  };
+
+  const handleImageDragLeave = () => {
+    setDragOverCell(null);
+  };
+
+  const handleImageDrop = (e, side, row, col) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedCell) return;
+    performCellMoveOrSwap(draggedCell, { side, row, col });
+    setDraggedCell(null);
+    setDragOverCell(null);
+  };
+
+  const handleImageDragEnd = () => {
+    setDraggedCell(null);
+    setDragOverCell(null);
+  };
+
+  const getCellDragClassName = (side, row, col, isDraggable) => {
+    const classes = [];
+    if (isDraggable) classes.push('cell-draggable');
+    if (
+      draggedCell?.side === side &&
+      draggedCell?.row === row &&
+      draggedCell?.col === col
+    ) {
+      classes.push('cell-dragging');
+    }
+    if (
+      dragOverCell?.side === side &&
+      dragOverCell?.row === row &&
+      dragOverCell?.col === col
+    ) {
+      classes.push('cell-drag-over');
+    }
+    return classes.join(' ');
+  };
 
   const handleRotateImage = (e, row, col) => {
     e.stopPropagation();
@@ -1142,6 +1321,7 @@ const Page = ({
                 const isImage = isImageContent(cellContent);
                 const isText = cellContent && !isImage && typeof cellContent === 'string';
                 const imageUrl = getImageUrl(cellContent);
+                const imageName = getCellImageName(cellContent);
 
                 // Sağ sayfa: ilk kolondaki hücrelerin sol kenarında dikiş izi olmamalı (ring tarafı)
                 // Sol sayfa: son kolondaki hücrelerin sağ kenarında dikiş izi olmamalı (ring tarafı)
@@ -1151,7 +1331,8 @@ const Page = ({
                 const cellClasses = [
                   'grid-cell',
                   coverSide === 'right' && isFirstCol ? 'no-left-border' : '',
-                  coverSide === 'left' && isLastCol ? 'no-right-border' : ''
+                  coverSide === 'left' && isLastCol ? 'no-right-border' : '',
+                  getCellDragClassName('front', row, col, isImage)
                 ].filter(Boolean).join(' ');
 
                 // Yatay uzun cepler için resim hizalaması
@@ -1169,16 +1350,23 @@ const Page = ({
                       e.stopPropagation();
                       handleCellClick(row, col);
                     }}
+                    draggable={isImage && pointerEvents !== 'none' && isTopPage}
+                    onDragStart={(e) => handleImageDragStart(e, 'front', row, col)}
+                    onDragOver={(e) => handleImageDragOver(e, 'front', row, col)}
+                    onDragLeave={handleImageDragLeave}
+                    onDrop={(e) => handleImageDrop(e, 'front', row, col)}
+                    onDragEnd={handleImageDragEnd}
+                    title={isImage && imageName ? imageName : undefined}
                     data-page-id={page.id}
                     data-row={row}
                     data-col={col}
                   >
                     {isImage ? (
                       <>
-                        <div className={imageWrapperClasses} ref={wrapperRef}>
+                        <div className={imageWrapperClasses} ref={wrapperRef} title={imageName || undefined}>
                           <img
                             src={imageUrl}
-                            alt=""
+                            alt={imageName || ''}
                             className={`cell-image ${(() => {
                               const angle = rotatedImages[key] || 0;
                               return `rotated rotated-${angle}`;
@@ -1346,6 +1534,7 @@ const Page = ({
                 // Eğer ön yüzde resim YOK ise default görüntü gösterme
                 const shouldShowDefault = hasFrontImage && !isImageContent(backCellContent) && defaultBackImage;
                 const backImageUrl = getImageUrl(backCellContent);
+                const backImageName = getCellImageName(backCellContent);
 
                 // Ön yüzdeki resmin çevrilmiş olup olmadığını kontrol et
                 const isFrontImageRotated = rotatedImages[frontKey] === true;
@@ -1364,10 +1553,12 @@ const Page = ({
                 const isFirstColBack = col === 0;
                 const isLastColBack = col === cols - 1;
                 const isHorizontalBack = rows > cols; // Yatay uzun cep (örneğin 3x1, 4x1)
+                const canDragBack = !!backImageUrl;
                 const backCellClasses = [
                   'grid-cell',
                   coverSide === 'right' && isFirstColBack ? 'no-left-border' : '',
-                  coverSide === 'left' && isLastColBack ? 'no-right-border' : ''
+                  coverSide === 'left' && isLastColBack ? 'no-right-border' : '',
+                  getCellDragClassName('back', row, col, canDragBack)
                 ].filter(Boolean).join(' ');
 
                 // Arka yüz için yatay uzun cepler için resim hizalaması
@@ -1390,6 +1581,13 @@ const Page = ({
                       // Çünkü backContent normal pozisyonda saklanıyor
                       handleBackCellClick(row, col);
                     }}
+                    draggable={canDragBack && pointerEvents !== 'none' && isTopPage}
+                    onDragStart={(e) => handleImageDragStart(e, 'back', row, col)}
+                    onDragOver={(e) => handleImageDragOver(e, 'back', row, col)}
+                    onDragLeave={handleImageDragLeave}
+                    onDrop={(e) => handleImageDrop(e, 'back', row, col)}
+                    onDragEnd={handleImageDragEnd}
+                    title={isImage && backImageName ? backImageName : undefined}
                     data-page-id={page.id}
                     data-row={row}
                     data-col={mirroredCol}
@@ -1397,10 +1595,10 @@ const Page = ({
                   >
                     {isImage ? (
                       <>
-                        <div className={backImageWrapperClasses}>
+                        <div className={backImageWrapperClasses} title={backImageName || undefined}>
                           <img
                             src={displayImage}
-                            alt=""
+                            alt={backImageName || ''}
                             className={`cell-image ${isDefaultImage ? 'default-image' : ''} ${(() => {
                               const backRotationKey = `back-${backKey}`;
                               const angle = rotatedImages[backRotationKey] || 0;
@@ -1556,6 +1754,9 @@ const Page = ({
               onSelect={handleGalleryImageSelect}
               title={t('settings.selectFromGallery')}
               onClose={() => { setShowGallery(false); setGalleryCell(null); }}
+              binderUsedImages={binderUsedImages}
+              stateContext={GALLERY_UI_CONTEXT.CUSTOM}
+              binderId={binderId}
             />
           </div>
         </div>,
@@ -1571,6 +1772,8 @@ const Page = ({
               onSelect={handleDefaultGalleryImageSelect}
               title={t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}
               onClose={() => { setShowDefaultGallery(false); setDefaultGalleryCell(null); }}
+              binderUsedImages={binderUsedImages}
+              stateContext={GALLERY_UI_CONTEXT.DEFAULT}
             />
           </div>
         </div>,

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import {
@@ -7,6 +7,12 @@ import {
   getItemFileLabel,
   truncateGalleryName,
 } from '../utils/galleryParse';
+import { isGalleryItemInBinder } from '../utils/binderImages';
+import {
+  loadGalleryUiState,
+  saveGalleryUiState,
+  validateSavedFolder,
+} from '../utils/galleryUiState';
 import './GalleryFolders.css';
 
 const GalleryWithFolders = ({
@@ -16,6 +22,9 @@ const GalleryWithFolders = ({
   title,
   onClose,
   embedded = false,
+  binderUsedImages = null,
+  stateContext = 'default',
+  binderId = null,
 }) => {
   const { language } = useLanguage();
   const t = (key, params) => {
@@ -32,6 +41,7 @@ const GalleryWithFolders = ({
 
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [stateRestored, setStateRestored] = useState(false);
 
   const normalizedItems = useMemo(
     () =>
@@ -48,6 +58,21 @@ const GalleryWithFolders = ({
     () => getGalleryFolderList(items, untitledLabel),
     [items, untitledLabel]
   );
+
+  useEffect(() => {
+    if (stateRestored || items.length === 0) return;
+
+    const saved = loadGalleryUiState(stateContext, binderId);
+    const validFolder = validateSavedFolder(saved.selectedFolder, folderList);
+    setSelectedFolder(validFolder);
+    setSearchTerm(saved.searchTerm || '');
+    setStateRestored(true);
+  }, [items, folderList, stateContext, binderId, stateRestored]);
+
+  useEffect(() => {
+    if (!stateRestored) return;
+    saveGalleryUiState(stateContext, binderId, { selectedFolder, searchTerm });
+  }, [selectedFolder, searchTerm, stateContext, binderId, stateRestored]);
 
   const displayItems = useMemo(() => {
     if (selectedFolder === null) return [];
@@ -75,6 +100,7 @@ const GalleryWithFolders = ({
 
   const isBackImage = variant === 'back-image';
   const prefix = isBackImage ? 'back-image-gallery' : 'gallery';
+  const inBinderLabel = t('settings.galleryInBinder');
 
   const handleSelectFolder = (folderKey) => {
     setSelectedFolder(folderKey);
@@ -153,15 +179,32 @@ const GalleryWithFolders = ({
         const displayName = truncateGalleryName(item.name);
         const showFileBadge =
           selectedFolder === GALLERY_ALL_KEY && item.fileLabel;
+        const isInBinder = isGalleryItemInBinder(item.raw, binderUsedImages);
+        const itemTitle = [
+          item.name || `Gallery ${index + 1}`,
+          isInBinder ? inBinderLabel : null,
+        ]
+          .filter(Boolean)
+          .join(' — ');
 
         return (
           <div
             key={`${item.url}-${index}`}
-            className={isBackImage ? 'back-image-gallery-item' : 'gallery-item'}
+            className={[
+              isBackImage ? 'back-image-gallery-item' : 'gallery-item',
+              isInBinder ? 'gallery-item--in-binder' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             onClick={(e) => handleItemClick(e, item)}
             onMouseDown={(e) => e.stopPropagation()}
-            title={item.name || `Gallery ${index + 1}`}
+            title={itemTitle}
           >
+            {isInBinder && (
+              <span className="gallery-item-in-binder-badge" title={inBinderLabel}>
+                ✓
+              </span>
+            )}
             <img
               src={item.url}
               alt={item.name || `Gallery ${index + 1}`}

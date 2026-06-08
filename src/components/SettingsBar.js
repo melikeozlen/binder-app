@@ -6,6 +6,7 @@ import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
 import { parseGalleryText } from '../utils/galleryParse';
 import GalleryWithFolders from './GalleryWithFolders';
+import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
 
 const SettingsBar = ({ 
   binderColor, 
@@ -40,7 +41,8 @@ const SettingsBar = ({
   onSelectBinder,
   onCreateBinder,
   onDeleteBinder,
-  onRenameBinder
+  onRenameBinder,
+  binderUsedImages = null
 }) => {
   const { language } = useLanguage();
   const t = (key, params) => {
@@ -895,6 +897,9 @@ const SettingsBar = ({
                   variant="back-image"
                   items={galleryUrls}
                   onSelect={handleBackImageGallerySelect}
+                  binderUsedImages={binderUsedImages}
+                  stateContext={GALLERY_UI_CONTEXT.BACK_CUSTOM}
+                  binderId={selectedBinderId}
                 />
               </>
             ) : (
@@ -915,6 +920,8 @@ const SettingsBar = ({
                   variant="back-image"
                   items={defaultGalleryUrls}
                   onSelect={handleBackImageDefaultGallerySelect}
+                  binderUsedImages={binderUsedImages}
+                  stateContext={GALLERY_UI_CONTEXT.BACK_DEFAULT}
                 />
               </>
             )}

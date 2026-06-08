@@ -17,6 +17,7 @@ import {
   migrateImagesFromLocalStorage,
   cleanupAllImagesFromLocalStorage
 } from './utils/indexedDB.js';
+import { collectBinderUsedImages } from './utils/binderImages';
 
 // Binder yönetimi için localStorage helper fonksiyonları
 const BINDERS_LIST_KEY = 'binders-list';
@@ -1011,6 +1012,11 @@ function App() {
       return orderA - orderB;
     });
   }, [pages]);
+
+  const binderUsedImages = useMemo(
+    () => collectBinderUsedImages(pages, defaultBackImage),
+    [pages, defaultBackImage]
+  );
   
   // Spread (yaprak çifti) mantığı:
   // Spread 0: left=null (kapak), right=page[0] (front)
@@ -2018,6 +2024,7 @@ function App() {
         onCreateBinder={handleCreateBinder}
         onDeleteBinder={handleDeleteBinder}
         onRenameBinder={handleRenameBinder}
+        binderUsedImages={binderUsedImages}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       />
@@ -2045,6 +2052,8 @@ function App() {
         maxSpreadIndex={maxSpreadIndex}
         imageInputMode={imageInputMode}
         galleryUrls={galleryUrls}
+        binderUsedImages={binderUsedImages}
+        binderId={selectedBinderId}
         onPageSelect={handlePageSelect}
         onPageUpdate={handlePageUpdate}
         onPageGridEdit={handlePageGridEdit}
