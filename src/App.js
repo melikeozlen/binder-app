@@ -962,7 +962,7 @@ function App() {
   const [ringColor, setRingColor] = useState(savedSettings?.ringColor || '#A0A0A0');
   const [containerColor, setContainerColor] = useState(savedSettings?.containerColor || '#ffffff');
   const [binderType, setBinderType] = useState(savedSettings?.binderType || 'leather');
-  const [widthRatio, setWidthRatio] = useState(savedSettings?.widthRatio || 2);
+  const [widthRatio, setWidthRatio] = useState(savedSettings?.widthRatio || 1.9);
   const [heightRatio, setHeightRatio] = useState(savedSettings?.heightRatio || 1);
   
   // widthRatio ve heightRatio state'lerini string veya number olarak yönetebilmek için
@@ -986,7 +986,7 @@ function App() {
           setRingColor(settings.ringColor || '#A0A0A0');
           setContainerColor(settings.containerColor || '#ffffff');
           setBinderType(settings.binderType || 'leather');
-          setWidthRatio(settings.widthRatio || 2);
+          setWidthRatio(settings.widthRatio || 1.9);
           setHeightRatio(settings.heightRatio || 1);
           setGridSize(settings.gridSize || '2x2');
           setPageType(settings.pageType || 'mat');
@@ -1050,7 +1050,7 @@ function App() {
     if (!selectedBinderId) return;
     
     // Boş string değerleri varsayılan değerlerle değiştir
-    const widthRatioToSave = widthRatio === '' ? 2 : widthRatio;
+    const widthRatioToSave = widthRatio === '' ? 1.9 : widthRatio;
     const heightRatioToSave = heightRatio === '' ? 1 : heightRatio;
     
     // defaultBackImage'ı localStorage'a kaydetme (büyük olabilir, sadece state'te tut)

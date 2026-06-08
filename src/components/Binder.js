@@ -9,7 +9,7 @@ const Binder = ({
   ringColor,
   containerColor = '#ffffff',
   binderType = 'leather',
-  widthRatio = 1.8, 
+  widthRatio = 1.9, 
   heightRatio = 1, 
   pages = [], 
   pageType = 'mat',

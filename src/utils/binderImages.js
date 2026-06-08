@@ -18,43 +18,67 @@ export const extractImageFromCell = (value) => {
   return { url: '', name: '' };
 };
 
+/** Galeri / binder URL karşılaştırması için normalize eder */
+export const normalizeImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  if (
+    trimmed.startsWith('data:image') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://')
+  ) {
+    try {
+      const parsed = new URL(trimmed);
+      parsed.hostname = parsed.hostname.toLowerCase();
+      parsed.hash = '';
+      return parsed.toString();
+    } catch {
+      return trimmed;
+    }
+  }
+
+  return trimmed;
+};
+
 export const collectBinderUsedImages = (pages = [], defaultBackImage = null) => {
   const urls = new Set();
-  const names = new Set();
 
-  const add = ({ url, name }) => {
+  const addUrl = (url) => {
+    const normalized = normalizeImageUrl(url);
     if (
-      url &&
-      (url.startsWith('http://') ||
-        url.startsWith('https://') ||
-        url.startsWith('data:image'))
+      normalized &&
+      (normalized.startsWith('http://') ||
+        normalized.startsWith('https://') ||
+        normalized.startsWith('data:image'))
     ) {
-      urls.add(url);
-    }
-    if (name) {
-      names.add(name.toLowerCase());
+      urls.add(normalized);
     }
   };
 
   pages.forEach((page) => {
-    Object.values(page.content || {}).forEach((value) => add(extractImageFromCell(value)));
-    Object.values(page.backContent || {}).forEach((value) => add(extractImageFromCell(value)));
+    Object.values(page.content || {}).forEach((value) => {
+      addUrl(extractImageFromCell(value).url);
+    });
+    Object.values(page.backContent || {}).forEach((value) => {
+      addUrl(extractImageFromCell(value).url);
+    });
   });
 
   if (defaultBackImage) {
-    add(extractImageFromCell(defaultBackImage));
+    addUrl(extractImageFromCell(defaultBackImage).url);
   }
 
-  return { urls, names };
+  return { urls };
 };
 
 export const isGalleryItemInBinder = (item, usedImages) => {
-  if (!usedImages) return false;
+  if (!usedImages?.urls) return false;
 
-  const url = typeof item === 'string' ? item : item.url;
-  const name = (typeof item === 'string' ? '' : item.name || '').trim().toLowerCase();
+  const url = typeof item === 'string' ? item : item?.url;
+  const normalized = normalizeImageUrl(url);
+  if (!normalized) return false;
 
-  if (url && usedImages.urls?.has(url)) return true;
-  if (name && usedImages.names?.has(name)) return true;
-  return false;
+  return usedImages.urls.has(normalized);
 };

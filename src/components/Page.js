@@ -828,16 +828,14 @@ const Page = ({
     }
   };
 
-  const updateRotatedImageSize = useCallback((img, wrapperWidth, wrapperHeight) => {
-    // Resmin orijinal boyutlarını al
-    const imgW = img.naturalWidth || img.width || 1;
-    const imgH = img.naturalHeight || img.height || 1;
-    
-    // Resim henüz yüklenmemişse bekle
-    if (imgW === 0 || imgH === 0) {
+  const fitImageToWrapper = useCallback((img, wrapper) => {
+    const imgW = img.naturalWidth;
+    const imgH = img.naturalHeight;
+
+    if (!imgW || !imgH) {
       if (!img.complete) {
         const handleLoad = () => {
-          updateRotatedImageSize(img, wrapperWidth, wrapperHeight);
+          fitImageToWrapper(img, wrapper);
           img.removeEventListener('load', handleLoad);
         };
         img.addEventListener('load', handleLoad, { once: true });
@@ -845,28 +843,26 @@ const Page = ({
       return;
     }
 
-    // Hangi açıda döndürülmüş?
+    const style = getComputedStyle(wrapper);
+    const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+    const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const wrapperWidth = Math.max(0, wrapper.clientWidth - padX);
+    const wrapperHeight = Math.max(0, wrapper.clientHeight - padY);
+
     let rotationAngle = 0;
     if (img.classList.contains('rotated-90')) rotationAngle = 90;
     else if (img.classList.contains('rotated-180')) rotationAngle = 180;
     else if (img.classList.contains('rotated-270')) rotationAngle = 270;
-    else if (img.classList.contains('rotated-0')) rotationAngle = 0;
 
-    // CONTAIN mantığı: Döndürülmüş resmin kapladığı alanı hesapla
     const radians = rotationAngle * Math.PI / 180;
     const sin = Math.abs(Math.sin(radians));
     const cos = Math.abs(Math.cos(radians));
-
-    // Döndürülmüş resmin kapladığı alan
     const rotatedW = imgW * cos + imgH * sin;
     const rotatedH = imgW * sin + imgH * cos;
-
-    // CONTAIN: wrapper içine sığdır (kesilme yok)
     const scale = Math.min(wrapperWidth / rotatedW, wrapperHeight / rotatedH);
 
-    // Resmin boyutunu scale ile ayarla
-    img.style.width = imgW * scale + "px";
-    img.style.height = imgH * scale + "px";
+    img.style.width = `${imgW * scale}px`;
+    img.style.height = `${imgH * scale}px`;
   }, []);
 
   const getCellKey = (row, col) => `${row}-${col}`;
@@ -1099,30 +1095,28 @@ const Page = ({
       }
     }
   };
-  // ResizeObserver: Tüm döndürülmüş resimler için boyutlandırma (CONTAIN mantığı)
   useEffect(() => {
     const wrappers = document.querySelectorAll('.cell-image-wrapper');
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const wrapper = entry.target;
-        const img = wrapper.querySelector('.cell-image.rotated');
-        if (!img) continue; // Döndürülmüş resim yoksa atla
-
-        const wrapperWidth = entry.contentRect.width;
-        const wrapperHeight = entry.contentRect.height;
-        
-        // CONTAIN mantığı ile boyutlandır
-        requestAnimationFrame(() => {
-          updateRotatedImageSize(img, wrapperWidth, wrapperHeight);
-        });
+        const img = wrapper.querySelector('.cell-image');
+        if (!img) continue;
+        requestAnimationFrame(() => fitImageToWrapper(img, wrapper));
       }
     });
 
-    wrappers.forEach(w => observer.observe(w));
+    wrappers.forEach((wrapper) => {
+      observer.observe(wrapper);
+      const img = wrapper.querySelector('.cell-image');
+      if (img?.complete) {
+        fitImageToWrapper(img, wrapper);
+      }
+    });
 
     return () => observer.disconnect();
-  }, [content, backContent, updateRotatedImageSize]);
+  }, [content, backContent, rotatedImages, fitImageToWrapper]);
 
   const handleBackImageSelect = (e, row, col) => {
     // Alttaki sayfalar için işlemi engelle
@@ -1325,13 +1319,13 @@ const Page = ({
 
                 // Sağ sayfa: ilk kolondaki hücrelerin sol kenarında dikiş izi olmamalı (ring tarafı)
                 // Sol sayfa: son kolondaki hücrelerin sağ kenarında dikiş izi olmamalı (ring tarafı)
-                const isFirstCol = col === 0;
                 const isLastCol = col === cols - 1;
+                const isLastRow = row === rows - 1;
                 const isHorizontal = rows > cols; // Yatay uzun cep (örneğin 3x1, 4x1)
                 const cellClasses = [
                   'grid-cell',
-                  coverSide === 'right' && isFirstCol ? 'no-left-border' : '',
-                  coverSide === 'left' && isLastCol ? 'no-right-border' : '',
+                  isLastCol ? 'cell-last-col' : '',
+                  isLastRow ? 'cell-last-row' : '',
                   getCellDragClassName('front', row, col, isImage)
                 ].filter(Boolean).join(' ');
 
@@ -1369,14 +1363,11 @@ const Page = ({
                             alt={imageName || ''}
                             className={`cell-image ${(() => {
                               const angle = rotatedImages[key] || 0;
-                              return `rotated rotated-${angle}`;
+                              return angle ? `rotated rotated-${angle}` : '';
                             })()}`}
                             onLoad={(e) => {
-                              // Resim yüklendiğinde boyutlandır
                               const wrapper = e.target.closest('.cell-image-wrapper');
-                              if (wrapper) {
-                                updateRotatedImageSize(e.target, wrapper.clientWidth, wrapper.clientHeight);
-                              }
+                              if (wrapper) fitImageToWrapper(e.target, wrapper);
                             }}
                           />
                         </div>
@@ -1548,16 +1539,14 @@ const Page = ({
                 const isImage = displayImage && (displayImage.startsWith('data:image') || displayImage.startsWith('http://') || displayImage.startsWith('https://'));
                 const isDefaultImage = !backImageUrl && shouldShowDefault;
 
-                // Arka yüz için de aynı mantık: sağ sayfa için ilk kolon, sol sayfa için son kolon
-                // Ama arka yüzde ayna efekti var, bu yüzden görünen pozisyona göre kontrol et
-                const isFirstColBack = col === 0;
                 const isLastColBack = col === cols - 1;
+                const isLastRowBack = row === rows - 1;
                 const isHorizontalBack = rows > cols; // Yatay uzun cep (örneğin 3x1, 4x1)
                 const canDragBack = !!backImageUrl;
                 const backCellClasses = [
                   'grid-cell',
-                  coverSide === 'right' && isFirstColBack ? 'no-left-border' : '',
-                  coverSide === 'left' && isLastColBack ? 'no-right-border' : '',
+                  isLastColBack ? 'cell-last-col' : '',
+                  isLastRowBack ? 'cell-last-row' : '',
                   getCellDragClassName('back', row, col, canDragBack)
                 ].filter(Boolean).join(' ');
 
@@ -1602,14 +1591,11 @@ const Page = ({
                             className={`cell-image ${isDefaultImage ? 'default-image' : ''} ${(() => {
                               const backRotationKey = `back-${backKey}`;
                               const angle = rotatedImages[backRotationKey] || 0;
-                              return `rotated rotated-${angle}`;
+                              return angle ? `rotated rotated-${angle}` : '';
                             })()}`}
                             onLoad={(e) => {
-                              // Resim yüklendiğinde boyutlandır
                               const wrapper = e.target.closest('.cell-image-wrapper');
-                              if (wrapper) {
-                                updateRotatedImageSize(e.target, wrapper.clientWidth, wrapper.clientHeight);
-                              }
+                              if (wrapper) fitImageToWrapper(e.target, wrapper);
                             }}
                           />
                         </div>

@@ -107,13 +107,13 @@ const SettingsBar = ({
   // Basılı tutma için yardımcı fonksiyonlar
   const startWidthIncrease = () => {
     // İlk tıklamada hemen çalış
-    const current = parseFloat(widthRatioRef.current) || 2;
+    const current = parseFloat(widthRatioRef.current) || 1.9;
     const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
     onWidthRatioChange(newValue);
     
     // Sonra hızlı tekrarla
     widthUpIntervalRef.current = setInterval(() => {
-      const current = parseFloat(widthRatioRef.current) || 2;
+      const current = parseFloat(widthRatioRef.current) || 1.9;
       const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
       onWidthRatioChange(newValue);
     }, 50); // 50ms = çok hızlı
@@ -128,13 +128,13 @@ const SettingsBar = ({
 
   const startWidthDecrease = () => {
     // İlk tıklamada hemen çalış
-    const current = parseFloat(widthRatioRef.current) || 2;
+    const current = parseFloat(widthRatioRef.current) || 1.9;
     const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
     onWidthRatioChange(newValue);
     
     // Sonra hızlı tekrarla
     widthDownIntervalRef.current = setInterval(() => {
-      const current = parseFloat(widthRatioRef.current) || 2;
+      const current = parseFloat(widthRatioRef.current) || 1.9;
       const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
       onWidthRatioChange(newValue);
     }, 50); // 50ms = çok hızlı
@@ -516,7 +516,7 @@ const SettingsBar = ({
             onBlur={(e) => {
               // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
               if (e.target.value === '') {
-                onWidthRatioChange(2);
+                onWidthRatioChange(1.9);
               } else {
                 // Değeri 2 ondalık basamağa yuvarla
                 const numValue = parseFloat(e.target.value);

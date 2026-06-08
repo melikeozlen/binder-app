@@ -493,19 +493,21 @@
   padding: 2px;
   box-sizing: border-box;
   /* isolation: isolate kaldırıldı - z-index'in inherit edilmesi için */
-  /* Belirgin beyaz kesikli dikiş izleri (----) - sadece sağ ve alt kenarlarda, üst kenar açık */
-  border-top: none;
-  border-right: 3px dashed rgba(207, 207, 207, 0.95);
-  border-bottom: 3px dashed rgba(203, 203, 203, 0.95);
-  border-left: none;
-  /* Dikiş izlerine hafif shadow - dikiş efekti bozulmadan */
-  box-shadow: 
-    1px 0 1px rgba(0, 0, 0, 0.06),
-    0 1px 1px rgba(0, 0, 0, 0.06);
-  /* Grid hücreleri tıklanabilir olmalı - ama alttaki sayfalarda değil */
+  /* Üst + sol: komşu hücrelerde tek çizgi; dış kenar için sağ/alt sınıflarla */
+  border: none;
+  border-top: 3px dashed rgba(205, 205, 205, 0.95);
+  border-left: 3px dashed rgba(205, 205, 205, 0.95);
+  box-shadow: none;
   pointer-events: auto;
-  /* Grid cell'ler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
   z-index: inherit;
+}
+
+.grid-cell.cell-last-col {
+  border-right: 3px dashed rgba(205, 205, 205, 0.95);
+}
+
+.grid-cell.cell-last-row {
+  border-bottom: 3px dashed rgba(205, 205, 205, 0.95);
 }
 
 /* Resim içeren grid-cell'lerde cursor default - sadece butonlarla işlem yapılır */
@@ -517,21 +519,6 @@
 .page-container.page-non-interactive .grid-cell {
   pointer-events: none !important;
   cursor: default !important;
-}
-
-/* Ring tarafında dikiş izi olmamalı - dinamik class'lar ile kontrol ediliyor */
-.grid-cell.no-left-border {
-  border-left: 3px dashed rgb(201 201 201 / 95%) !important;
-  box-shadow: 
-    0 1px 1px rgba(0, 0, 0, 0.06);
-
-    
-}
-
-.grid-cell.no-right-border {
-  border-right: none;
-  box-shadow: 
-    0 1px 1px rgba(0, 0, 0, 0.06);
 }
 
 .grid-cell:hover .cell-image-controls {
@@ -636,11 +623,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.2);
   padding: 5px;
   box-sizing: border-box;
-  overflow: hidden; /* Taşan kısımları gizle */
-  border-radius: 10px; /* Yuvarlatılmış kenarlar - img */
+  overflow: hidden;
+  border-radius: 10px;
   /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
   z-index: inherit;
 }
@@ -673,9 +660,11 @@
 }
 
 .cell-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Taşan kısımları kesmek için contain yerine cover */
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   object-position: center;
   cursor: inherit;
   box-sizing: border-box;
@@ -684,7 +673,7 @@
   background-color: transparent;
   display: block;
   position: relative;
-  border-radius: 10px; /* Yuvarlatılmış kenarlar - img */
+  border-radius: 10px;
   /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
   z-index: inherit;
   pointer-events: none; /* Resim tıklamalarını engelle, sadece butonlar tıklanabilir */
@@ -704,9 +693,10 @@
 }
 
 .cell-image.default-image {
-  /* Default görüntü ön yüzdeki resim gibi yer kaplamalı */
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center;
 }
@@ -1260,6 +1250,7 @@
   left: 50%;
   transform-origin: center;
   width: auto;
+  height: auto;
   max-width: none;
   max-height: none;
   object-fit: contain;
