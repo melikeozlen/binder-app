@@ -10,7 +10,9 @@
   overflow: hidden;
   max-width: 100%;
   max-height: 100%;
+  width: 100%;
   position: relative;
+  touch-action: manipulation;
 }
 
 .binder-container.fullscreen {
@@ -103,11 +105,14 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: var(--width-ratio, 1.8) / var(--height-ratio, 1);
-  margin: 0.25rem;
-  max-width: calc(100% - 0.5rem);
-  max-height: calc(100% - 0.5rem);
+  margin: 0.15rem;
+  max-width: 100%;
+  max-height: 100%;
   width: 100%;
   height: 100%;
+  flex-shrink: 1;
+  min-height: 0;
+  min-width: 0;
 }
 
 .binder {
@@ -1150,13 +1155,13 @@
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1400px) and (min-width: 1025px) {
   .binder {
     width: 90vw;
     height: auto;
-    min-height: 600px;
+    min-height: 480px;
   }
-  
+
   .binder-flap {
     display: none;
   }
@@ -1413,25 +1418,79 @@
   }
 }
 
-@media (max-width: 768px) {
-  .binder {
-    flex-direction: column;
-    width: 95vw;
+/* Mobil: binder yatay düzenini koru, sadece sıkılaştır */
+@media (max-width: 1024px) {
+  .binder-container {
+    padding: 0.1rem;
   }
-  
+
+  .binder-wrapper {
+    margin: 0;
+    aspect-ratio: unset;
+    max-width: 100%;
+    max-height: 100%;
+    flex-shrink: 0;
+  }
+
+  .binder {
+    aspect-ratio: unset;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    margin: 0;
+  }
+
   .binder-left,
   .binder-right {
-    width: 100%;
-    flex-direction: row;
+    min-width: 0;
+    width: 14%;
+    padding: 4px;
   }
-  
+
+  .right-pockets {
+    min-height: 0;
+  }
+
   .card-pockets {
-    flex-direction: row;
+    margin-top: 20%;
+    margin-bottom: 8px;
   }
-  
+
   .card-pocket {
-    width: 100px;
-    height: 60px;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .binder-page {
+    overflow: hidden;
+    max-height: calc(100% * 8 / 9);
+  }
+
+  .binder-flap {
+    display: none;
+  }
+
+  .page-navigation {
+    bottom: 4px;
+    padding: 2px 5px;
+  }
+
+  .nav-button {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .page-counter {
+    font-size: 8px;
+    min-width: 28px;
+  }
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+  .binder-container {
+    padding: 0.05rem 0.2rem;
   }
 }
 

@@ -250,6 +250,13 @@
   line-height: 1.4;
 }
 
+/* Mobilde binder tam görünsün — yan çubuk gizli (navigasyon: kaydır / ok tuşları) */
+@media (max-width: 1024px) {
+  .page-order-bar {
+    display: none !important;
+  }
+}
+
 @media (min-width: 1025px) and (max-width: 1200px) {
   .page-order-bar {
     width: 65px;

@@ -30,7 +30,7 @@ const SettingsBar = ({
   onAddPage,
   onDeleteAllPages,
   pagesCount = 0,
-  imageInputMode = 'file',
+  imageInputMode = 'defaultGallery',
   onImageInputModeChange,
   galleryUrls = [],
   onGalleryUrlsChange,

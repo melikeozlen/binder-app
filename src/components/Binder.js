@@ -29,7 +29,7 @@ const Binder = ({
   onNextPage,
   onPrevPage,
   onDeletePage,
-  imageInputMode = 'file',
+  imageInputMode = 'defaultGallery',
   galleryUrls = [],
   binderUsedImages = null,
   binderId = null,
@@ -46,16 +46,26 @@ const Binder = ({
 
 
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
     const updateSize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setContainerSize({ width: rect.width, height: rect.height });
-      }
+      const rect = el.getBoundingClientRect();
+      setContainerSize({ width: rect.width, height: rect.height });
     };
 
     updateSize();
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(el);
     window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    const vv = window.visualViewport;
+    if (vv) vv.addEventListener('resize', updateSize);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateSize);
+      if (vv) vv.removeEventListener('resize', updateSize);
+    };
   }, []);
 
   // Touch sürükleme ile sayfa değiştirme
@@ -97,30 +107,31 @@ const Binder = ({
 
   const binderAspectRatio = widthRatio / heightRatio;
   const containerAspectRatio = containerSize.width / containerSize.height;
-  
-  // Container'ın aspect ratio'suna göre maksimum boyutu seç
   const useFullWidth = containerAspectRatio > binderAspectRatio;
-  
+
   const wrapperStyle = useMemo(() => {
-    if (containerSize.width === 0 || containerSize.height === 0) {
-      return { width: '95%', height: '95%' };
+    const isCompact = containerSize.width < 1024;
+    const scale = isCompact ? 0.97 : 0.95;
+
+    if (containerSize.width <= 1 || containerSize.height <= 1) {
+      return { width: `${scale * 100}%`, height: `${scale * 100}%` };
     }
-    
-    const scale = 0.95; // Biraz küçült
-    
+
     if (useFullWidth) {
-      // Container daha geniş, height'ı 95% yap, width'i aspect ratio'ya göre hesapla
       return {
         height: `${scale * 100}%`,
-        width: `${(binderAspectRatio / containerAspectRatio) * scale * 100}%`
-      };
-    } else {
-      // Container daha yüksek, width'i 95% yap, height'i aspect ratio'ya göre hesapla
-      return {
-        width: `${scale * 100}%`,
-        height: `${(containerAspectRatio / binderAspectRatio) * scale * 100}%`
+        width: `${(binderAspectRatio / containerAspectRatio) * scale * 100}%`,
+        maxWidth: '100%',
+        maxHeight: '100%',
       };
     }
+
+    return {
+      width: `${scale * 100}%`,
+      height: `${(containerAspectRatio / binderAspectRatio) * scale * 100}%`,
+      maxWidth: '100%',
+      maxHeight: '100%',
+    };
   }, [useFullWidth, containerSize, binderAspectRatio, containerAspectRatio]);
   // Dikiş rengini hesapla: binder rengi açıksa koyu, koyuysa açık
   const stitchColor = useMemo(() => {

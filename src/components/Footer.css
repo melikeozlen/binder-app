@@ -170,9 +170,8 @@
 @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
   .app-footer {
     padding: 0.4rem 0.8rem;
-    min-height: 36px;
-    position: sticky;
-    bottom: 0;
+    min-height: unset;
+    position: relative;
   }
   
   .footer-content {
@@ -203,9 +202,8 @@
 @media (max-width: 767px) {
   .app-footer {
     padding: 0.4rem 0.6rem;
-    min-height: 36px;
-    position: sticky;
-    bottom: 0;
+    min-height: unset;
+    position: relative;
   }
   
   .footer-content {

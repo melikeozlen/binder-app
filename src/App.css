@@ -1,108 +1,27 @@
+:root {
+  --app-chrome-max-header: 38dvh;
+  --app-chrome-max-footer: 22dvh;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
 .App {
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
+  width: 100dvw;
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
   overflow: hidden;
-}
-
-@media (max-width: 1024px) {
-  .App {
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    min-height: 100vh;
-    height: auto;
-  }
-  
-  .App > .settings-bar {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
-  
-  .App > .app-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 999;
-  }
-}
-
-/* Tablet yatay ekran için özel ayarlar */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-  .App {
-    min-height: 100vh;
-    height: 100vh;
-    overflow-y: auto;
-  }
-  
-  .App > .binder-container {
-    min-height: calc(100vh - 80px); /* Footer ve SettingsBar için yer bırak */
-  }
-  
-  .App > .app-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 999;
-  }
-}
-
-.App.fullscreen-mode {
-  height: 100vh;
-  width: 100vw;
-}
-
-.App.fullscreen-mode .page-order-bar {
-  display: none !important;
-}
-
-/* Fullscreen modunda Settings ve Footer minimal görünüm */
-.App.fullscreen-mode .settings-bar {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10001 !important;
-  display: flex !important;
-  padding: 0.15rem 0.3rem;
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  opacity: 0.85;
-  transition: opacity 0.2s;
-}
-
-.App.fullscreen-mode .settings-bar:hover {
-  opacity: 1;
-}
-
-.App.fullscreen-mode .app-footer {
-  position: fixed !important;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 10001 !important;
-  display: flex !important;
-  padding: 0.3rem 0.5rem;
-  background-color: rgba(248, 248, 248, 0.95);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  opacity: 0.85;
-  transition: opacity 0.2s;
-}
-
-.App.fullscreen-mode .app-footer:hover {
-  opacity: 1;
-}
-
-.App.fullscreen-mode .binder-container {
-  margin-right: 0 !important;
-  width: 100vw !important;
-  padding: 0 !important;
-  top: 40px !important; /* SettingsBar için yer */
-  bottom: 40px !important; /* Footer için yer */
-  height: calc(100vh - 80px) !important; /* SettingsBar + Footer yüksekliği */
+  padding:
+    var(--safe-top)
+    var(--safe-right)
+    var(--safe-bottom)
+    var(--safe-left);
+  box-sizing: border-box;
 }
 
 .App > .app-footer {
@@ -118,30 +37,80 @@
   margin-right: 70px; /* PageOrderBar için yer bırak */
 }
 
-@media (max-width: 1024px) {
-  .App > .binder-container {
-    margin-right: 0;
-    min-height: auto;
-  }
+.App.fullscreen-mode {
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  width: 100dvw;
+}
+
+.App.fullscreen-mode .page-order-bar {
+  display: none !important;
+}
+
+/* Fullscreen modunda Settings ve Footer minimal görünüm */
+.App.fullscreen-mode .settings-bar {
+  position: fixed !important;
+  top: var(--safe-top);
+  left: var(--safe-left);
+  right: var(--safe-right);
+  z-index: 10001 !important;
+  display: flex !important;
+  padding: 0.15rem 0.3rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  max-height: none;
+  overflow: visible;
+}
+
+.App.fullscreen-mode .settings-bar:hover {
+  opacity: 1;
+}
+
+.App.fullscreen-mode .app-footer {
+  position: fixed !important;
+  bottom: var(--safe-bottom);
+  left: var(--safe-left);
+  right: var(--safe-right);
+  z-index: 10001 !important;
+  display: flex !important;
+  padding: 0.3rem 0.5rem;
+  background-color: rgba(248, 248, 248, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  max-height: none;
+  overflow: visible;
+}
+
+.App.fullscreen-mode .app-footer:hover {
+  opacity: 1;
+}
+
+.App.fullscreen-mode .binder-container {
+  margin-right: 0 !important;
+  width: 100% !important;
+  padding: 0 !important;
+  top: 40px !important;
+  bottom: 40px !important;
+  height: calc(100dvh - 80px - var(--safe-top) - var(--safe-bottom)) !important;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
   overflow: hidden;
-}
-
-@media (max-width: 1024px) {
-  html, body {
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
+  -webkit-text-size-adjust: 100%;
 }
 
 #root {
@@ -149,10 +118,88 @@ html, body {
   overflow: hidden;
 }
 
+/* ——— Mobil & tablet: binder her zaman tam görünür ——— */
 @media (max-width: 1024px) {
+  :root {
+    --app-chrome-max-header: 40dvh;
+    --app-chrome-max-footer: 24dvh;
+  }
+
+  html,
+  body,
   #root {
-    overflow-y: auto;
+    overflow: hidden;
+    height: 100%;
+    height: 100dvh;
+  }
+
+  .App {
+    overflow: hidden;
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .App > .settings-bar {
+    position: relative;
+    top: auto;
+    flex: 0 0 auto;
+    max-height: var(--app-chrome-max-header);
     overflow-x: hidden;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    z-index: 1000;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .App > .binder-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-right: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.15rem;
+    touch-action: manipulation;
+  }
+
+  .App > .app-footer {
+    position: relative;
+    bottom: auto;
+    flex: 0 0 auto;
+    max-height: var(--app-chrome-max-footer);
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    z-index: 999;
+  }
+}
+
+/* Mobil yatay — binder'a daha fazla yükseklik */
+@media (max-width: 1024px) and (orientation: landscape) {
+  :root {
+    --app-chrome-max-header: 30dvh;
+    --app-chrome-max-footer: 18dvh;
+  }
+
+  .App > .settings-bar {
+    padding: 0.2rem 0.35rem;
+  }
+
+  .App > .binder-container {
+    padding: 0.1rem 0.25rem;
+  }
+
+  .App > .app-footer {
+    padding: 0.25rem 0.5rem;
+    min-height: unset;
+  }
+}
+
+/* Küçük telefon dikey */
+@media (max-width: 480px) and (orientation: portrait) {
+  :root {
+    --app-chrome-max-header: 42dvh;
+    --app-chrome-max-footer: 20dvh;
   }
 }
