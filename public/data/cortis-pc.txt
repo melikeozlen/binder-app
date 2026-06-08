@@ -862,6 +862,9 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbk0n4000jjo04ectki5k9-back-1778296272035.webp | BACK CORTIS - Juhoon - GREENGREEN Album album photocard street version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbk0kc0007jo040tq4k862-front-1778320428647.webp | CORTIS - Juhoon - GREENGREEN Album album photocard street version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbk0kc0007jo040tq4k862-back-1778320435902.webp | BACK CORTIS - Juhoon - GREENGREEN Album album photocard street version
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo019lri001hjl044bojkmsd-front-1778436846302.webp | CORTIS - Juhoon - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo019lri001hjl044bojkmsd-back-1778436851660.webp | BACK CORTIS - Juhoon - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
+
 
 
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmq1lcpbd00awia0bwe1k7j63-front-1780704283372.webp | CORTIS - Martin - GREENGREEN Album lucky draw (LD) round 2 makestar
@@ -970,6 +973,8 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbcmx9003gjo04hbf9ghuo-front-1780931864769.webp | CORTIS - Martin - GREENGREEN Album album photocard bridge version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbcmx9003gjo04hbf9ghuo-back-1780931873977.webp | BACK CORTIS - Martin - GREENGREEN Album album photocard bridge version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovb51kn0012ji04vbn3fvc5-front-1778296301496.webp | CORTIS - Martin - GREENGREEN Album pob (pre-order benefit) makestar
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo015yui000dld047x00la01-front-1778436865837.webp | CORTIS - Martin - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo015yui000dld047x00la01-back-1778436872449.webp | BACK CORTIS - Martin - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
 
 
 
@@ -1078,6 +1083,8 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbgfdj002gic04lrx1lq4h-back-1780297102395.webp | BACK CORTIS - James - GREENGREEN Album album photocard street version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbgfb40024ic0448tw19lm-front-1778320603620.webp | CORTIS - James - GREENGREEN Album album photocard street version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbgfb40024ic0448tw19lm-back-1778320610343.webp | BACK CORTIS - James - GREENGREEN Album album photocard street version
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo017yu1000hjl04ueg8qh9y-front-1778436845498.webp | CORTIS - James - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo017yu1000hjl04ueg8qh9y-back-1778436851076.webp | BACK CORTIS - James - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
 
 
 
@@ -1181,6 +1188,9 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbm5cd006bl704vbwueyze-back-1778361424448.webp | BACK CORTIS - Seonghyeon - GREENGREEN Album album photocard street version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbm596005zl704eimeoeob-front-1778320712212.webp | CORTIS - Seonghyeon - GREENGREEN Album album photocard street version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbm596005zl704eimeoeob-back-1778320718566.webp | BACK CORTIS - Seonghyeon - GREENGREEN Album album photocard street version
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo01awwf0013ii04wlmhg209-front-1778436846525.webp | CORTIS - Seonghyeon - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo01awwf0013ii04wlmhg209-back-1778436853662.webp | BACK CORTIS - Seonghyeon - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
+
 
 
 
@@ -1289,3 +1299,5 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovbooqe000tjj04d9q29gik-back-1780513450917.webp | BACK CORTIS - Keonho - GREENGREEN Album album photocard street version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovboomd000ejj04e93iwok4-front-1778320726366.webp | CORTIS - Keonho - GREENGREEN Album album photocard street version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovboomd000ejj04e93iwok4-back-1778320732905.webp | BACK CORTIS - Keonho - GREENGREEN Album album photocard street version
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo01bxf70013le047j24zw0k-front-1778436846506.webp | CORTIS - Keonho - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
+OTHER | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmo01bxf70013le047j24zw0k-back-1778436851726.webp | BACK CORTIS - Keonho - CONTROL : COMPLETE (Torriden x CORTIS) Other pob (pre-order benefit) brand collaboration purchase benefit polaroid polaroid set non-standard size
