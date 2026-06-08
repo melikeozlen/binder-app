@@ -109,6 +109,28 @@
   opacity: 0.6;
 }
 
+/* Parlak / holo: efekt yalnızca sayfa yüzeyinde, dışarı taşmaz */
+.page-container:has(.page-type-glossy),
+.page-container:has(.page-type-holo) {
+  overflow: hidden;
+}
+
+.page-type-glossy,
+.page-type-holo {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.page-type-glossy::before,
+.page-type-holo::before {
+  display: none;
+}
+
+.page-type-glossy .page-content,
+.page-type-holo .page-content {
+  overflow: hidden;
+}
+
 .page-front {
   transform: rotateY(0deg);
   z-index: 2;
@@ -122,6 +144,17 @@
 
 .page-back .grid-cell {
   pointer-events: auto;
+  /* Arka yüz pocket çizgileri ön yüzle aynı kalsın */
+  border-top: 3px dashed rgba(205, 205, 205, 0.95);
+  border-left: 3px dashed rgba(205, 205, 205, 0.95);
+}
+
+.page-back .grid-cell.cell-last-col {
+  border-right: 3px dashed rgba(205, 205, 205, 0.95);
+}
+
+.page-back .grid-cell.cell-last-row {
+  border-bottom: 3px dashed rgba(205, 205, 205, 0.95);
 }
 
 .page-container.flipped .page-front {
@@ -195,20 +228,25 @@
   z-index: 2;
 }
 
-/* Parlak dosya - glossy efekt */
+/* Parlak dosya - glossy efekt (yalnızca pocket grid üzerinde) */
 .page-type-glossy .grid-cell {
   background-color: rgba(255, 255, 255, 0.25);
-  position: relative;
-  overflow: hidden;
-}
-
-.page-type-glossy .cell-image {
-  /* Resmin kalitesi korunuyor - filter yok */
   position: relative;
   z-index: 1;
 }
 
-.page-type-glossy .grid-cell::after {
+.page-type-glossy .cell-image {
+  position: relative;
+  z-index: 1;
+}
+
+.page-type-glossy .page-grid {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.page-type-glossy .page-grid::after {
   content: '';
   position: absolute;
   top: -100%;
@@ -227,7 +265,7 @@
   );
   animation: glossy-shine 8s ease-in-out infinite;
   pointer-events: none;
-  z-index: 2;
+  z-index: 0;
   mix-blend-mode: overlay;
   opacity: 0.8;
 }
@@ -255,20 +293,25 @@
   }
 }
 
-/* Holo dosya - holografik yansıma efekti (daha doğal, glossy benzeri) */
+/* Holo dosya - holografik yansıma (yalnızca pocket grid üzerinde) */
 .page-type-holo .grid-cell {
   background-color: rgba(255, 255, 255, 0.25);
-  position: relative;
-  overflow: hidden;
-}
-
-.page-type-holo .cell-image {
-  /* Resmin kalitesi korunuyor - filter yok */
   position: relative;
   z-index: 1;
 }
 
-.page-type-holo .grid-cell::after {
+.page-type-holo .cell-image {
+  position: relative;
+  z-index: 1;
+}
+
+.page-type-holo .page-grid {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.page-type-holo .page-grid::after {
   content: '';
   position: absolute;
   top: -100%;
@@ -289,7 +332,7 @@
   );
   animation: holo-shine 10s ease-in-out infinite;
   pointer-events: none;
-  z-index: 2;
+  z-index: 0;
   mix-blend-mode: overlay;
   opacity: 0.75;
 }
@@ -375,8 +418,7 @@
 
 .page-content {
   flex: 1;
-  padding: 15px;
-  padding-top: 25px; /* Sayfa numarası için üst boşluk */
+  padding: 25px 20px 15px 20px; /* Üst: sayfa no. — yanlar slotları hafif daraltır */
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -489,10 +531,9 @@
   justify-content: center;
   min-height: 60px;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   padding: 2px;
   box-sizing: border-box;
-  /* isolation: isolate kaldırıldı - z-index'in inherit edilmesi için */
   /* Üst + sol: komşu hücrelerde tek çizgi; dış kenar için sağ/alt sınıflarla */
   border: none;
   border-top: 3px dashed rgba(205, 205, 205, 0.95);
@@ -624,10 +665,9 @@
   align-items: center;
   justify-content: center;
   background-color: rgba(255, 255, 255, 0.2);
-  padding: 5px;
+  padding: 5px 5px 1px 5px;
   box-sizing: border-box;
   overflow: hidden;
-  border-radius: 10px;
   /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
   z-index: inherit;
 }
@@ -708,12 +748,24 @@
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex !important;
-  gap: 4px;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
   z-index: 1000 !important;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease;
   visibility: visible !important;
+}
+
+.cell-image-controls-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.cell-image-controls--picker-above {
+  flex-direction: column-reverse;
 }
 
 .grid-cell:hover .cell-image-controls {
@@ -793,6 +845,109 @@
 .cell-control-rotate:hover {
   background-color: rgba(255, 255, 255, 0.95);
   color: #007bff;
+}
+
+.cell-control-sleeve {
+  color: #666;
+  font-size: 10px;
+}
+
+.cell-control-sleeve--active {
+  color: #333;
+  box-shadow: inset 0 0 0 2px var(--sleeve-btn-color, #a8cce8);
+}
+
+/* Sleeve: renkli halka resmin DIŞINDA — köşeli, piksel kırpmaz */
+.cell-image.has-sleeve {
+  border-radius: 0;
+  box-shadow: 0 0 0 var(--sleeve-width, 6px) var(--sleeve-color, #a8cce8);
+}
+
+.cell-image-wrapper--sleeve {
+  overflow: visible;
+}
+
+.grid-cell:has(.cell-image.has-sleeve) {
+  overflow: visible;
+}
+
+.cell-sleeve-picker {
+  position: relative;
+  margin-top: 6px;
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  pointer-events: auto;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.cell-image-controls--picker-above .cell-sleeve-picker {
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+.grid-cell:has(.cell-sleeve-picker) {
+  z-index: 10;
+}
+
+.cell-sleeve-picker-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+.cell-sleeve-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.cell-sleeve-swatch--active {
+  box-shadow: 0 0 0 2px #333;
+}
+
+.cell-sleeve-custom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cell-sleeve-custom input[type='color'] {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: none;
+}
+
+.cell-sleeve-remove {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #666;
+  cursor: pointer;
+}
+
+.cell-sleeve-remove:hover {
+  background: #eee;
+  color: #333;
 }
 
 /* Sayfa çevirme butonu */
@@ -989,8 +1144,7 @@
   }
 
   .page-content {
-    padding: 6px;
-    padding-top: 14px;
+    padding: 14px 9px 6px 9px;
     min-height: 0;
     overflow: hidden;
   }

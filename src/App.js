@@ -328,6 +328,7 @@ const loadPage = async (pageId, binderId) => {
         content: pageData.content || {},
         backContent: pageData.backContent || {},
         rotatedImages: pageData.rotatedImages || {},
+        sleeves: pageData.sleeves || {},
         transparent: pageData.transparent !== undefined ? pageData.transparent : false
       };
     }
@@ -676,6 +677,7 @@ const savePageWithSeparateImages = async (page, binderId) => {
       content: contentWithRefs,
       backContent: backContentWithRefs,
       rotatedImages: page.rotatedImages || {},
+      sleeves: page.sleeves || {},
       transparent: page.transparent !== undefined ? page.transparent : false,
       order: page.order !== undefined ? page.order : page.id // Eski sayfalar için ID'yi order olarak kullan
     };
@@ -762,6 +764,7 @@ const loadPageWithSeparateImages = async (pageId, binderId) => {
         content: content,
         backContent: backContent,
         rotatedImages: pageData.rotatedImages || {},
+        sleeves: pageData.sleeves || {},
         transparent: pageData.transparent !== undefined ? pageData.transparent : false,
         order: pageData.order !== undefined ? pageData.order : pageData.id // Eski sayfalar için ID'yi order olarak kullan
       };
@@ -1344,6 +1347,7 @@ function App() {
       content: {},
       backContent: {},
       rotatedImages: {},
+      sleeves: {},
       transparent: false,
       order: newOrder
     };
@@ -1730,6 +1734,7 @@ function App() {
         content: updatedPage.content || {},
         backContent: updatedPage.backContent || {},
         rotatedImages: updatedPage.rotatedImages || {},
+        sleeves: updatedPage.sleeves || {},
         transparent: updatedPage.transparent !== undefined ? updatedPage.transparent : (currentPage.transparent !== undefined ? currentPage.transparent : false),
         order: preservedOrder // Order bilgisini koru
       };

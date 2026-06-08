@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import './Page.css';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -6,6 +6,18 @@ import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
 import GalleryWithFolders from './GalleryWithFolders';
 import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
+
+const SLEEVE_PRESETS = [
+  '#A8CCE8',
+  '#F0B8C8',
+  '#B8E0D0',
+  '#C8B8E8',
+  '#F0E0A0',
+  '#F5F5F5',
+  '#2A2A2A',
+];
+const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
+const SLEEVE_RING_PX = 6; // Resmin dışına çizilen çerçeve kalınlığı (px)
 
 const Page = ({
   page,
@@ -35,6 +47,9 @@ const Page = ({
   const [content, setContent] = useState(page.content || {});
   const [backContent, setBackContent] = useState(page.backContent || {});
   const [rotatedImages, setRotatedImages] = useState(page.rotatedImages || {}); // Çevrilmiş resimlerin takibi
+  const [sleeves, setSleeves] = useState(page.sleeves || {}); // Sleeve renkleri
+  const [sleevePickerCell, setSleevePickerCell] = useState(null); // { side, row, col }
+  const [sleevePickerFlip, setSleevePickerFlip] = useState(false);
   const [rotatedDefaultBackImage, setRotatedDefaultBackImage] = useState(null); // Çevrilmiş default arka yüz resmi
   const [urlInputValue, setUrlInputValue] = useState('');
   const [urlInputCell, setUrlInputCell] = useState(null); // {row, col, side: 'front'|'back'}
@@ -47,6 +62,8 @@ const Page = ({
   const [dragOverCell, setDragOverCell] = useState(null); // {side, row, col}
   const fileInputRefs = useRef({});
   const backFileInputRefs = useRef({});
+  const sleevePickerRef = useRef(null);
+  const colorPickerActiveRef = useRef(false);
 
   const wrapperRef = useRef(null);
 
@@ -141,6 +158,7 @@ const Page = ({
   const contentRef = useRef(content);
   const backContentRef = useRef(backContent);
   const rotatedImagesRef = useRef(rotatedImages);
+  const sleevesRef = useRef(sleeves);
 
   // State değişikliklerini ref'lere yansıt
   useEffect(() => {
@@ -155,6 +173,10 @@ const Page = ({
     rotatedImagesRef.current = rotatedImages;
   }, [rotatedImages]);
 
+  useEffect(() => {
+    sleevesRef.current = sleeves;
+  }, [sleeves]);
+
   // page prop'u değiştiğinde local state'i güncelle (localStorage'dan yüklendiğinde)
   // Her sayfa unique ID'ye sahip ve kendi verilerini tutmalı
   const prevPageIdRef = useRef(null);
@@ -165,7 +187,8 @@ const Page = ({
     const pageDataString = JSON.stringify({
       content: page.content,
       backContent: page.backContent,
-      rotatedImages: page.rotatedImages
+      rotatedImages: page.rotatedImages,
+      sleeves: page.sleeves,
     });
 
     // Sayfa ID'si değiştiyse veya sayfa verileri değiştiyse güncelle
@@ -178,34 +201,40 @@ const Page = ({
         setContent({});
         setBackContent({});
         setRotatedImages({});
+        setSleeves({});
+        setSleevePickerCell(null);
         contentRef.current = {};
         backContentRef.current = {};
         rotatedImagesRef.current = {};
+        sleevesRef.current = {};
       }
 
       // Yeni sayfanın verilerini yükle
       const newContent = page.content ? { ...page.content } : {};
       const newBackContent = page.backContent ? { ...page.backContent } : {};
       const newRotatedImages = page.rotatedImages ? { ...page.rotatedImages } : {};
+      const newSleeves = page.sleeves ? { ...page.sleeves } : {};
 
       setContent(newContent);
       setBackContent(newBackContent);
       setRotatedImages(newRotatedImages);
+      setSleeves(newSleeves);
 
       // Ref'leri de güncelle
       contentRef.current = newContent;
       backContentRef.current = newBackContent;
       rotatedImagesRef.current = newRotatedImages;
+      sleevesRef.current = newSleeves;
 
       prevPageIdRef.current = page.id;
       prevPageDataRef.current = pageDataString;
     }
-  }, [page.id, page.content, page.backContent, page.rotatedImages]); // Tüm sayfa verilerini dinle
+  }, [page.id, page.content, page.backContent, page.rotatedImages, page.sleeves]); // Tüm sayfa verilerini dinle
 
   // State güncellemesi yapıp onUpdate'i çağıran helper fonksiyon
   // Bu fonksiyon sadece belirtilen cep için güncelleme yapar
   // Sayfa ID kontrolü yaparak yanlış sayfaya kaydetmeyi önler
-  const updatePageWithState = useCallback((contentUpdate, backContentUpdate, rotatedImagesUpdate) => {
+  const updatePageWithState = useCallback((contentUpdate, backContentUpdate, rotatedImagesUpdate, sleevesUpdate) => {
     // Sayfa ID kontrolü - eğer sayfa değiştiyse güncelleme yapma
     const currentPageId = page.id;
     if (!currentPageId) {
@@ -214,7 +243,7 @@ const Page = ({
     }
 
     let updateCount = 0;
-    const totalUpdates = [contentUpdate, backContentUpdate, rotatedImagesUpdate].filter(u => u !== undefined).length;
+    const totalUpdates = [contentUpdate, backContentUpdate, rotatedImagesUpdate, sleevesUpdate].filter(u => u !== undefined).length;
 
     const callOnUpdate = () => {
       updateCount++;
@@ -229,6 +258,7 @@ const Page = ({
               content: contentRef.current,
               backContent: backContentRef.current,
               rotatedImages: rotatedImagesRef.current,
+              sleeves: sleevesRef.current,
               gridSize: page.gridSize || gridSize,
               cover: page.cover,
               isCover: page.isCover,
@@ -282,6 +312,18 @@ const Page = ({
         rotatedImagesRef.current = newRotatedImages;
         callOnUpdate();
         return newRotatedImages;
+      });
+    }
+
+    if (sleevesUpdate !== undefined) {
+      setSleeves((prevSleeves) => {
+        if (page.id !== currentPageId) {
+          return prevSleeves;
+        }
+        const newSleeves = typeof sleevesUpdate === 'function' ? sleevesUpdate(prevSleeves) : sleevesUpdate;
+        sleevesRef.current = newSleeves;
+        callOnUpdate();
+        return newSleeves;
       });
     }
   }, [page.id, page.gridSize, page.cover, page.isCover, page.transparent, page.order, gridSize, onUpdate]);
@@ -784,7 +826,16 @@ const Page = ({
         return newContent;
       },
       undefined,
-      undefined
+      (prevRotated) => {
+        const next = { ...prevRotated };
+        delete next[key];
+        return next;
+      },
+      (prevSleeves) => {
+        const next = { ...prevSleeves };
+        delete next[key];
+        return next;
+      }
     );
   };
 
@@ -846,8 +897,10 @@ const Page = ({
     const style = getComputedStyle(wrapper);
     const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
     const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    const wrapperWidth = Math.max(0, wrapper.clientWidth - padX);
-    const wrapperHeight = Math.max(0, wrapper.clientHeight - padY);
+    const hasSleeve = img.classList.contains('has-sleeve');
+    const sleeveInset = hasSleeve ? SLEEVE_RING_PX * 2 : 0;
+    const wrapperWidth = Math.max(0, wrapper.clientWidth - padX - sleeveInset);
+    const wrapperHeight = Math.max(0, wrapper.clientHeight - padY - sleeveInset);
 
     let rotationAngle = 0;
     if (img.classList.contains('rotated-90')) rotationAngle = 90;
@@ -909,6 +962,9 @@ const Page = ({
     return newRotated;
   };
 
+  const swapSleeveCells = (prevSleeves, fromKey, toKey, toHasImage) =>
+    swapRotationCells(prevSleeves, fromKey, toKey, toHasImage);
+
   const performCellMoveOrSwap = (from, to) => {
     if (!page.id || from.side !== to.side) return;
     if (from.row === to.row && from.col === to.col) return;
@@ -924,13 +980,15 @@ const Page = ({
       updatePageWithState(
         (prevContent) => swapContentCells(prevContent, fromKey, toKey),
         undefined,
-        (prevRotated) => swapRotationCells(prevRotated, fromRotKey, toRotKey, toHasImage)
+        (prevRotated) => swapRotationCells(prevRotated, fromRotKey, toRotKey, toHasImage),
+        (prevSleeves) => swapSleeveCells(prevSleeves, fromRotKey, toRotKey, toHasImage)
       );
     } else {
       updatePageWithState(
         undefined,
         (prevBackContent) => swapContentCells(prevBackContent, fromKey, toKey),
-        (prevRotated) => swapRotationCells(prevRotated, fromRotKey, toRotKey, toHasImage)
+        (prevRotated) => swapRotationCells(prevRotated, fromRotKey, toRotKey, toHasImage),
+        (prevSleeves) => swapSleeveCells(prevSleeves, fromRotKey, toRotKey, toHasImage)
       );
     }
   };
@@ -1116,7 +1174,239 @@ const Page = ({
     });
 
     return () => observer.disconnect();
-  }, [content, backContent, rotatedImages, fitImageToWrapper]);
+  }, [content, backContent, rotatedImages, sleeves, fitImageToWrapper]);
+
+  useLayoutEffect(() => {
+    if (!sleevePickerCell || !sleevePickerRef.current) {
+      setSleevePickerFlip(false);
+      return;
+    }
+
+    const picker = sleevePickerRef.current;
+    const controls = picker.closest('.cell-image-controls');
+    const buttonsRow = controls?.querySelector('.cell-image-controls-buttons');
+    const bounds = picker.closest('.page-grid') || picker.closest('.page-content');
+    if (!buttonsRow || !bounds) return;
+
+    const boundsRect = bounds.getBoundingClientRect();
+    const buttonsRect = buttonsRow.getBoundingClientRect();
+    const pickerHeight = picker.offsetHeight || 72;
+    const gap = 8;
+    const fitsBelow = buttonsRect.bottom + gap + pickerHeight <= boundsRect.bottom - 2;
+    const fitsAbove = buttonsRect.top - gap - pickerHeight >= boundsRect.top + 2;
+
+    setSleevePickerFlip(!fitsBelow && fitsAbove);
+  }, [sleevePickerCell, sleeves]);
+
+  useEffect(() => {
+    if (!sleevePickerCell) {
+      colorPickerActiveRef.current = false;
+      return undefined;
+    }
+    const handlePointerDownOutside = (e) => {
+      if (colorPickerActiveRef.current) return;
+      if (sleevePickerRef.current?.contains(e.target)) return;
+      setSleevePickerCell(null);
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener('pointerdown', handlePointerDownOutside);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('pointerdown', handlePointerDownOutside);
+    };
+  }, [sleevePickerCell]);
+
+  const handleSleeveButtonClick = (e, side, row, col) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (pointerEvents === 'none' || !isTopPage || !page.id) return;
+
+    const cellKey = getRotationKey(side, row, col);
+    const hasSleeve = !!sleeves[cellKey];
+
+    if (hasSleeve) {
+      setSleevePickerCell((prev) =>
+        prev?.side === side && prev?.row === row && prev?.col === col
+          ? null
+          : { side, row, col }
+      );
+      return;
+    }
+
+    updatePageWithState(
+      undefined,
+      undefined,
+      undefined,
+      (prevSleeves) => ({ ...prevSleeves, [cellKey]: DEFAULT_SLEEVE_COLOR })
+    );
+    setSleevePickerCell({ side, row, col });
+  };
+
+  const updateSleeveColor = (side, row, col, color) => {
+    const cellKey = getRotationKey(side, row, col);
+    updatePageWithState(
+      undefined,
+      undefined,
+      undefined,
+      (prevSleeves) => ({ ...prevSleeves, [cellKey]: color })
+    );
+  };
+
+  const handleSleeveRemove = (side, row, col) => {
+    const cellKey = getRotationKey(side, row, col);
+    updatePageWithState(
+      undefined,
+      undefined,
+      undefined,
+      (prevSleeves) => {
+        const next = { ...prevSleeves };
+        delete next[cellKey];
+        return next;
+      }
+    );
+    setSleevePickerCell(null);
+  };
+
+  const renderCellImage = (imageUrl, imageName, rotationKey, sleeveColor, wrapperClasses, extraImgClass = '') => {
+    const angle = rotatedImages[rotationKey] || 0;
+    const rotationClass = angle ? `rotated rotated-${angle}` : '';
+    const wrapperWithSleeve = sleeveColor
+      ? `${wrapperClasses} cell-image-wrapper--sleeve`
+      : wrapperClasses;
+
+    return (
+      <div className={wrapperWithSleeve} title={imageName || undefined}>
+        <img
+          src={imageUrl}
+          alt={imageName || ''}
+          className={[
+            'cell-image',
+            extraImgClass,
+            rotationClass,
+            sleeveColor ? 'has-sleeve' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          style={
+            sleeveColor
+              ? { '--sleeve-color': sleeveColor, '--sleeve-width': `${SLEEVE_RING_PX}px` }
+              : undefined
+          }
+          onLoad={(e) => {
+            const wrapper = e.target.closest('.cell-image-wrapper');
+            if (wrapper) fitImageToWrapper(e.target, wrapper);
+          }}
+        />
+      </div>
+    );
+  };
+
+  const renderSleevePicker = (side, row, col) => {
+    if (
+      !sleevePickerCell ||
+      sleevePickerCell.side !== side ||
+      sleevePickerCell.row !== row ||
+      sleevePickerCell.col !== col
+    ) {
+      return null;
+    }
+
+    const cellKey = getRotationKey(side, row, col);
+    const currentColor = sleeves[cellKey];
+
+    return (
+      <div
+        ref={sleevePickerRef}
+        className="cell-sleeve-picker"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="cell-sleeve-picker-presets">
+          {SLEEVE_PRESETS.map((color) => (
+            <button
+              key={color}
+              type="button"
+              className={`cell-sleeve-swatch${currentColor === color ? ' cell-sleeve-swatch--active' : ''}`}
+              style={{ backgroundColor: color }}
+              title={t('page.sleeveColor')}
+              onClick={(e) => {
+                e.stopPropagation();
+                updateSleeveColor(side, row, col, color);
+              }}
+            />
+          ))}
+          <label
+            className="cell-sleeve-custom"
+            title={t('page.sleeveColor')}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <input
+              type="color"
+              value={currentColor || DEFAULT_SLEEVE_COLOR}
+              onChange={(e) => updateSleeveColor(side, row, col, e.target.value)}
+              onFocus={() => {
+                colorPickerActiveRef.current = true;
+              }}
+              onBlur={() => {
+                setTimeout(() => {
+                  const active = document.activeElement;
+                  if (sleevePickerRef.current?.contains(active)) return;
+                  colorPickerActiveRef.current = false;
+                }, 300);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            />
+          </label>
+        </div>
+        {currentColor && (
+          <button
+            type="button"
+            className="cell-sleeve-remove"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSleeveRemove(side, row, col);
+            }}
+          >
+            {t('page.sleeveRemove')}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const isSleevePickerOpenAt = (side, row, col) =>
+    sleevePickerCell?.side === side &&
+    sleevePickerCell?.row === row &&
+    sleevePickerCell?.col === col;
+
+  const getImageControlsClassName = (side, row, col) => {
+    const open = isSleevePickerOpenAt(side, row, col);
+    return [
+      'cell-image-controls',
+      open && sleevePickerFlip ? 'cell-image-controls--picker-above' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  };
+
+  const renderSleeveButton = (side, row, col) => {
+    const cellKey = getRotationKey(side, row, col);
+    const hasSleeve = !!sleeves[cellKey];
+
+    return (
+      <button
+        type="button"
+        className={`cell-control-btn cell-control-sleeve${hasSleeve ? ' cell-control-sleeve--active' : ''}`}
+        style={hasSleeve ? { '--sleeve-btn-color': sleeves[cellKey] } : undefined}
+        onClick={(e) => handleSleeveButtonClick(e, side, row, col)}
+        title={hasSleeve ? t('page.sleeveColor') : t('page.sleeve')}
+      >
+        ▢
+      </button>
+    );
+  };
 
   const handleBackImageSelect = (e, row, col) => {
     // Alttaki sayfalar için işlemi engelle
@@ -1181,6 +1471,7 @@ const Page = ({
     }
     const key = `${row}-${col}`;
     // Sadece bu cep için güncelleme yap
+    const backRotKey = getRotationKey('back', row, col);
     updatePageWithState(
       undefined,
       (prevBackContent) => {
@@ -1188,7 +1479,16 @@ const Page = ({
         delete newContent[key];
         return newContent;
       },
-      undefined
+      (prevRotated) => {
+        const next = { ...prevRotated };
+        delete next[backRotKey];
+        return next;
+      },
+      (prevSleeves) => {
+        const next = { ...prevSleeves };
+        delete next[backRotKey];
+        return next;
+      }
     );
   };
 
@@ -1357,57 +1657,48 @@ const Page = ({
                   >
                     {isImage ? (
                       <>
-                        <div className={imageWrapperClasses} ref={wrapperRef} title={imageName || undefined}>
-                          <img
-                            src={imageUrl}
-                            alt={imageName || ''}
-                            className={`cell-image ${(() => {
-                              const angle = rotatedImages[key] || 0;
-                              return angle ? `rotated rotated-${angle}` : '';
-                            })()}`}
-                            onLoad={(e) => {
-                              const wrapper = e.target.closest('.cell-image-wrapper');
-                              if (wrapper) fitImageToWrapper(e.target, wrapper);
-                            }}
-                          />
-                        </div>
-                        <div className="cell-image-controls">
-                          <button
-                            type="button"
-                            className="cell-control-btn cell-control-rotate"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleRotateImage(e, row, col);
-                            }}
-                            title={t('page.rotateImage')}
-                          >
-                            ↻
-                          </button>
-                          <button
-                            type="button"
-                            className="cell-control-btn cell-control-remove"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleRemoveImage(e, row, col);
-                            }}
-                            title={t('page.removeImage')}
-                          >
-                            ×
-                          </button>
-                          <button
-                            type="button"
-                            className="cell-control-btn cell-control-replace"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleReplaceImage(e, row, col);
-                            }}
-                            title={t('page.replaceImage')}
-                          >
-                            +
-                          </button>
+                        {renderCellImage(imageUrl, imageName, key, sleeves[key], imageWrapperClasses)}
+                        <div className={getImageControlsClassName('front', row, col)}>
+                          <div className="cell-image-controls-buttons">
+                            {renderSleeveButton('front', row, col)}
+                            <button
+                              type="button"
+                              className="cell-control-btn cell-control-rotate"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleRotateImage(e, row, col);
+                              }}
+                              title={t('page.rotateImage')}
+                            >
+                              ↻
+                            </button>
+                            <button
+                              type="button"
+                              className="cell-control-btn cell-control-remove"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleRemoveImage(e, row, col);
+                              }}
+                              title={t('page.removeImage')}
+                            >
+                              ×
+                            </button>
+                            <button
+                              type="button"
+                              className="cell-control-btn cell-control-replace"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleReplaceImage(e, row, col);
+                              }}
+                              title={t('page.replaceImage')}
+                            >
+                              +
+                            </button>
+                          </div>
+                          {renderSleevePicker('front', row, col)}
                         </div>
                       </>
                     ) : isText ? (
@@ -1584,89 +1875,86 @@ const Page = ({
                   >
                     {isImage ? (
                       <>
-                        <div className={backImageWrapperClasses} title={backImageName || undefined}>
-                          <img
-                            src={displayImage}
-                            alt={backImageName || ''}
-                            className={`cell-image ${isDefaultImage ? 'default-image' : ''} ${(() => {
-                              const backRotationKey = `back-${backKey}`;
-                              const angle = rotatedImages[backRotationKey] || 0;
-                              return angle ? `rotated rotated-${angle}` : '';
-                            })()}`}
-                            onLoad={(e) => {
-                              const wrapper = e.target.closest('.cell-image-wrapper');
-                              if (wrapper) fitImageToWrapper(e.target, wrapper);
-                            }}
-                          />
-                        </div>
-                        <div className="cell-image-controls">
-                          {isDefaultImage ? (
-                            <>
-                              <button
-                                type="button"
-                                className="cell-control-btn cell-control-rotate"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleRotateBackImage(e, row, col);
-                                }}
-                                title={t('page.rotateImage')}
-                              >
-                                ↻
-                              </button>
-                              <button
-                                type="button"
-                                className="cell-control-btn cell-control-replace"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleBackCellClick(row, col);
-                                }}
-                                title={t('page.replaceImage')}
-                              >
-                                +
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                className="cell-control-btn cell-control-rotate"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleRotateBackImage(e, row, col);
-                                }}
-                                title={t('page.rotateImage')}
-                              >
-                                ↻
-                              </button>
-                              <button
-                                type="button"
-                                className="cell-control-btn cell-control-remove"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleRemoveBackImage(e, row, col);
-                                }}
-                                title={t('page.removeImage')}
-                              >
-                                ×
-                              </button>
-                              <button
-                                type="button"
-                                className="cell-control-btn cell-control-replace"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleReplaceBackImage(e, row, col);
-                                }}
-                                title={t('page.replaceImage')}
-                              >
-                                +
-                              </button>
-                            </>
-                          )}
+                        {renderCellImage(
+                          displayImage,
+                          backImageName,
+                          `back-${backKey}`,
+                          !isDefaultImage ? sleeves[`back-${backKey}`] : null,
+                          backImageWrapperClasses,
+                          isDefaultImage ? 'default-image' : ''
+                        )}
+                        <div className={getImageControlsClassName('back', row, col)}>
+                          <div className="cell-image-controls-buttons">
+                            {isDefaultImage ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="cell-control-btn cell-control-rotate"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRotateBackImage(e, row, col);
+                                  }}
+                                  title={t('page.rotateImage')}
+                                >
+                                  ↻
+                                </button>
+                                <button
+                                  type="button"
+                                  className="cell-control-btn cell-control-replace"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleBackCellClick(row, col);
+                                  }}
+                                  title={t('page.replaceImage')}
+                                >
+                                  +
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                {renderSleeveButton('back', row, col)}
+                                <button
+                                  type="button"
+                                  className="cell-control-btn cell-control-rotate"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRotateBackImage(e, row, col);
+                                  }}
+                                  title={t('page.rotateImage')}
+                                >
+                                  ↻
+                                </button>
+                                <button
+                                  type="button"
+                                  className="cell-control-btn cell-control-remove"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRemoveBackImage(e, row, col);
+                                  }}
+                                  title={t('page.removeImage')}
+                                >
+                                  ×
+                                </button>
+                                <button
+                                  type="button"
+                                  className="cell-control-btn cell-control-replace"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleReplaceBackImage(e, row, col);
+                                  }}
+                                  title={t('page.replaceImage')}
+                                >
+                                  +
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          {!isDefaultImage && renderSleevePicker('back', row, col)}
                         </div>
                       </>
                     ) : urlInputCell && urlInputCell.row === row && urlInputCell.col === col && urlInputCell.side === 'back' ? (
