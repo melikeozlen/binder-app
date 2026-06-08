@@ -6,6 +6,7 @@ import {
   getGalleryFolderList,
   getItemFileLabel,
   truncateGalleryName,
+  matchesGallerySearch,
 } from '../utils/galleryParse';
 import { isGalleryItemInBinder } from '../utils/binderImages';
 import {
@@ -81,22 +82,29 @@ const GalleryWithFolders = ({
   }, [selectedFolder, normalizedItems]);
 
   const filteredFolders = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) return folderList;
-    return folderList.filter((f) => f.name.toLowerCase().includes(q));
+    if (!searchTerm.trim()) return folderList;
+    return folderList.filter((f) => matchesGallerySearch(f.name, searchTerm));
   }, [folderList, searchTerm]);
 
   const filteredItems = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) return displayItems;
+    if (!searchTerm.trim()) return displayItems;
     return displayItems.filter((item) => {
-      const nameMatch = item.name.toLowerCase().includes(q);
+      const nameMatch = matchesGallerySearch(item.name, searchTerm);
       const fileMatch =
         selectedFolder === GALLERY_ALL_KEY &&
-        item.fileLabel.toLowerCase().includes(q);
+        matchesGallerySearch(item.fileLabel, searchTerm);
       return nameMatch || fileMatch;
     });
   }, [displayItems, searchTerm, selectedFolder]);
+
+  const getFolderAccentHue = (folderName) => {
+    let hash = 0;
+    for (let i = 0; i < folderName.length; i += 1) {
+      hash = folderName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hues = [330, 280, 220, 185, 155, 45, 15, 260];
+    return hues[Math.abs(hash) % hues.length];
+  };
 
   const isBackImage = variant === 'back-image';
   const prefix = isBackImage ? 'back-image-gallery' : 'gallery';
@@ -253,6 +261,7 @@ const GalleryWithFolders = ({
           handleSelectFolder(GALLERY_ALL_KEY);
         }}
       >
+        <span className="gallery-folder-card-icon" aria-hidden="true">✦</span>
         <span className="gallery-folder-card-name">{allLabel}</span>
         <span className="gallery-folder-card-count">
           {t('settings.galleryCount', { count: normalizedItems.length })}
@@ -263,11 +272,14 @@ const GalleryWithFolders = ({
           key={folder.name}
           type="button"
           className="gallery-folder-card"
+          style={{ '--folder-accent': `${getFolderAccentHue(folder.name)}` }}
           onClick={(e) => {
             e.stopPropagation();
             handleSelectFolder(folder.name);
           }}
         >
+          <span className="gallery-folder-card-tab" aria-hidden="true" />
+          <span className="gallery-folder-card-icon" aria-hidden="true">📁</span>
           <span className="gallery-folder-card-name" title={folder.name}>
             {folder.name}
           </span>

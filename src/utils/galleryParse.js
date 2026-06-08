@@ -68,3 +68,13 @@ export const truncateGalleryName = (name, maxLength = 15) => {
   if (name.length <= maxLength) return name;
   return `${name.substring(0, maxLength)}...`;
 };
+
+/** Boşlukla ayrılmış kelimelerin hepsinin metinde geçip geçmediğini kontrol eder */
+export const matchesGallerySearch = (text, searchTerm) => {
+  const query = (searchTerm || '').trim().toLowerCase();
+  if (!query) return true;
+
+  const haystack = (text || '').toLowerCase();
+  const tokens = query.split(/\s+/).filter(Boolean);
+  return tokens.every((token) => haystack.includes(token));
+};
