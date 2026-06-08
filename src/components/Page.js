@@ -65,8 +65,6 @@ const Page = ({
   const sleevePickerRef = useRef(null);
   const colorPickerActiveRef = useRef(false);
 
-  const wrapperRef = useRef(null);
-
   (function () {
     let el = null;
     let observer = null;
