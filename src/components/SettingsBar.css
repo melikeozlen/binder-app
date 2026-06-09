@@ -771,6 +771,46 @@
 }
 
 
+/* Mobil yatay: üst çubuk daha kompakt, binder + footer için yer aç */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .settings-bar {
+    gap: 0.2rem;
+    padding: 0.15rem 0.3rem;
+  }
+
+  .settings-bar .setting-label {
+    display: none;
+  }
+
+  .settings-control {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.25rem;
+  }
+
+  .action-button {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.6rem;
+  }
+
+  .color-input {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ratio-input {
+    width: 38px;
+  }
+
+  .grid-input {
+    width: 36px;
+  }
+
+  .binder-select {
+    min-width: 90px;
+    max-width: 140px;
+  }
+}
+
 @media (max-width: 768px) {
   .settings-bar {
     gap: 0.4rem;
