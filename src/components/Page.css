@@ -713,7 +713,7 @@
   background-color: transparent;
   display: block;
   position: relative;
-  border-radius: 10px;
+  border-radius: 8px;
   /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
   z-index: inherit;
   pointer-events: none; /* Resim tıklamalarını engelle, sadece butonlar tıklanabilir */
