@@ -74,6 +74,7 @@ const SettingsBar = ({
   const [showBinderMenu, setShowBinderMenu] = useState(false);
   const [editingBinderId, setEditingBinderId] = useState(null);
   const [editingBinderName, setEditingBinderName] = useState('');
+  const [mobileSettingsExpanded, setMobileSettingsExpanded] = useState(false);
   
   // widthRatio ve heightRatio ref'lerini güncelle
   useEffect(() => {
@@ -307,7 +308,8 @@ const SettingsBar = ({
   };
 
   return (
-    <div className="settings-bar">
+    <div className={`settings-bar${mobileSettingsExpanded ? ' settings-bar--expanded' : ''}`}>
+      <div className="settings-bar-primary">
       {/* Fullscreen butonu - En solda */}
       {onToggleFullscreen && (
         <div className="setting-item">
@@ -422,6 +424,31 @@ const SettingsBar = ({
           </div>
         )}
       </div>
+
+      <div className="setting-item settings-add-page-mobile">
+        <button
+          className="settings-control action-button settings-add-page-btn"
+          onClick={() => onAddPage()}
+          disabled={!gridSize}
+        >
+          {t('settings.addPage')}
+        </button>
+      </div>
+
+      <div className="setting-item settings-mobile-toggle-item">
+        <button
+          type="button"
+          className="settings-mobile-toggle-btn"
+          onClick={() => setMobileSettingsExpanded((v) => !v)}
+          title={mobileSettingsExpanded ? t('settings.showLess') : t('settings.moreSettings')}
+          aria-expanded={mobileSettingsExpanded}
+        >
+          {mobileSettingsExpanded ? '▲' : '▼'}
+        </button>
+      </div>
+      </div>
+
+      <div className="settings-bar-secondary">
       <div className="setting-item">
         <select
           value={binderType}
@@ -733,7 +760,7 @@ const SettingsBar = ({
           onClick={() => textFileInputRef.current?.click()}
           title={t('settings.loadTextFileHelp')}
         >
-          📄 {t('settings.loadTextFile')}
+          📄 <span className="icon-button-label">{t('settings.loadTextFile')}</span>
         </button>
       </div>
       
@@ -930,7 +957,7 @@ const SettingsBar = ({
         document.body
       )}
       
-      <div className="setting-item">
+      <div className="setting-item settings-add-page-desktop">
         <button
           className="settings-control action-button"
           onClick={() => onAddPage()}
@@ -939,7 +966,7 @@ const SettingsBar = ({
           {t('settings.addPage')}
         </button>
       </div>
-      
+
       <div className="setting-item">
         <button
           className="settings-control action-button danger-button"
@@ -950,7 +977,7 @@ const SettingsBar = ({
           {t('settings.deletePages') || 'Sayfaları Sil'}
         </button>
       </div>
-      
+      </div>
 
       {/* Renk Seçici Modal - Mobil için */}
       {showColorPicker && createPortal(

@@ -121,7 +121,7 @@ body {
 /* ——— Mobil & tablet: header + binder + footer her zaman sığsın ——— */
 @media (max-width: 1024px) {
   :root {
-    --app-chrome-max-header: 40dvh;
+    --app-chrome-max-header: 28dvh;
     --app-chrome-max-footer: 24dvh;
   }
 
@@ -220,7 +220,7 @@ body {
 /* Küçük telefon dikey */
 @media (max-width: 480px) and (orientation: portrait) {
   :root {
-    --app-chrome-max-header: 42dvh;
+    --app-chrome-max-header: 32dvh;
     --app-chrome-max-footer: 20dvh;
   }
 }
