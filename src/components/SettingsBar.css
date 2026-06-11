@@ -66,21 +66,50 @@
 
   .settings-bar-primary {
     flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.2rem;
   }
 
   .settings-bar-primary .binder-selector {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
+    max-width: min(36vw, 108px);
   }
 
   .settings-bar-primary .binder-selector-wrapper {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .settings-bar-primary .binder-select {
-    flex: 1;
+    flex: 0 1 auto;
+    width: auto;
     min-width: 0;
-    max-width: none;
+    max-width: min(30vw, 88px);
+    font-size: 0.6rem;
+    padding: 0.15rem 1.2rem 0.15rem 0.25rem;
+  }
+
+  .settings-bar-primary .binder-menu-btn {
+    flex-shrink: 0;
+    padding: 0.12rem 0.22rem;
+    font-size: 0.7rem;
+  }
+
+  .settings-bar-primary .fullscreen-toggle-btn-left,
+  .settings-bar-primary .footer-toggle-btn {
+    width: 26px !important;
+    height: 24px !important;
+    flex-shrink: 0;
+  }
+
+  .settings-bar-primary .setting-item {
+    flex-shrink: 0;
+  }
+
+  .settings-add-page-mobile {
+    flex-shrink: 0;
   }
 
   .settings-bar-secondary {
@@ -104,13 +133,12 @@
   }
 
   .settings-mobile-toggle-item {
-    margin-left: auto;
     flex-shrink: 0;
   }
 
   .settings-mobile-toggle-btn {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 24px;
     border-radius: 4px;
     border: 1px solid #ccc;
     background-color: #fff;
@@ -143,8 +171,25 @@
 
   .settings-add-page-btn {
     white-space: nowrap;
-    padding: 0.2rem 0.35rem;
-    font-size: 0.65rem;
+    padding: 0.15rem 0.3rem;
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-bar-primary .binder-selector {
+    max-width: min(32vw, 96px);
+  }
+
+  .settings-bar-primary .binder-select {
+    max-width: min(26vw, 76px);
+    font-size: 0.58rem;
+    padding: 0.12rem 1rem 0.12rem 0.2rem;
+  }
+
+  .settings-add-page-btn {
+    padding: 0.12rem 0.22rem;
+    font-size: 0.58rem;
   }
 }
 
@@ -949,9 +994,9 @@
     width: 36px;
   }
 
-  .binder-select {
-    min-width: 90px;
-    max-width: 140px;
+  .settings-bar-primary .binder-select {
+    max-width: min(28vw, 80px);
+    min-width: 0;
   }
 }
 
@@ -1304,16 +1349,142 @@
   background: transparent;
 }
 
-@media (max-width: 768px) {
-  .binder-select {
-    min-width: 100px;
-    max-width: 150px;
+/* Mobil binder menüsü — header overflow dışında tam panel */
+.binder-menu-mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  background: rgba(0, 0, 0, 0.4);
+  padding:
+    env(safe-area-inset-top, 0)
+    env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0)
+    env(safe-area-inset-left, 0);
+}
+
+.binder-menu-mobile-panel {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  max-height: min(82dvh, 560px);
+  align-self: stretch;
+  background: #fff;
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.binder-menu-mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.binder-menu-mobile-header h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.binder-menu-mobile-close {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #444;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.binder-menu--mobile {
+  position: static;
+  top: auto;
+  left: auto;
+  margin: 0;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  max-height: none;
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+}
+
+.binder-menu--mobile .binder-menu-section {
+  width: 100%;
+  padding: 0 0.85rem;
+  box-sizing: border-box;
+}
+
+.binder-menu--mobile .binder-menu-item,
+.binder-menu--mobile .binder-menu-action-row,
+.binder-menu--mobile .binder-menu-item-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.binder-menu--mobile .binder-menu-divider {
+  margin-left: 0.85rem;
+  margin-right: 0.85rem;
+}
+
+@media (max-width: 1024px) {
+  .binder-menu-item-actions {
+    opacity: 1;
   }
-  
-  .binder-menu {
+
+  .binder-menu-action-btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .binder-edit-action-btn {
+    min-width: 34px;
+    height: 34px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .settings-bar-primary .binder-select {
+    max-width: min(30vw, 88px);
+  }
+
+  .binder-menu:not(.binder-menu--mobile) {
     min-width: 200px;
     max-width: 260px;
     padding: 0.4rem 0;
+  }
+
+  .binder-menu--mobile {
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+    padding: 0.5rem 0 0.75rem;
   }
 
   .binder-menu-section {

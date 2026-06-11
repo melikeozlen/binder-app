@@ -82,7 +82,18 @@ const SettingsBar = ({
   const [editingBinderId, setEditingBinderId] = useState(null);
   const [editingBinderName, setEditingBinderName] = useState('');
   const [mobileSettingsExpanded, setMobileSettingsExpanded] = useState(false);
-  
+  const [isMobileLayout, setIsMobileLayout] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1024px)');
+    const update = () => setIsMobileLayout(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
   // widthRatio ve heightRatio ref'lerini güncelle
   useEffect(() => {
     widthRatioRef.current = widthRatio;
@@ -322,6 +333,143 @@ const SettingsBar = ({
     setShowBinderMenu(false);
   };
 
+  const renderBinderMenu = (extraClassName = '') => (
+    <div className={`binder-menu${extraClassName ? ` ${extraClassName}` : ''}`}>
+      <div className="binder-menu-section binder-menu-section--actions">
+        <p className="binder-menu-section-label">{t('binder.menuActions')}</p>
+        <button
+          className="binder-menu-item binder-menu-item--primary"
+          onClick={() => {
+            onCreateBinder && onCreateBinder();
+            setShowBinderMenu(false);
+          }}
+        >
+          + {t('binder.newBinder')}
+        </button>
+        <div className="binder-menu-action-row">
+          <button
+            className="binder-menu-item binder-menu-item--secondary"
+            onClick={() => {
+              onExportBinder && onExportBinder();
+              setShowBinderMenu(false);
+            }}
+            disabled={!selectedBinderId}
+          >
+            ⬇ {t('binder.exportBinder')}
+          </button>
+          <button
+            className="binder-menu-item binder-menu-item--secondary"
+            onClick={() => {
+              binderImportInputRef.current?.click();
+            }}
+          >
+            ⬆ {t('binder.importBinder')}
+          </button>
+        </div>
+      </div>
+
+      <input
+        ref={binderImportInputRef}
+        type="file"
+        accept=".json,.binder.json,application/json"
+        className="binder-import-input"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && onImportBinder) {
+            onImportBinder(file);
+            setShowBinderMenu(false);
+          }
+          e.target.value = '';
+        }}
+      />
+
+      <div className="binder-menu-divider" role="separator" />
+
+      <div className="binder-menu-section binder-menu-section--list">
+        <p className="binder-menu-section-label">{t('binder.menuBinders')}</p>
+        {binders.map(binder => (
+          <div
+            key={binder.id}
+            className={`binder-menu-item-wrapper${binder.id === selectedBinderId ? ' binder-menu-item-wrapper--selected' : ''}`}
+            onClick={() => handleBinderItemSelect(binder.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleBinderItemSelect(binder.id);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            title={t('binder.selectBinder')}
+          >
+            {editingBinderId === binder.id ? (
+              <div className="binder-edit-input-wrapper">
+                <input
+                  type="text"
+                  value={editingBinderName}
+                  onChange={(e) => setEditingBinderName(e.target.value)}
+                  onKeyDown={handleBinderNameKeyDown}
+                  onBlur={handleBinderNameSave}
+                  className="binder-edit-input"
+                  placeholder={t('binder.binderNamePlaceholder')}
+                  autoFocus
+                />
+                <button
+                  className="binder-edit-action-btn binder-edit-save-btn"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleBinderNameSave}
+                  title={t('binder.save')}
+                >
+                  ✓
+                </button>
+                <button
+                  className="binder-edit-action-btn binder-edit-cancel-btn"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleBinderNameCancel}
+                  title={t('binder.cancel')}
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className="binder-menu-item-content">
+                <span className="binder-menu-item-text">{binder.name}</span>
+                <div className="binder-menu-item-actions">
+                  <button
+                    className="binder-menu-action-btn binder-menu-edit-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingBinderId(binder.id);
+                      setEditingBinderName(binder.name);
+                    }}
+                    title={t('binder.renameBinder')}
+                  >
+                    ✎
+                  </button>
+                  {binders.length > 1 && (
+                    <button
+                      className="binder-menu-action-btn binder-menu-delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(t('binder.deleteBinderConfirm'))) {
+                          onDeleteBinder && onDeleteBinder(binder.id);
+                          setShowBinderMenu(false);
+                        }
+                      }}
+                      title={t('binder.deleteBinder')}
+                    >
+                      🗑
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className={`settings-bar${mobileSettingsExpanded ? ' settings-bar--expanded' : ''}`}>
       <div className="settings-bar-primary">
@@ -376,141 +524,8 @@ const SettingsBar = ({
           </button>
         </div>
         
-        {/* Binder menüsü */}
-        {showBinderMenu && (
-          <div className="binder-menu">
-            <div className="binder-menu-section binder-menu-section--actions">
-              <p className="binder-menu-section-label">{t('binder.menuActions')}</p>
-              <button
-                className="binder-menu-item binder-menu-item--primary"
-                onClick={() => {
-                  onCreateBinder && onCreateBinder();
-                  setShowBinderMenu(false);
-                }}
-              >
-                + {t('binder.newBinder')}
-              </button>
-              <div className="binder-menu-action-row">
-                <button
-                  className="binder-menu-item binder-menu-item--secondary"
-                  onClick={() => {
-                    onExportBinder && onExportBinder();
-                    setShowBinderMenu(false);
-                  }}
-                  disabled={!selectedBinderId}
-                >
-                  ⬇ {t('binder.exportBinder')}
-                </button>
-                <button
-                  className="binder-menu-item binder-menu-item--secondary"
-                  onClick={() => {
-                    binderImportInputRef.current?.click();
-                  }}
-                >
-                  ⬆ {t('binder.importBinder')}
-                </button>
-              </div>
-            </div>
-
-            <input
-              ref={binderImportInputRef}
-              type="file"
-              accept=".json,.binder.json,application/json"
-              className="binder-import-input"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file && onImportBinder) {
-                  onImportBinder(file);
-                  setShowBinderMenu(false);
-                }
-                e.target.value = '';
-              }}
-            />
-
-            <div className="binder-menu-divider" role="separator" />
-
-            <div className="binder-menu-section binder-menu-section--list">
-              <p className="binder-menu-section-label">{t('binder.menuBinders')}</p>
-              {binders.map(binder => (
-              <div
-                key={binder.id}
-                className={`binder-menu-item-wrapper${binder.id === selectedBinderId ? ' binder-menu-item-wrapper--selected' : ''}`}
-                onClick={() => handleBinderItemSelect(binder.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleBinderItemSelect(binder.id);
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-                title={t('binder.selectBinder')}
-              >
-                {editingBinderId === binder.id ? (
-                  <div className="binder-edit-input-wrapper">
-                    <input
-                      type="text"
-                      value={editingBinderName}
-                      onChange={(e) => setEditingBinderName(e.target.value)}
-                      onKeyDown={handleBinderNameKeyDown}
-                      onBlur={handleBinderNameSave}
-                      className="binder-edit-input"
-                      placeholder={t('binder.binderNamePlaceholder')}
-                      autoFocus
-                    />
-                    <button
-                      className="binder-edit-action-btn binder-edit-save-btn"
-                      onClick={handleBinderNameSave}
-                      title={t('binder.save')}
-                    >
-                      ✓
-                    </button>
-                    <button
-                      className="binder-edit-action-btn binder-edit-cancel-btn"
-                      onClick={handleBinderNameCancel}
-                      title={t('binder.cancel')}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ) : (
-                  <div className="binder-menu-item-content">
-                    <span className="binder-menu-item-text">{binder.name}</span>
-                    <div className="binder-menu-item-actions">
-                      <button
-                        className="binder-menu-action-btn binder-menu-edit-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingBinderId(binder.id);
-                          setEditingBinderName(binder.name);
-                        }}
-                        title={t('binder.renameBinder')}
-                      >
-                        ✎
-                      </button>
-                      {binders.length > 1 && (
-                        <button
-                          className="binder-menu-action-btn binder-menu-delete-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(t('binder.deleteBinderConfirm'))) {
-                              onDeleteBinder && onDeleteBinder(binder.id);
-                              setShowBinderMenu(false);
-                            }
-                          }}
-                          title={t('binder.deleteBinder')}
-                        >
-                          🗑
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-            </div>
-          </div>
-        )}
+        {/* Binder menüsü — masaüstü: dropdown */}
+        {showBinderMenu && !isMobileLayout && renderBinderMenu()}
       </div>
 
       <div className="setting-item settings-add-page-mobile">
@@ -1166,12 +1181,40 @@ const SettingsBar = ({
         document.body
       )}
       
-      {/* Binder menüsü dışına tıklandığında kapat */}
-      {showBinderMenu && (
-        <div 
+      {/* Binder menüsü dışına tıklandığında kapat — masaüstü */}
+      {showBinderMenu && !isMobileLayout && (
+        <div
           className="binder-menu-backdrop"
           onClick={() => setShowBinderMenu(false)}
         />
+      )}
+
+      {/* Binder menüsü — mobil: tam panel */}
+      {showBinderMenu && isMobileLayout && createPortal(
+        <div
+          className="binder-menu-mobile-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowBinderMenu(false);
+            }
+          }}
+        >
+          <div className="binder-menu-mobile-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="binder-menu-mobile-header">
+              <h3>{t('binder.selectBinder')}</h3>
+              <button
+                type="button"
+                className="binder-menu-mobile-close"
+                onClick={() => setShowBinderMenu(false)}
+                aria-label={t('binder.cancel')}
+              >
+                ×
+              </button>
+            </div>
+            {renderBinderMenu('binder-menu--mobile')}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
