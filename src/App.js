@@ -986,6 +986,13 @@ function App() {
   // defaultBackImage IndexedDB'den yükle (async olduğu için başlangıçta null)
   const [defaultBackImage, setDefaultBackImage] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [footerVisible, setFooterVisible] = useState(() => {
+    try {
+      return localStorage.getItem('binder-footer-visible') !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const [pages, setPages] = useState([]);
   
   // Binder değiştiğinde ayarları ve sayfaları yükle
@@ -2068,8 +2075,22 @@ function App() {
     }
   };
 
+  const toggleFooterVisibility = () => {
+    setFooterVisible((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('binder-footer-visible', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className={`App ${isFullscreen ? 'fullscreen-mode' : ''}`}>
+    <div
+      className={`App ${isFullscreen ? 'fullscreen-mode' : ''} ${!footerVisible ? 'footer-hidden' : ''}`}
+    >
       <SettingsBar
         binderColor={binderColor}
         ringColor={ringColor}
@@ -2112,6 +2133,8 @@ function App() {
         binderUsedImages={binderUsedImages}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
+        footerVisible={footerVisible}
+        onToggleFooter={toggleFooterVisibility}
       />
       <PageOrderBar
         pages={sortedPages}

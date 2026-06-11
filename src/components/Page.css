@@ -144,17 +144,16 @@
 
 .page-back .grid-cell {
   pointer-events: auto;
-  /* Arka yüz pocket çizgileri ön yüzle aynı kalsın */
-  border-top: 3px dashed rgba(205, 205, 205, 0.95);
-  border-left: 3px dashed rgba(205, 205, 205, 0.95);
+  border-top: 3px dashed #cdcdcdf2;
+  border-left: 3px dashed #cdcdcdf2;
 }
 
 .page-back .grid-cell.cell-last-col {
-  border-right: 3px dashed rgba(205, 205, 205, 0.95);
+  border-right: 3px dashed #cdcdcdf2;
 }
 
 .page-back .grid-cell.cell-last-row {
-  border-bottom: 3px dashed rgba(205, 205, 205, 0.95);
+  border-bottom: 3px dashed #cdcdcdf2;
 }
 
 .page-container.flipped .page-front {
@@ -360,42 +359,41 @@
 
 /* Ring delikleri alanı - grid'in dışında */
 .page-holes {
-  width: 40px;
-  min-width: 40px;
+  width: var(--page-holes-width, 40px);
+  min-width: var(--page-holes-width, 40px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-evenly;
-  padding: 15px 10px;
+  padding: clamp(4px, 3%, 15px) clamp(2px, 2%, 10px);
   background-color: rgba(255, 255, 255, 0.5);
   position: relative;
+  flex-shrink: 0;
   /* Ring delikleri alanı tıklamaları engellemeli */
   pointer-events: auto;
 }
 
 .holes-left {
-  border-left: 3px dashed rgba(240, 240, 240, 0.95); /* Sol sayfada delikler sağ kenarda, sol kenarda border */
+  border-left: 3px dashed rgba(240, 240, 240, 0.95);
   border-right: none;
-  /* Dikiş izine hafif shadow */
   box-shadow: -1px 0 1px rgba(0, 0, 0, 0.06);
 }
 
 .holes-right {
-  border-right: 3px dashed rgba(240, 240, 240, 0.95); /* Sağ sayfada delikler sol kenarda, sağ kenarda border */
+  border-right: 3px dashed rgba(240, 240, 240, 0.95);
   border-left: none;
-  /* Dikiş izine hafif shadow */
   box-shadow: 1px 0 1px rgba(0, 0, 0, 0.06);
 }
 
 .ring-hole {
-  width: 20px;
-  height: 20px;
+  width: var(--ring-hole-size, 20px);
+  height: var(--ring-hole-size, 20px);
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 1);
-  border: 2px solid rgba(255, 255, 255, 1);
-  box-shadow: 
-    inset 0 1px 3px rgba(0, 0, 0, 0.3),
-    0 1px 2px rgba(0, 0, 0, 0.2);
+  border: max(1px, calc(var(--ring-hole-size, 20px) * 0.1)) solid rgba(255, 255, 255, 1);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.28),
+    0 1px 1px rgba(0, 0, 0, 0.18);
   flex-shrink: 0;
   position: relative;
 }
@@ -406,8 +404,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
+  width: var(--ring-hole-inner, 8px);
+  height: var(--ring-hole-inner, 8px);
   border-radius: 50%;
   background: transparent;
   border: 1px solid rgba(0, 0, 0, 0.2);
@@ -465,28 +463,6 @@
   opacity: 0.3;
 }
 
-.page-leaf-number {
-  position: absolute;
-  bottom: 4px;
-  font-size: 8px;
-  font-weight: 450;
-  color: rgba(0, 0, 0, 0.4);
-  background-color: transparent;
-  padding: 1px 4px;
-  border-radius: 2px;
-  z-index: 1001;
-  pointer-events: none;
-  user-select: none;
-}
-
-.page-leaf-number-left {
-  left: 8px;
-}
-
-.page-leaf-number-right {
-  right: 8px;
-}
-
 .page-grid {
   display: grid;
   gap: 0px;
@@ -521,7 +497,7 @@
 
 .grid-cell {
   border: none;
-  border-radius: 0px;
+  border-radius: 0;
   background-color: rgba(255, 255, 255, 0.2);
   cursor: pointer;
   display: flex;
@@ -532,21 +508,19 @@
   overflow: hidden;
   padding: 2px;
   box-sizing: border-box;
-  /* Üst + sol: komşu hücrelerde tek çizgi; dış kenar için sağ/alt sınıflarla */
-  border: none;
-  border-top: 3px dashed rgba(205, 205, 205, 0.95);
-  border-left: 3px dashed rgba(205, 205, 205, 0.95);
+  border-top: 3px dashed #cdcdcdf2;
+  border-left: 3px dashed #cdcdcdf2;
   box-shadow: none;
   pointer-events: auto;
   z-index: inherit;
 }
 
 .grid-cell.cell-last-col {
-  border-right: 3px dashed rgba(205, 205, 205, 0.95);
+  border-right: 3px dashed #cdcdcdf2;
 }
 
 .grid-cell.cell-last-row {
-  border-bottom: 3px dashed rgba(205, 205, 205, 0.95);
+  border-bottom: 3px dashed #cdcdcdf2;
 }
 
 /* Resim içeren grid-cell'lerde cursor default - sadece butonlarla işlem yapılır */
@@ -663,11 +637,11 @@
   align-items: center;
   justify-content: center;
   background-color: rgba(255, 255, 255, 0.10);
-  padding: 2px 2px 1px 2px;
+  padding: 2px;
   box-sizing: border-box;
   overflow: hidden;
-  /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
-  z-index: inherit;
+  z-index: 1;
+  border: none;
 }
 
 /* Yatay uzun cepler için resim hizalaması */
@@ -1142,25 +1116,19 @@
   }
 
   .page-content {
-    padding: 14px 9px 6px 9px;
+    padding: 10px 6px 5px 6px;
     min-height: 0;
     overflow: hidden;
   }
 
-  .page-holes {
-    width: 22px;
-    min-width: 22px;
-    padding: 6px 3px;
-  }
-
-  .ring-hole {
-    width: 12px;
-    height: 12px;
+  .page-number {
+    font-size: 7px;
   }
 
   .page-grid {
     min-height: 0;
   }
+
 
   .grid-cell,
   .grid-1x1 .grid-cell,
@@ -1168,6 +1136,7 @@
   .grid-3x3 .grid-cell,
   .grid-4x4 .grid-cell {
     min-height: 0;
+    padding: 1px;
   }
 
   .gallery-content {
@@ -1200,6 +1169,54 @@
     height: auto;
     flex: 1;
     min-height: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-content {
+    padding: 5px 3px 3px 3px;
+  }
+
+  .page-number {
+    font-size: 6px;
+    padding: 0 2px;
+  }
+
+  .page-number-left {
+    left: 4px;
+  }
+
+  .page-number-right {
+    right: 4px;
+  }
+
+  .page-flip-button {
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
+    top: 4px;
+  }
+
+  .page-flip-forward {
+    right: 18px;
+  }
+
+  .page-flip-back {
+    right: 34px;
+  }
+
+  .grid-cell,
+  .grid-1x1 .grid-cell,
+  .grid-2x2 .grid-cell,
+  .grid-3x3 .grid-cell,
+  .grid-4x4 .grid-cell {
+    padding: 0;
+  }
+
+  .cell-control-btn {
+    width: 15px;
+    height: 15px;
+    font-size: 8px;
   }
 }
 

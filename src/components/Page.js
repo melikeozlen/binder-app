@@ -35,7 +35,6 @@ const Page = ({
   pageZIndex = 1,
   frontPageNumber = null,
   backPageNumber = null,
-  leafNumber = null,
   isTopPage = true,
   imageInputMode = 'defaultGallery',
   galleryUrls = [],
@@ -1762,12 +1761,6 @@ const Page = ({
                 {frontPageNumber}
               </div>
             )}
-            {/* Yaprak numarası - ön yüz, sağ sayfa */}
-            {leafNumber !== null && shouldShowFront && (
-              <div className="page-leaf-number page-leaf-number-right">
-                {t('binder.leaf')} {leafNumber}
-              </div>
-            )}
           </div>
         </div>
 
@@ -2005,12 +1998,6 @@ const Page = ({
             {backPageNumber !== null && shouldShowBack && (
               <div className={`page-number ${coverSide === 'left' ? 'page-number-right' : 'page-number-left'} ${isTopPage ? '' : 'page-number-hidden'}`}>
                 {backPageNumber}
-              </div>
-            )}
-            {/* Yaprak numarası - arka yüz, sol sayfa */}
-            {leafNumber !== null && shouldShowBack && (
-              <div className="page-leaf-number page-leaf-number-left">
-                {t('binder.leaf')} {leafNumber}
               </div>
             )}
           </div>

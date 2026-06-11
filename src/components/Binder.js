@@ -411,7 +411,6 @@ const Binder = ({
                 pageZIndex={1000}
                 frontPageNumber={null}
                 backPageNumber={leftPageNumber}
-                leafNumber={currentSpreadIndex}
                 isTopPage={true}
                 imageInputMode={imageInputMode}
                 galleryUrls={galleryUrls}
@@ -480,7 +479,6 @@ const Binder = ({
                 binderId={binderId}
                 frontPageNumber={rightPageNumber}
                 backPageNumber={null}
-                leafNumber={currentSpreadIndex + 1}
                 isTopPage={true}
                 onUpdate={onPageUpdate}
                 onGridEdit={() => onPageGridEdit && onPageGridEdit(rightPage.id, rightPage.gridSize || '2x2')}

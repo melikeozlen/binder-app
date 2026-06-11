@@ -418,6 +418,43 @@
   transform: scale(1.05);
 }
 
+.footer-toggle-btn {
+  width: 32px !important;
+  height: 25px !important;
+  border-radius: 4px !important;
+  border: 1px solid #ccc !important;
+  background-color: #ffffff !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+  padding: 0 0 5px !important;
+}
+
+.footer-toggle-btn:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #999 !important;
+}
+
+.footer-toggle-glyph {
+  display: block;
+  width: 13px;
+  height: 2px;
+  border-radius: 1px;
+  background-color: #555;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.footer-toggle-btn--off .footer-toggle-glyph {
+  opacity: 0.28;
+  background-color: #999;
+}
+
+.footer-toggle-btn--on .footer-toggle-glyph {
+  opacity: 1;
+}
+
 .icon-button.remove-button:hover {
   border-color: #dc143c;
   background-color: #ffe4e1;

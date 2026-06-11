@@ -70,25 +70,9 @@
   opacity: 1;
 }
 
-.App.fullscreen-mode .app-footer {
-  position: fixed !important;
-  bottom: var(--safe-bottom);
-  left: var(--safe-left);
-  right: var(--safe-right);
-  z-index: 10001 !important;
-  display: flex !important;
-  padding: 0.3rem 0.5rem;
-  background-color: rgba(248, 248, 248, 0.95);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  opacity: 0.85;
-  transition: opacity 0.2s;
-  max-height: none;
-  overflow: visible;
-}
-
-.App.fullscreen-mode .app-footer:hover {
-  opacity: 1;
+.App.fullscreen-mode .app-footer,
+.App.footer-hidden .app-footer {
+  display: none !important;
 }
 
 .App.fullscreen-mode .binder-container {
@@ -96,8 +80,8 @@
   width: 100% !important;
   padding: 0 !important;
   top: 40px !important;
-  bottom: 40px !important;
-  height: calc(100dvh - 80px - var(--safe-top) - var(--safe-bottom)) !important;
+  bottom: 0 !important;
+  height: calc(100dvh - 40px - var(--safe-top) - var(--safe-bottom)) !important;
 }
 
 * {
@@ -122,7 +106,8 @@ body {
 @media (max-width: 1024px) {
   :root {
     --app-chrome-max-header: 28dvh;
-    --app-chrome-max-footer: 24dvh;
+    --app-chrome-max-footer: 22dvh;
+    --app-chrome-max-page-order: 26px;
   }
 
   html,
@@ -141,7 +126,7 @@ body {
 
   .App {
     display: grid;
-    grid-template-rows: minmax(0, auto) minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, auto) minmax(0, 1fr) auto auto;
     grid-template-columns: 1fr;
     /* svh: tarayıcı çubuğu açıkken de footer sığsın */
     min-height: 100vh;
@@ -180,8 +165,15 @@ body {
     overflow: hidden;
   }
 
-  .App > .app-footer {
+  .App > .page-order-bar {
     grid-row: 3;
+    max-height: var(--app-chrome-max-page-order);
+    min-height: 0;
+    flex-shrink: 0;
+  }
+
+  .App > .app-footer {
+    grid-row: 4;
     position: relative;
     bottom: auto;
     flex: unset;
@@ -193,13 +185,18 @@ body {
     overscroll-behavior: contain;
     z-index: 999;
   }
+
+  .App.footer-hidden {
+    grid-template-rows: minmax(0, auto) minmax(0, 1fr) auto;
+  }
 }
 
 /* Mobil yatay — üst çubuk sıkı, footer görünür kalsın */
 @media (max-width: 1024px) and (orientation: landscape) {
   :root {
     --app-chrome-max-header: 24dvh;
-    --app-chrome-max-footer: 16dvh;
+    --app-chrome-max-footer: 14dvh;
+    --app-chrome-max-page-order: 22px;
   }
 
   .App > .settings-bar {
@@ -221,6 +218,7 @@ body {
 @media (max-width: 480px) and (orientation: portrait) {
   :root {
     --app-chrome-max-header: 32dvh;
-    --app-chrome-max-footer: 20dvh;
+    --app-chrome-max-footer: 18dvh;
+    --app-chrome-max-page-order: 22px;
   }
 }

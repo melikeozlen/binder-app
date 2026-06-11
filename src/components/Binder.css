@@ -123,7 +123,7 @@
   background-color: var(--binder-color, rgb(230, 230, 230));
   border-radius: 8px;
   margin: 0.25rem;
-  box-shadow: 
+  box-shadow:
     0 4px 8px rgba(0, 0, 0, 0.2),
     0 2px 4px rgba(0, 0, 0, 0.15),
     0 8px 16px rgba(0, 0, 0, 0.1),
@@ -131,6 +131,19 @@
     inset 0 -2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
+  --binder-left-width: 19%;
+  --binder-right-width: 17%;
+  --binder-spine-center: calc(var(--binder-left-width) + (100% - var(--binder-left-width) - var(--binder-right-width)) / 2);
+  --ring-spine-width: clamp(20px, 3vw, 50px);
+  --page-ring-gap: clamp(4px, 0.5vw, 8px);
+  --page-holes-width: 40px;
+  --grid-stitch-width: 3px;
+  --grid-stitch-color: #cdcdcdf2;
+  --grid-stitch-color-outer: rgba(240, 240, 240, 0.95);
+  --ring-hole-size: 20px;
+  --ring-hole-inner: 8px;
+  /* Orta bölgenin ~%60.9'u — eski 52%×3/4 oranıyla uyumlu, her iki yanda eşit */
+  --page-sheet-width: calc((100% - var(--binder-left-width) - var(--binder-right-width)) * 0.609375);
 }
 
 /* Binder tipleri */
@@ -431,7 +444,7 @@
 
 /* Sol taraf */
 .binder-left {
-  width: 19%;
+  width: var(--binder-left-width);
   min-width: 150px;
   padding: 0;
   display: flex;
@@ -704,23 +717,23 @@
 /* Butonları deliklerin olduğu tarafa taşı */
 /* Sol sayfa: delikler sağda, butonlar sağa - daha içe */
 .binder-page.left-page .binder-page-select-button.button-holes-side {
-  right: calc(40px - 5px); /* Deliklerin içine, daha yakın */
+  right: calc(var(--page-holes-width, 40px) - 4px);
   left: auto;
 }
 
 .binder-page.left-page .binder-page-delete-button.button-holes-side {
-  right: calc(40px - 5px + 22px); /* Select butonunun yanına */
+  right: calc(var(--page-holes-width, 40px) - 4px + 20px);
   left: auto;
 }
 
 /* Sağ sayfa: delikler solda, butonlar sola - daha içe */
 .binder-page.right-page .binder-page-select-button.button-holes-side {
-  left: calc(40px - 5px); /* Deliklerin içine, daha yakın */
+  left: calc(var(--page-holes-width, 40px) - 4px);
   right: auto;
 }
 
 .binder-page.right-page .binder-page-delete-button.button-holes-side {
-  left: calc(40px - 5px + 22px); /* Select butonunun yanına */
+  left: calc(var(--page-holes-width, 40px) - 4px + 20px);
   right: auto;
 }
 
@@ -776,30 +789,28 @@
 }
 
 .binder-page.left-page {
-  /* Ring'in sol kenarından başla ve sola doğru uzan */
-  left: calc(50% - clamp(20px, 3vw, 50px) / 2 + 2px);
-  width: calc(52% * 3 / 4); /* Sağ kapak ile aynı genişlik */
-  transform: translate(-100%, -50%); /* Sola doğru uzan ve dikey ortalama */
-  transform-origin: right center; /* Çevirme merkezi sağ kenar */
+  /* Spine sol kenarı — ring ile simetrik boşluk */
+  left: calc(var(--binder-spine-center) - var(--ring-spine-width) / 2 - var(--page-ring-gap));
+  width: var(--page-sheet-width);
+  transform: translate(-100%, -50%);
+  transform-origin: right center;
 }
 
 .binder-page.left-page.page-flipped-right {
-  /* Sol sayfa çevrildiğinde sağa geç - geri gidince */
-  left: calc(52% + clamp(20px, 3vw, 50px) / 2 - 1px) !important;
+  left: calc(var(--binder-spine-center) + var(--ring-spine-width) / 2 + var(--page-ring-gap)) !important;
   transform: translateY(-50%) !important;
 }
 
 .binder-page.right-page {
-  /* Ring'in sağ kenarından başla ve sağa doğru uzan */
-  left: calc(52% + clamp(20px, 3vw, 50px) / 2 - 1px);
-  width: calc(52% * 3 / 4); /* Sağ kapağın 3/4'ü genişliğinde */
-  transform: translateY(-50%); /* Dikey ortalama */
-  transform-origin: left center; /* Çevirme merkezi sol kenar */
+  /* Spine sağ kenarı — ring ile simetrik boşluk */
+  left: calc(var(--binder-spine-center) + var(--ring-spine-width) / 2 + var(--page-ring-gap));
+  width: var(--page-sheet-width);
+  transform: translateY(-50%);
+  transform-origin: left center;
 }
 
 .binder-page.right-page.page-flipped-left {
-  /* Sağ sayfa çevrildiğinde sola geç - ileri gidince, sol sayfa pozisyonuna */
-  left: calc(50% - clamp(20px, 3vw, 50px) / 2 + 2px) !important;
+  left: calc(var(--binder-spine-center) - var(--ring-spine-width) / 2 - var(--page-ring-gap)) !important;
   transform: translate(-100%, -50%) !important;
 }
 
@@ -811,15 +822,15 @@
   align-items: center;
   justify-content: center;
   padding: clamp(10px, 1.5%, 20px);
-  position: relative;
+  position: static;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 
 .ring-mechanism {
   position: absolute;
-  left: 50%;
+  left: var(--binder-spine-center);
   top: 0;
   bottom: 0;
   transform: translateX(-50%);
@@ -834,7 +845,7 @@
   justify-content: center;
   gap: 0;
   z-index: 15;
-  width: clamp(20px, 3vw, 50px);
+  width: var(--ring-spine-width);
   padding: 1.5% 0.5%;
   pointer-events: none;
   box-sizing: border-box;
@@ -992,7 +1003,7 @@
 
 /* Sağ taraf */
 .binder-right {
-  width: 17%;
+  width: var(--binder-right-width);
   min-width: 150px;
   padding: 20px;
   display: flex;
@@ -1171,13 +1182,14 @@
 .page-navigation {
   position: absolute;
   bottom: 6px;
-  left: 50%;
+  left: var(--binder-spine-center);
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 4px;
-  z-index: 20;
+  z-index: 30;
   background-color: rgba(255, 255, 255, 0.6);
+  pointer-events: auto;
   padding: 2px 6px;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -1419,6 +1431,13 @@
 }
 
 /* Mobil: binder yatay düzenini koru, sadece sıkılaştır */
+@media (max-width: 1400px) {
+  .binder-left,
+  .binder-right {
+    min-width: 0;
+  }
+}
+
 @media (max-width: 1024px) {
   .binder-container {
     padding: 0.1rem;
@@ -1442,11 +1461,21 @@
     margin: 0;
   }
 
+  .binder {
+    --binder-left-width: 14%;
+    --binder-right-width: 14%;
+    --binder-spine-center: calc(var(--binder-left-width) + (100% - var(--binder-left-width) - var(--binder-right-width)) / 2);
+  }
+
   .binder-left,
   .binder-right {
     min-width: 0;
-    width: 14%;
+    width: var(--binder-left-width);
     padding: 4px;
+  }
+
+  .binder-right {
+    width: var(--binder-right-width);
   }
 
   .right-pockets {
@@ -1473,25 +1502,191 @@
   }
 
   .page-navigation {
-    bottom: 4px;
-    padding: 2px 5px;
+    bottom: 2px;
+    padding: 1px 4px;
+    gap: 2px;
+    border-radius: 5px;
   }
 
   .nav-button {
-    width: 22px;
-    height: 22px;
-    font-size: 11px;
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
   }
 
   .page-counter {
-    font-size: 8px;
-    min-width: 28px;
+    font-size: 6px;
+    min-width: 18px;
+    padding: 0 1px;
+    line-height: 1.1;
   }
 }
 
 @media (max-width: 1024px) and (orientation: landscape) {
   .binder-container {
     padding: 0.05rem 0.2rem;
+  }
+}
+
+/* Küçük ekranlar: ring, delikler ve dikiş çizgileri orantılı küçülür */
+@media (max-width: 1024px) {
+  .binder {
+    --ring-spine-width: clamp(10px, 2.4vw, 20px);
+    --page-ring-gap: clamp(2px, 0.35vw, 5px);
+    --page-holes-width: 15px;
+    --grid-stitch-width: 2px;
+    --ring-hole-size: 11px;
+    --ring-hole-inner: 4px;
+  }
+
+  .page-navigation {
+    z-index: 1110;
+    background-color: rgba(255, 255, 255, 0.82);
+  }
+
+  .ring-mechanism {
+    z-index: 1102;
+    padding: 0.6% 0.25%;
+    border-radius: clamp(5px, 1.2vw, 12px);
+    box-shadow:
+      inset 0 0 12px var(--ring-light-rgba-80, rgba(200, 200, 200, 0.8)),
+      inset 0 1px 4px var(--ring-highlight-rgba-90, rgba(230, 230, 230, 0.9)),
+      inset 0 -1px 4px rgba(0, 0, 0, 0.2),
+      0 0 8px var(--ring-dark-rgba-50, rgba(120, 120, 120, 0.4)),
+      0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .rings-group {
+    margin-top: clamp(8px, 2%, 16px);
+    gap: clamp(2px, 0.6%, 5px);
+  }
+
+  .ring-wrapper {
+    width: clamp(9px, 1.6vw, 14px);
+    min-height: 18px;
+    max-height: clamp(32px, 9%, 55px);
+  }
+
+  .ring-ring {
+    width: clamp(9px, 1.5vw, 13px);
+    height: clamp(9px, 1.5vw, 13px);
+    border-width: clamp(1px, 0.2vw, 2px);
+  }
+
+  .ring-ring::before {
+    width: clamp(4px, 0.7vw, 7px);
+    height: clamp(4px, 0.7vw, 7px);
+  }
+
+  .ring-ring::after {
+    width: clamp(2px, 0.35vw, 3px);
+    height: clamp(2px, 0.35vw, 3px);
+    top: clamp(1px, 0.25vw, 2px);
+  }
+
+  .binder-page-select-button,
+  .binder-page-delete-button {
+    width: 15px;
+    height: 15px;
+    font-size: 10px;
+    top: 5px;
+  }
+
+  .binder-page.left-page .binder-page-delete-button.button-holes-side {
+    right: calc(var(--page-holes-width, 15px) - 4px + 17px);
+  }
+
+  .binder-page.right-page .binder-page-delete-button.button-holes-side {
+    left: calc(var(--page-holes-width, 15px) - 4px + 17px);
+  }
+}
+
+@media (max-width: 480px) {
+  .binder {
+    --ring-spine-width: clamp(6px, 1.8vw, 10px);
+    --page-ring-gap: 2px;
+    --page-holes-width: 10px;
+    --grid-stitch-width: 1px;
+    --ring-hole-size: 6px;
+    --ring-hole-inner: 2px;
+  }
+
+  .ring-mechanism {
+    padding: 0.4% 0.15%;
+    border-radius: clamp(3px, 0.8vw, 7px);
+    box-shadow:
+      inset 0 0 6px var(--ring-light-rgba-80, rgba(200, 200, 200, 0.7)),
+      inset 0 1px 2px var(--ring-highlight-rgba-90, rgba(230, 230, 230, 0.85)),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.18),
+      0 0 4px var(--ring-dark-rgba-50, rgba(120, 120, 120, 0.35)),
+      0 1px 2px rgba(0, 0, 0, 0.15);
+  }
+
+  .rings-group {
+    margin-top: clamp(5px, 1.5%, 10px);
+    gap: 1px;
+  }
+
+  .ring-wrapper {
+    width: clamp(6px, 1.2vw, 9px);
+    min-height: 12px;
+    max-height: clamp(22px, 7%, 38px);
+  }
+
+  .ring-ring {
+    width: clamp(6px, 1.1vw, 9px);
+    height: clamp(6px, 1.1vw, 9px);
+    border-width: 1px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2px var(--ring-highlight-rgba-60, rgba(255, 255, 255, 0.5)),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.25);
+  }
+
+  .ring-ring::before {
+    width: 3px;
+    height: 3px;
+    border-width: 0.5px;
+  }
+
+  .ring-ring::after {
+    width: 2px;
+    height: 2px;
+    top: 1px;
+  }
+
+  .binder-page-select-button,
+  .binder-page-delete-button {
+    width: 13px;
+    height: 13px;
+    font-size: 9px;
+    top: 3px;
+  }
+
+  .binder-page.left-page .binder-page-delete-button.button-holes-side {
+    right: calc(var(--page-holes-width, 10px) - 3px + 14px);
+  }
+
+  .binder-page.right-page .binder-page-delete-button.button-holes-side {
+    left: calc(var(--page-holes-width, 10px) - 3px + 14px);
+  }
+
+  .page-navigation {
+    bottom: 1px;
+    padding: 0 3px;
+    gap: 1px;
+    border-radius: 4px;
+  }
+
+  .nav-button {
+    width: 11px;
+    height: 11px;
+    font-size: 7px;
+  }
+
+  .page-counter {
+    font-size: 5px;
+    min-width: 14px;
   }
 }
 

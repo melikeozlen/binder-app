@@ -250,36 +250,180 @@
   line-height: 1.4;
 }
 
-/* Mobilde binder tam görünsün — yan çubuk gizli (navigasyon: kaydır / ok tuşları) */
+/* Mobil: binder altında yatay ince şerit */
 @media (max-width: 1024px) {
   .page-order-bar {
-    display: none !important;
+    display: flex !important;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100%;
+    height: auto;
+    max-height: 26px;
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.12rem 0.3rem;
+    border-left: none;
+    border-top: 1px solid #e8e8e8;
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.04);
+    z-index: 900;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .page-order-header,
+  .page-order-swap {
+    display: none;
+  }
+
+  .page-order-bar > .page-order-list {
+    justify-content: flex-start;
+  }
+
+  .page-order-list {
+    flex-direction: row;
+    flex: 1;
+    gap: 0.12rem;
+    padding: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    align-items: center;
+  }
+
+  .page-order-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .page-order-item {
+    min-height: 20px;
+    min-width: 20px;
+    padding: 0.1rem 0.28rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .page-order-number {
+    font-size: 0.58rem;
+  }
+
+  .page-order-active-dot {
+    width: 4px;
+    height: 4px;
+    top: 1px;
+    right: 1px;
+  }
+
+  .page-order-ellipsis {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.15rem;
+    margin: 0;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .page-order-ellipsis.clickable {
+    min-width: 16px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .page-order-empty {
+    padding: 0.2rem 0.4rem;
+  }
+
+  .page-order-empty-text {
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-order-bar {
+    max-height: 22px;
+    padding: 0.08rem 0.2rem;
+  }
+
+  .page-order-list {
+    gap: 0.08rem;
+  }
+
+  .page-order-item {
+    min-height: 16px;
+    min-width: 16px;
+    padding: 0.05rem 0.2rem;
+    border-radius: 3px;
+  }
+
+  .page-order-number {
+    font-size: 0.5rem;
+  }
+
+  .page-order-active-dot {
+    width: 3px;
+    height: 3px;
+    top: 0;
+    right: 0;
+  }
+
+  .page-order-ellipsis {
+    font-size: 0.48rem;
+  }
+
+  .page-order-ellipsis.clickable {
+    min-width: 14px;
+    min-height: 14px;
   }
 }
 
 @media (min-width: 1025px) and (max-width: 1200px) {
   .page-order-bar {
-    width: 65px;
-    padding: 0.6rem 0.3rem;
+    width: 52px;
+    padding: 0.45rem 0.25rem;
   }
-  
+
+  .page-order-header {
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.35rem;
+  }
+
+  .page-order-icon {
+    font-size: 0.9rem;
+  }
+
+  .page-order-swap {
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
   .page-order-swap-input {
-    font-size: 0.65rem;
-    padding: 0.25rem 0.2rem;
+    font-size: 0.58rem;
+    padding: 0.2rem 0.15rem;
   }
-  
+
   .page-order-swap-button {
-    font-size: 0.65rem;
-    padding: 0.35rem 0.25rem;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.15rem;
   }
-  
+
   .page-order-item {
-    min-height: 32px;
-    padding: 0.3rem 0.25rem;
+    min-height: 26px;
+    padding: 0.2rem 0.15rem;
   }
-  
+
   .page-order-number {
-    font-size: 0.7rem;
+    font-size: 0.62rem;
+  }
+
+  .page-order-active-dot {
+    width: 5px;
+    height: 5px;
+    top: 2px;
+    right: 2px;
   }
 }
 

@@ -36,6 +36,8 @@ const SettingsBar = ({
   onGalleryUrlsChange,
   isFullscreen = false,
   onToggleFullscreen,
+  footerVisible = true,
+  onToggleFooter,
   binders = [],
   selectedBinderId = null,
   onSelectBinder,
@@ -330,6 +332,20 @@ const SettingsBar = ({
             title={isFullscreen ? t('binder.exitFullscreen') : t('binder.enterFullscreen')}
           >
             {isFullscreen ? '⛶' : '⛶'}
+          </button>
+        </div>
+      )}
+
+      {onToggleFooter && (
+        <div className="setting-item">
+          <button
+            type="button"
+            className={`footer-toggle-btn ${footerVisible ? 'footer-toggle-btn--on' : 'footer-toggle-btn--off'}`}
+            onClick={onToggleFooter}
+            title={footerVisible ? t('footer.hideFooter') : t('footer.showFooter')}
+            aria-pressed={footerVisible}
+          >
+            <span className="footer-toggle-glyph" aria-hidden="true" />
           </button>
         </div>
       )}
