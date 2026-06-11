@@ -297,6 +297,8 @@ COTL | https://i.pinimg.com/736x/f5/81/1d/f5811da6f762d55ac505e4e7016f3b75.jpg |
 COTL | https://i.pinimg.com/736x/97/cf/41/97cf41087475ee3f138efb22e64777df.jpg | WEVERSE LIVE EXCLUSIVE A WV Juhoon
 COTL | https://i.pinimg.com/736x/ef/12/72/ef12727307b8cff83959b4761ae95d87.jpg | WEVERSE LIVE EXCLUSIVE A WV James
 COTL | https://i.pinimg.com/736x/53/d2/60/53d260d39e9798225fe000a18a8ce64e.jpg | WEVERSE LIVE EXCLUSIVE WV OT5 GROUP
+COTL | https://i.pinimg.com/736x/93/97/5f/93975f081f00e64176cfd2f32881111f.jpg | WEVERSE LIVE EXCLUSIVE WV OT5 GROUP 2
+
 
 
 COTL | https://i.pinimg.com/736x/24/80/f8/2480f8b1bfc067df031c1ff724da8772.jpg | WEVERSE LIVE EXCLUSIVE B WV Martin
@@ -811,6 +813,8 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfybd5z000bja0bg3ssou3x-front-1779455072419.webp | CORTIS - Juhoon - GREENGREEN Album weverse album version portrait version B version horizontal photo print
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfybd5z000bja0bg3ssou3x-back-1779455080705.webp | BACK CORTIS - Juhoon - GREENGREEN Album weverse album version portrait version B version horizontal photo print
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpa3cgjh0062le04pcaauhvj-front-1779041454767.webp | CORTIS - Juhoon - GREENGREEN Album broadcast
+GREENGREEN | https://i.pinimg.com/736x/e7/85/b6/e785b6e36e25d8ddcd141cc45434f5e8.jpg | CORTIS - Grup Group OT5 - GREENGREEN Album broadcast
+
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmp953rl5004xjy04y3w2233e-front-1779684129229.webp | CORTIS - Juhoon - GREENGREEN Album release event weverse global shop (wvg) pob (pre-order benefit)
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmp953rl5004xjy04y3w2233e-back-1779684135546.webp | BACK CORTIS - Juhoon - GREENGREEN Album release event weverse global shop (wvg) pob (pre-order benefit)
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmp7vmgqh00bbkz047xsfwa3f-front-1779684026278.webp | CORTIS - Juhoon - GREENGREEN Album youtube gift weverse global shop (wvg)
