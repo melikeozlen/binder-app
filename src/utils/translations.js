@@ -5,7 +5,7 @@ const translations = {
     'footer.user': '@kepcang',
     'footer.install': 'Yükle',
     'footer.installApp': 'Uygulama olarak yükle',
-    'footer.clearCache': 'Önbellek Temizle',
+    'footer.clearCache': 'Sıfırla',
     'footer.clearCacheConfirm': 'Tüm önbellek ve veriler temizlenecek. Devam etmek istiyor musunuz?',
     'settings.tip': 'Tip:',
     'settings.tipHelp': 'Zarf tipini seçin: Deri, Şeffaf veya Kot',
