@@ -228,13 +228,13 @@
   z-index: 2;
 }
 
-/* Parlak dosya - glossy efekt (yalnızca pocket grid üzerinde) */
+/* Parlak dosya - glossy efekt (resimlerin üstünde) */
 .page-type-glossy .grid-cell {
   background-color: rgba(255, 255, 255, 0.25);
   position: relative;
-  z-index: 1;
 }
 
+.page-type-glossy .cell-image-wrapper,
 .page-type-glossy .cell-image {
   position: relative;
   z-index: 1;
@@ -243,10 +243,9 @@
 .page-type-glossy .page-grid {
   position: relative;
   overflow: hidden;
-  isolation: isolate;
 }
 
-.page-type-glossy .page-grid::after {
+.page-type-glossy .grid-cell::after {
   content: '';
   position: absolute;
   top: -100%;
@@ -257,17 +256,17 @@
     ellipse at center,
     transparent 0%,
     transparent 30%,
-    rgba(255, 255, 255, 0.2) 40%,
-    rgba(255, 255, 255, 0.45) 45%,
-    rgba(255, 255, 255, 0.3) 50%,
-    rgba(255, 255, 255, 0.15) 55%,
+    rgba(255, 255, 255, 0.25) 40%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.18) 55%,
     transparent 65%
   );
   animation: glossy-shine 8s ease-in-out infinite;
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
   mix-blend-mode: overlay;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 @keyframes glossy-shine {
@@ -293,13 +292,13 @@
   }
 }
 
-/* Holo dosya - holografik yansıma (yalnızca pocket grid üzerinde) */
+/* Holo dosya - holografik yansıma (resimlerin üstünde) */
 .page-type-holo .grid-cell {
   background-color: rgba(255, 255, 255, 0.25);
   position: relative;
-  z-index: 1;
 }
 
+.page-type-holo .cell-image-wrapper,
 .page-type-holo .cell-image {
   position: relative;
   z-index: 1;
@@ -308,10 +307,9 @@
 .page-type-holo .page-grid {
   position: relative;
   overflow: hidden;
-  isolation: isolate;
 }
 
-.page-type-holo .page-grid::after {
+.page-type-holo .grid-cell::after {
   content: '';
   position: absolute;
   top: -100%;
@@ -322,19 +320,19 @@
     ellipse at center,
     transparent 0%,
     transparent 28%,
-    rgba(255, 200, 150, 0.22) 36%,
-    rgba(255, 255, 200, 0.35) 40%,
-    rgba(200, 255, 255, 0.35) 43%,
-    rgba(200, 200, 255, 0.28) 46%,
-    rgba(255, 200, 255, 0.22) 48%,
-    rgba(255, 200, 150, 0.15) 50%,
+    rgba(255, 200, 150, 0.28) 36%,
+    rgba(255, 255, 200, 0.42) 40%,
+    rgba(200, 255, 255, 0.42) 43%,
+    rgba(200, 200, 255, 0.34) 46%,
+    rgba(255, 200, 255, 0.28) 48%,
+    rgba(255, 200, 150, 0.2) 50%,
     transparent 58%
   );
   animation: holo-shine 10s ease-in-out infinite;
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
   mix-blend-mode: overlay;
-  opacity: 0.75;
+  opacity: 0.85;
 }
 
 @keyframes holo-shine {
