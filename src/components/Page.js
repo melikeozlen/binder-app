@@ -1614,13 +1614,15 @@ const Page = ({
                 const imageUrl = getImageUrl(cellContent);
                 const imageName = getCellImageName(cellContent);
 
-                // Sağ sayfa: ilk kolondaki hücrelerin sol kenarında dikiş izi olmamalı (ring tarafı)
-                // Sol sayfa: son kolondaki hücrelerin sağ kenarında dikiş izi olmamalı (ring tarafı)
                 const isLastCol = col === cols - 1;
                 const isLastRow = row === rows - 1;
+                const isFirstCol = col === 0;
+                const isFirstRow = row === 0;
                 const isHorizontal = rows > cols; // Yatay uzun cep (örneğin 3x1, 4x1)
                 const cellClasses = [
                   'grid-cell',
+                  isFirstCol ? 'cell-first-col' : '',
+                  isFirstRow ? 'cell-first-row' : '',
                   isLastCol ? 'cell-last-col' : '',
                   isLastRow ? 'cell-last-row' : '',
                   getCellDragClassName('front', row, col, isImage)
@@ -1823,10 +1825,14 @@ const Page = ({
 
                 const isLastColBack = col === cols - 1;
                 const isLastRowBack = row === rows - 1;
+                const isFirstColBack = col === 0;
+                const isFirstRowBack = row === 0;
                 const isHorizontalBack = rows > cols; // Yatay uzun cep (örneğin 3x1, 4x1)
                 const canDragBack = !!backImageUrl;
                 const backCellClasses = [
                   'grid-cell',
+                  isFirstColBack ? 'cell-first-col' : '',
+                  isFirstRowBack ? 'cell-first-row' : '',
                   isLastColBack ? 'cell-last-col' : '',
                   isLastRowBack ? 'cell-last-row' : '',
                   getCellDragClassName('back', row, col, canDragBack)

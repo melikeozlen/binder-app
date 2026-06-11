@@ -144,16 +144,6 @@
 
 .page-back .grid-cell {
   pointer-events: auto;
-  border-top: 3px dashed #cdcdcdf2;
-  border-left: 3px dashed #cdcdcdf2;
-}
-
-.page-back .grid-cell.cell-last-col {
-  border-right: 3px dashed #cdcdcdf2;
-}
-
-.page-back .grid-cell.cell-last-row {
-  border-bottom: 3px dashed #cdcdcdf2;
 }
 
 .page-container.flipped .page-front {
@@ -374,14 +364,12 @@
 }
 
 .holes-left {
-  border-left: 3px dashed rgba(240, 240, 240, 0.95);
-  border-right: none;
+  border: none;
   box-shadow: -1px 0 1px rgba(0, 0, 0, 0.06);
 }
 
 .holes-right {
-  border-right: 3px dashed rgba(240, 240, 240, 0.95);
-  border-left: none;
+  border: none;
   box-shadow: 1px 0 1px rgba(0, 0, 0, 0.06);
 }
 
@@ -471,28 +459,10 @@
   height: 100%;
   /* Üst kenar açık - resim eklenebilsin diye */
   /* Sağ ve alt kenar yok - hücrelerin kenarlarındaki border yeterli */
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  border-left: 3px dashed rgba(240, 240, 240, 0.95);
+  border: none;
   background-color: rgba(255, 255, 255, 0.15);
-  /* Sol kenar dikiş izine hafif shadow */
-  box-shadow: -1px 0 1px rgba(0, 0, 0, 0.06);
   /* Boş alanlar tıklamaları engellemeli - sadece grid-cell'ler tıklanabilir */
   pointer-events: none;
-}
-
-/* Sağ sayfa: ring sol tarafta, sol kenarda dikiş izi olmamalı */
-.page-right .page-grid {
-  border-left: none;
-  box-shadow: none;
-}
-
-/* Sol sayfa: ring sağ tarafta, sağ kenarda dikiş izi olmamalı */
-.page-left .page-grid {
-  border-left: 3px dashed rgba(240, 240, 240, 0.95);
-  border-right: none;
-  box-shadow: -1px 0 1px rgba(0, 0, 0, 0.06);
 }
 
 .grid-cell {
@@ -508,19 +478,36 @@
   overflow: hidden;
   padding: 2px;
   box-sizing: border-box;
-  border-top: 3px dashed #cdcdcdf2;
-  border-left: 3px dashed #cdcdcdf2;
   box-shadow: none;
   pointer-events: auto;
   z-index: inherit;
 }
 
-.grid-cell.cell-last-col {
-  border-right: 3px dashed #cdcdcdf2;
+/*
+ * Grid dikişleri: her cep 4 kenarlı; komşuda tek çizgi için
+ * üst+sağ+alt+sol — sağ/alt komşu hücreyle paylaşılır.
+ */
+.page-grid .grid-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  box-sizing: border-box;
+  border: none;
+  border-top: 3px dashed var(--grid-stitch-color, #ffffff);
+  border-right: 3px dashed var(--grid-stitch-color, #ffffff);
+  border-bottom: 3px dashed var(--grid-stitch-color, #ffffff);
+  border-left: 3px dashed var(--grid-stitch-color, #ffffff);
 }
 
-.grid-cell.cell-last-row {
-  border-bottom: 3px dashed #cdcdcdf2;
+/* Komşu kenarda çift çizgi olmasın: sol ve üst komşunun sağ/alt çizgisini kullan */
+.page-grid .grid-cell:not(.cell-first-col)::before {
+  border-left: none;
+}
+
+.page-grid .grid-cell:not(.cell-first-row)::before {
+  border-top: none;
 }
 
 /* Resim içeren grid-cell'lerde cursor default - sadece butonlarla işlem yapılır */
@@ -1225,7 +1212,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #ffffff;
   background: white;
   flex-shrink: 0;
   gap: 1rem;
@@ -1324,7 +1311,7 @@
 
 .gallery-item {
   position: relative;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #ffffff;
   border-radius: 6px;
   overflow: visible;
   cursor: pointer;
@@ -1369,7 +1356,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #ffffff;
   border-radius: 0 0 4px 4px;
   line-height: 1.2;
   flex-shrink: 0;
