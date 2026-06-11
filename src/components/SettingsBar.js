@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { HexColorPicker } from 'react-colorful';
 import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
@@ -7,6 +8,25 @@ import { loadDefaultGallery } from '../utils/defaultGallery';
 import { parseGalleryText } from '../utils/galleryParse';
 import GalleryWithFolders from './GalleryWithFolders';
 import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
+
+const COLOR_PRESETS = [
+  '#E6E6E6', '#FFFFFF', '#000000', '#A0A0A0', '#878787',
+  '#D7D7DC', '#8B4513', '#5F9EA0', '#C4A484', '#2F4F4F',
+  '#FFB6C1', '#87CEEB', '#F0E68C', '#90EE90', '#DDA0DD',
+];
+
+const normalizeHex = (value) => {
+  if (!value) return '#000000';
+  let hex = String(value).trim();
+  if (!hex.startsWith('#')) hex = `#${hex}`;
+  if (hex.length === 4) {
+    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+  }
+  if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+    return hex.toUpperCase();
+  }
+  return '#000000';
+};
 
 const SettingsBar = ({ 
   binderColor, 
@@ -333,6 +353,49 @@ const SettingsBar = ({
     setShowBinderMenu(false);
   };
 
+  const openColorPicker = (type, value) => {
+    setColorPickerType(type);
+    setColorPickerValue(normalizeHex(value));
+    setShowColorPicker(true);
+  };
+
+  const applyColorPicker = () => {
+    const nextColor = normalizeHex(colorPickerValue);
+    if (colorPickerType === 'binder') {
+      onColorChange && onColorChange(nextColor);
+    } else if (colorPickerType === 'ring') {
+      onRingColorChange && onRingColorChange(nextColor);
+    } else if (colorPickerType === 'background') {
+      onContainerColorChange && onContainerColorChange(nextColor);
+    } else if (colorPickerType === 'gridStitch') {
+      onGridStitchColorChange && onGridStitchColorChange(nextColor);
+    }
+    setShowColorPicker(false);
+  };
+
+  const renderColorControl = (type, value, onDesktopChange, labelKey) => (
+    <div className="setting-item">
+      <div className="color-input-wrapper" data-tooltip={t(labelKey)}>
+        {isMobileLayout ? (
+          <button
+            type="button"
+            className="color-swatch-btn"
+            style={{ backgroundColor: normalizeHex(value) }}
+            onClick={() => openColorPicker(type, value)}
+            aria-label={t(labelKey)}
+          />
+        ) : (
+          <input
+            type="color"
+            value={normalizeHex(value)}
+            onChange={(e) => onDesktopChange(e.target.value)}
+            className="settings-control color-input"
+          />
+        )}
+      </div>
+    </div>
+  );
+
   const renderBinderMenu = (extraClassName = '') => (
     <div className={`binder-menu${extraClassName ? ` ${extraClassName}` : ''}`}>
       <div className="binder-menu-section binder-menu-section--actions">
@@ -565,81 +628,10 @@ const SettingsBar = ({
         </select>
       </div>
       
-      <div className="setting-item">
-        <div className="color-input-wrapper" data-tooltip={t('settings.binder')}>
-          <input
-            type="color"
-            value={binderColor}
-            onChange={(e) => onColorChange(e.target.value)}
-            onClick={(e) => {
-              if (window.innerWidth <= 1024) {
-                e.preventDefault();
-                setColorPickerType('binder');
-                setColorPickerValue(binderColor);
-                setShowColorPicker(true);
-              }
-            }}
-            className="settings-control color-input"
-          />
-        </div>
-      </div>
-      
-      <div className="setting-item">
-        <div className="color-input-wrapper" data-tooltip={t('settings.ring')}>
-          <input
-            type="color"
-            value={ringColor}
-            onChange={(e) => onRingColorChange(e.target.value)}
-            onClick={(e) => {
-              if (window.innerWidth <= 1024) {
-                e.preventDefault();
-                setColorPickerType('ring');
-                setColorPickerValue(ringColor);
-                setShowColorPicker(true);
-              }
-            }}
-            className="settings-control color-input"
-          />
-        </div>
-      </div>
-      
-      <div className="setting-item">
-        <div className="color-input-wrapper" data-tooltip={t('settings.background')}>
-          <input
-            type="color"
-            value={containerColor}
-            onChange={(e) => onContainerColorChange(e.target.value)}
-            onClick={(e) => {
-              if (window.innerWidth <= 1024) {
-                e.preventDefault();
-                setColorPickerType('background');
-                setColorPickerValue(containerColor);
-                setShowColorPicker(true);
-              }
-            }}
-            className="settings-control color-input"
-          />
-        </div>
-      </div>
-
-      <div className="setting-item">
-        <div className="color-input-wrapper" data-tooltip={t('settings.gridStitch')}>
-          <input
-            type="color"
-            value={gridStitchColor}
-            onChange={(e) => onGridStitchColorChange(e.target.value)}
-            onClick={(e) => {
-              if (window.innerWidth <= 1024) {
-                e.preventDefault();
-                setColorPickerType('gridStitch');
-                setColorPickerValue(gridStitchColor);
-                setShowColorPicker(true);
-              }
-            }}
-            className="settings-control color-input"
-          />
-        </div>
-      </div>
+      {renderColorControl('binder', binderColor, onColorChange, 'settings.binder')}
+      {renderColorControl('ring', ringColor, onRingColorChange, 'settings.ring')}
+      {renderColorControl('background', containerColor, onContainerColorChange, 'settings.background')}
+      {renderColorControl('gridStitch', gridStitchColor, onGridStitchColorChange, 'settings.gridStitch')}
       
       <div className="setting-item">
         <span className="setting-label" title={t('settings.widthHelp')}>{t('settings.width')}</span>
@@ -1127,50 +1119,58 @@ const SettingsBar = ({
               </button>
             </div>
             <div className="color-picker-body">
+              <div className="color-picker-preview" style={{ backgroundColor: normalizeHex(colorPickerValue) }} />
               <div className="color-picker-main">
-                <input
-                  type="color"
-                  value={colorPickerValue}
-                  onChange={(e) => setColorPickerValue(e.target.value)}
-                  className="color-picker-input-large"
+                <HexColorPicker
+                  color={normalizeHex(colorPickerValue)}
+                  onChange={setColorPickerValue}
+                  className="color-picker-wheel"
                 />
               </div>
+              <div className="color-picker-presets" role="listbox" aria-label={t('settings.customColor')}>
+                {COLOR_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`color-picker-preset${normalizeHex(colorPickerValue) === preset ? ' color-picker-preset--active' : ''}`}
+                    style={{ backgroundColor: preset }}
+                    onClick={() => setColorPickerValue(preset)}
+                    aria-label={preset}
+                  />
+                ))}
+              </div>
               <div className="color-picker-custom">
-                <label>{t('settings.customColor')}</label>
+                <label htmlFor="color-picker-hex-input">{t('settings.customColor')}</label>
                 <input
+                  id="color-picker-hex-input"
                   type="text"
                   value={colorPickerValue}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                      setColorPickerValue(value);
+                      setColorPickerValue(value.toUpperCase());
                     }
                   }}
                   placeholder="#000000"
                   className="color-picker-hex-input"
+                  inputMode="text"
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
               <div className="color-picker-actions">
                 <button
+                  type="button"
                   className="color-picker-btn color-picker-btn-cancel"
                   onClick={() => setShowColorPicker(false)}
                 >
                   {t('binder.cancel')}
                 </button>
                 <button
+                  type="button"
                   className="color-picker-btn color-picker-btn-apply"
-                  onClick={() => {
-                    if (colorPickerType === 'binder') {
-                      onColorChange(colorPickerValue);
-                    } else if (colorPickerType === 'ring') {
-                      onRingColorChange(colorPickerValue);
-                    } else if (colorPickerType === 'background') {
-                      onContainerColorChange(colorPickerValue);
-                    } else if (colorPickerType === 'gridStitch') {
-                      onGridStitchColorChange(colorPickerValue);
-                    }
-                    setShowColorPicker(false);
-                  }}
+                  onClick={applyColorPicker}
                 >
                   {t('settings.apply')}
                 </button>
