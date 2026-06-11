@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import './Footer.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
-import { getTotalImageCountFromIndexedDB, clearAllIndexedDB } from '../utils/indexedDB.js';
+import { clearAllIndexedDB } from '../utils/indexedDB.js';
 
 const INFO_SECTIONS = [
   {
@@ -121,13 +121,12 @@ const getLocalStorageUsagePercent = () => {
   }
 };
 
-const Footer = ({ pagesCount = 0 }) => {
+const Footer = () => {
   const { language, setLanguage } = useLanguage();
   const t = (key) => getTranslation(key, language);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [storageUsage, setStorageUsage] = useState(0);
-  const [imageCount, setImageCount] = useState(0);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [openInfoSections, setOpenInfoSections] = useState(() =>
     Object.fromEntries(INFO_SECTIONS.map((s) => [s.id, !!s.defaultOpen]))
@@ -171,16 +170,13 @@ const Footer = ({ pagesCount = 0 }) => {
 
   // localStorage durumunu periyodik olarak güncelle
   useEffect(() => {
-    const updateStorageInfo = async () => {
+    const updateStorageInfo = () => {
       setStorageUsage(getLocalStorageUsagePercent());
-      // IndexedDB'den resim sayısını al
-      const count = await getTotalImageCountFromIndexedDB();
-      setImageCount(count);
     };
-    
+
     updateStorageInfo();
-    const interval = setInterval(updateStorageInfo, 2000); // Her 2 saniyede bir güncelle
-    
+    const interval = setInterval(updateStorageInfo, 2000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -288,7 +284,7 @@ const Footer = ({ pagesCount = 0 }) => {
             ></div>
           </div>
           <span className="footer-storage-text">
-            {storageUsage.toFixed(1)}% • {t('storage.pages')}: {pagesCount} • {t('storage.images')}: {imageCount}
+            {storageUsage.toFixed(1)}%
           </span>
         </div>
         {process.env.REACT_APP_BUILD_TIME && (

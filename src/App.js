@@ -2154,7 +2154,7 @@ function App() {
         onToggleFullscreen={toggleFullscreen}
         onAddPage={handleAddPage}
       />
-      <Footer pagesCount={pages.length} />
+      <Footer />
     
     </div>
   );
