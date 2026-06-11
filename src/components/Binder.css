@@ -138,8 +138,6 @@
   --page-ring-gap: clamp(4px, 0.5vw, 8px);
   --page-holes-width: 40px;
   --grid-stitch-width: 3px;
-  --grid-stitch-color: rgba(215, 215, 220, 0.98);
-  --grid-stitch-color-outer: rgba(222, 222, 226, 0.98);
   --ring-hole-size: 20px;
   --ring-hole-inner: 8px;
   /* Orta bölgenin ~%60.9'u — eski 52%×3/4 oranıyla uyumlu, her iki yanda eşit */

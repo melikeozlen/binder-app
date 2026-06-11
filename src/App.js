@@ -973,6 +973,7 @@ function App() {
   const [binderColor, setBinderColor] = useState(savedSettings?.binderColor || '#E6E6E6');
   const [ringColor, setRingColor] = useState(savedSettings?.ringColor || '#A0A0A0');
   const [containerColor, setContainerColor] = useState(savedSettings?.containerColor || '#ffffff');
+  const [gridStitchColor, setGridStitchColor] = useState(savedSettings?.gridStitchColor || '#D7D7DC');
   const [binderType, setBinderType] = useState(savedSettings?.binderType || 'leather');
   const [widthRatio, setWidthRatio] = useState(savedSettings?.widthRatio || 1.9);
   const [heightRatio, setHeightRatio] = useState(savedSettings?.heightRatio || 1);
@@ -1004,6 +1005,7 @@ function App() {
           setBinderColor(settings.binderColor || '#E6E6E6');
           setRingColor(settings.ringColor || '#A0A0A0');
           setContainerColor(settings.containerColor || '#ffffff');
+          setGridStitchColor(settings.gridStitchColor || '#D7D7DC');
           setBinderType(settings.binderType || 'leather');
           setWidthRatio(settings.widthRatio || 1.9);
           setHeightRatio(settings.heightRatio || 1);
@@ -1083,11 +1085,12 @@ function App() {
       imageInputMode,
       // defaultBackImage: localStorage'a kaydetme
       containerColor,
+      gridStitchColor,
       binderType
     };
     
     saveSettings(settingsToSave, selectedBinderId);
-  }, [binderColor, ringColor, widthRatio, heightRatio, gridSize, pageType, imageInputMode, containerColor, binderType, selectedBinderId]); // defaultBackImage dependency'den çıkarıldı
+  }, [binderColor, ringColor, widthRatio, heightRatio, gridSize, pageType, imageInputMode, containerColor, gridStitchColor, binderType, selectedBinderId]); // defaultBackImage dependency'den çıkarıldı
 
   // Sayfaları localStorage'a kaydet - debounce ile optimize edilmiş
   useEffect(() => {
@@ -1133,6 +1136,10 @@ function App() {
 
   const handleContainerColorChange = (color) => {
     setContainerColor(color);
+  };
+
+  const handleGridStitchColorChange = (color) => {
+    setGridStitchColor(color);
   };
 
   const handleBinderTypeChange = (type) => {
@@ -1283,6 +1290,7 @@ function App() {
         pageType,
         imageInputMode,
         containerColor,
+        gridStitchColor,
         binderType,
       },
       selectedBinderId
@@ -2095,6 +2103,7 @@ function App() {
         binderColor={binderColor}
         ringColor={ringColor}
         containerColor={containerColor}
+        gridStitchColor={gridStitchColor}
         binderType={binderType}
         widthRatio={widthRatio}
         heightRatio={heightRatio}
@@ -2104,6 +2113,7 @@ function App() {
         onColorChange={handleColorChange}
         onRingColorChange={handleRingColorChange}
         onContainerColorChange={handleContainerColorChange}
+        onGridStitchColorChange={handleGridStitchColorChange}
         onBinderTypeChange={handleBinderTypeChange}
         onWidthRatioChange={handleWidthRatioChange}
         onHeightRatioChange={handleHeightRatioChange}
@@ -2147,6 +2157,7 @@ function App() {
       <Binder 
         binderColor={binderColor} 
         ringColor={ringColor}
+        gridStitchColor={gridStitchColor}
         containerColor={containerColor}
         binderType={binderType}
         widthRatio={widthRatio}

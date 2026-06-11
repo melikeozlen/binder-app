@@ -7,6 +7,7 @@ import { getTranslation } from '../utils/translations';
 const Binder = ({ 
   binderColor, 
   ringColor,
+  gridStitchColor = '#D7D7DC',
   containerColor = '#ffffff',
   binderType = 'leather',
   widthRatio = 1.9, 
@@ -308,7 +309,13 @@ const Binder = ({
         '--ring-highlight-rgba-20': ringHighlightRgba20,
         '--ring-base-rgba': ringBaseRgba
       }}>
-        <div className={`binder binder-type-${binderType}`}>
+        <div
+          className={`binder binder-type-${binderType}`}
+          style={{
+            '--grid-stitch-color': gridStitchColor,
+            '--grid-stitch-color-outer': gridStitchColor,
+          }}
+        >
           {/* Sol taraf - Ön cepler */}
           <div className="binder-left" style={{display:"grid", gridTemplateRows:"1fr 2fr 1fr"}}>
             <div></div>

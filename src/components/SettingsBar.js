@@ -12,6 +12,7 @@ const SettingsBar = ({
   binderColor, 
   ringColor,
   containerColor,
+  gridStitchColor = '#D7D7DC',
   binderType,
   widthRatio,
   heightRatio,
@@ -21,6 +22,7 @@ const SettingsBar = ({
   onColorChange, 
   onRingColorChange,
   onContainerColorChange,
+  onGridStitchColorChange,
   onBinderTypeChange,
   onWidthRatioChange,
   onHeightRatioChange,
@@ -74,7 +76,7 @@ const SettingsBar = ({
   const [showBackImageDefaultGallery, setShowBackImageDefaultGallery] = useState(false);
   const [defaultGalleryUrls, setDefaultGalleryUrls] = useState([]);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [colorPickerType, setColorPickerType] = useState(null); // 'binder', 'ring', 'background'
+  const [colorPickerType, setColorPickerType] = useState(null); // 'binder', 'ring', 'background', 'gridStitch'
   const [colorPickerValue, setColorPickerValue] = useState('#000000');
   const [showBinderMenu, setShowBinderMenu] = useState(false);
   const [editingBinderId, setEditingBinderId] = useState(null);
@@ -604,6 +606,25 @@ const SettingsBar = ({
           />
         </div>
       </div>
+
+      <div className="setting-item">
+        <div className="color-input-wrapper" data-tooltip={t('settings.gridStitch')}>
+          <input
+            type="color"
+            value={gridStitchColor}
+            onChange={(e) => onGridStitchColorChange(e.target.value)}
+            onClick={(e) => {
+              if (window.innerWidth <= 1024) {
+                e.preventDefault();
+                setColorPickerType('gridStitch');
+                setColorPickerValue(gridStitchColor);
+                setShowColorPicker(true);
+              }
+            }}
+            className="settings-control color-input"
+          />
+        </div>
+      </div>
       
       <div className="setting-item">
         <span className="setting-label" title={t('settings.widthHelp')}>{t('settings.width')}</span>
@@ -1077,7 +1098,12 @@ const SettingsBar = ({
         >
           <div className="color-picker-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="color-picker-header">
-              <h3>{colorPickerType === 'binder' ? t('settings.binder') : colorPickerType === 'ring' ? t('settings.ring') : t('settings.background')}</h3>
+              <h3>{
+                colorPickerType === 'binder' ? t('settings.binder')
+                  : colorPickerType === 'ring' ? t('settings.ring')
+                  : colorPickerType === 'gridStitch' ? t('settings.gridStitch')
+                  : t('settings.background')
+              }</h3>
               <button
                 className="color-picker-close"
                 onClick={() => setShowColorPicker(false)}
@@ -1125,6 +1151,8 @@ const SettingsBar = ({
                       onRingColorChange(colorPickerValue);
                     } else if (colorPickerType === 'background') {
                       onContainerColorChange(colorPickerValue);
+                    } else if (colorPickerType === 'gridStitch') {
+                      onGridStitchColorChange(colorPickerValue);
                     }
                     setShowColorPicker(false);
                   }}
