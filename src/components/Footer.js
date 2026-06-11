@@ -5,6 +5,106 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { getTotalImageCountFromIndexedDB, clearAllIndexedDB } from '../utils/indexedDB.js';
 
+const INFO_SECTIONS = [
+  {
+    id: 'nav',
+    titleKey: 'info.sec.nav.title',
+    itemKeys: ['info.sec.nav.1', 'info.sec.nav.2'],
+    defaultOpen: true,
+  },
+  {
+    id: 'binder',
+    titleKey: 'info.sec.binder.title',
+    itemKeys: ['info.sec.binder.1', 'info.sec.binder.2', 'info.sec.binder.3', 'info.sec.binder.4'],
+  },
+  {
+    id: 'pages',
+    titleKey: 'info.sec.pages.title',
+    itemKeys: ['info.sec.pages.1', 'info.sec.pages.2', 'info.sec.pages.3', 'info.sec.pages.4', 'info.sec.pages.5'],
+  },
+  {
+    id: 'look',
+    titleKey: 'info.sec.look.title',
+    itemKeys: ['info.sec.look.1', 'info.sec.look.2', 'info.sec.look.3', 'info.sec.look.4'],
+  },
+  {
+    id: 'file',
+    titleKey: 'info.sec.file.title',
+    itemKeys: ['info.sec.file.1', 'info.sec.file.2', 'info.sec.file.3'],
+  },
+  {
+    id: 'url',
+    titleKey: 'info.sec.url.title',
+    itemKeys: ['info.sec.url.1', 'info.sec.url.2', 'info.sec.url.3', 'info.sec.url.4'],
+  },
+  {
+    id: 'gallery',
+    titleKey: 'info.sec.gallery.title',
+    itemKeys: ['info.sec.gallery.1', 'info.sec.gallery.2', 'info.sec.gallery.3', 'info.sec.gallery.4', 'info.sec.gallery.5'],
+    codeKey: 'info.sec.gallery.example',
+    noteKey: 'info.sec.gallery.note',
+  },
+  {
+    id: 'defaultGallery',
+    titleKey: 'info.sec.defaultGallery.title',
+    itemKeys: ['info.sec.defaultGallery.1', 'info.sec.defaultGallery.2', 'info.sec.defaultGallery.3'],
+  },
+  {
+    id: 'backImage',
+    titleKey: 'info.sec.backImage.title',
+    itemKeys: ['info.sec.backImage.1', 'info.sec.backImage.2', 'info.sec.backImage.3', 'info.sec.backImage.4'],
+  },
+  {
+    id: 'imageEdit',
+    titleKey: 'info.sec.imageEdit.title',
+    itemKeys: ['info.sec.imageEdit.1', 'info.sec.imageEdit.2', 'info.sec.imageEdit.3', 'info.sec.imageEdit.4', 'info.sec.imageEdit.5'],
+  },
+  {
+    id: 'imageDrag',
+    titleKey: 'info.sec.imageDrag.title',
+    itemKeys: ['info.sec.imageDrag.1', 'info.sec.imageDrag.2', 'info.sec.imageDrag.3'],
+  },
+  {
+    id: 'pageOrder',
+    titleKey: 'info.sec.pageOrder.title',
+    itemKeys: ['info.sec.pageOrder.1', 'info.sec.pageOrder.2', 'info.sec.pageOrder.3'],
+  },
+  {
+    id: 'footer',
+    titleKey: 'info.sec.footer.title',
+    itemKeys: ['info.sec.footer.1', 'info.sec.footer.2', 'info.sec.footer.3', 'info.sec.footer.4', 'info.sec.footer.5', 'info.sec.footer.6'],
+  },
+];
+
+const InfoCollapseSection = ({ section, isOpen, onToggle, t }) => (
+  <div className={`info-collapse ${isOpen ? 'open' : ''}`}>
+    <button
+      type="button"
+      className="info-collapse-header"
+      onClick={onToggle}
+      aria-expanded={isOpen}
+    >
+      <span className="info-collapse-chevron" aria-hidden="true">{isOpen ? '▼' : '▶'}</span>
+      <span>{t(section.titleKey)}</span>
+    </button>
+    {isOpen && (
+      <div className="info-collapse-body">
+        <ul className="info-list">
+          {section.itemKeys.map((key) => (
+            <li key={key}>{t(key)}</li>
+          ))}
+        </ul>
+        {section.codeKey && (
+          <pre className="info-code-block">{t(section.codeKey)}</pre>
+        )}
+        {section.noteKey && (
+          <p className="info-collapse-note">{t(section.noteKey)}</p>
+        )}
+      </div>
+    )}
+  </div>
+);
+
 // localStorage kullanım yüzdesini hesapla
 const getLocalStorageUsagePercent = () => {
   try {
@@ -29,6 +129,20 @@ const Footer = ({ pagesCount = 0 }) => {
   const [storageUsage, setStorageUsage] = useState(0);
   const [imageCount, setImageCount] = useState(0);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [openInfoSections, setOpenInfoSections] = useState(() =>
+    Object.fromEntries(INFO_SECTIONS.map((s) => [s.id, !!s.defaultOpen]))
+  );
+
+  const toggleInfoSection = (id) => {
+    setOpenInfoSections((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const openInfoModal = () => {
+    setOpenInfoSections(
+      Object.fromEntries(INFO_SECTIONS.map((s) => [s.id, !!s.defaultOpen]))
+    );
+    setShowInfoModal(true);
+  };
 
   useEffect(() => {
     // Check if app is already installed
@@ -159,7 +273,7 @@ const Footer = ({ pagesCount = 0 }) => {
         <span className="footer-separator">•</span>
         <button
           className="footer-info-btn"
-          onClick={() => setShowInfoModal(true)}
+          onClick={openInfoModal}
           title={t('info.title')}
         >
           ℹ️ {t('info.button')}
@@ -207,183 +321,17 @@ const Footer = ({ pagesCount = 0 }) => {
               </button>
             </div>
             <div className="info-modal-body">
-              <div className="info-section">
-                <h3>{t('info.intro')}</h3>
-                <p>{t('info.introDesc')}</p>
-              </div>
-
-              <div className="info-section">
-                <h3>{t('info.settingsHeader')}</h3>
-                <p>{t('info.settingsHeaderDesc')}</p>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.fullscreen')}</h4>
-                  <p>{t('info.fullscreenDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.binderSelect')}</h4>
-                  <p>{t('info.binderSelectDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.binderType')}</h4>
-                  <p>{t('info.binderTypeDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.binderColor')}</h4>
-                  <p>{t('info.binderColorDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.ringColor')}</h4>
-                  <p>{t('info.ringColorDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.backgroundColor')}</h4>
-                  <p>{t('info.backgroundColorDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.width')}</h4>
-                  <p>{t('info.widthDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.height')}</h4>
-                  <p>{t('info.heightDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.grid')}</h4>
-                  <p>{t('info.gridDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.pageType')}</h4>
-                  <p>{t('info.pageTypeDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.imageInputMode')}</h4>
-                  <p style={{ whiteSpace: 'pre-line' }}>{t('info.imageInputModeDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.loadTextFile')}</h4>
-                  <p>{t('info.loadTextFileDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.backImage')}</h4>
-                  <p>{t('info.backImageDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.addPage')}</h4>
-                  <p>{t('info.addPageDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.deletePages')}</h4>
-                  <p>{t('info.deletePagesDesc')}</p>
-                </div>
-              </div>
-
-              <div className="info-section">
-                <h3>{t('info.imageMethods')}</h3>
-                <p>{t('info.imageMethodsDesc')}</p>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.methodFile')}</h4>
-                  <p style={{ whiteSpace: 'pre-line' }}>{t('info.methodFileDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.methodUrl')}</h4>
-                  <p style={{ whiteSpace: 'pre-line' }}>{t('info.methodUrlDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.methodGallery')}</h4>
-                  <p style={{ whiteSpace: 'pre-line' }}>{t('info.methodGalleryDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.methodDefault')}</h4>
-                  <p style={{ whiteSpace: 'pre-line' }}>{t('info.methodDefaultDesc')}</p>
-                </div>
-              </div>
-
-              <div className="info-section">
-                <h3>{t('info.txtFormat')}</h3>
-                <p>{t('info.txtFormatDesc')}</p>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.txtFormat1')}</h4>
-                  <pre className="info-code-block">{t('info.txtFormat1Example')}</pre>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.txtFormat2')}</h4>
-                  <pre className="info-code-block">{t('info.txtFormat2Example')}</pre>
-                  <p>{t('info.txtFormat2Note')}</p>
-                </div>
-
-                <div className="info-subsection">
-                  <h4>{t('info.txtFormat3')}</h4>
-                  <pre className="info-code-block">{t('info.txtFormat3Example')}</pre>
-                  <p>{t('info.txtFormat3Note')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.txtFormatRules')}</h4>
-                  <ul className="info-list">
-                    <li>{t('info.txtFormatRules1')}</li>
-                    <li>{t('info.txtFormatRules2')}</li>
-                    <li>{t('info.txtFormatRules3')}</li>
-                    <li>{t('info.txtFormatRules4')}</li>
-                    <li>{t('info.txtFormatRules5')}</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="info-section">
-                <h3>{t('info.pageManagement')}</h3>
-                <p>{t('info.pageManagementDesc')}</p>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.pageOrder')}</h4>
-                  <p style={{ whiteSpace: 'pre-line' }}>{t('info.pageOrderDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.pageEdit')}</h4>
-                  <p style={{ whiteSpace: 'pre-line' }}>{t('info.pageEditDesc')}</p>
-                </div>
-                
-                <div className="info-subsection">
-                  <h4>{t('info.imageEdit')}</h4>
-                  <p style={{ whiteSpace: 'pre-line' }}>{t('info.imageEditDesc')}</p>
-                </div>
-              </div>
-
-              <div className="info-section">
-                <h3>{t('info.storage')}</h3>
-                <p style={{ whiteSpace: 'pre-line' }}>{t('info.storageDesc')}</p>
-              </div>
-
-              <div className="info-section">
-                <h3>{t('info.tips')}</h3>
-                <ul className="info-list">
-                  <li>{t('info.tips1')}</li>
-                  <li>{t('info.tips2')}</li>
-                  <li>{t('info.tips3')}</li>
-                  <li>{t('info.tips4')}</li>
-                  <li>{t('info.tips5')}</li>
-                </ul>
+              <p className="info-intro">{t('info.introDesc')}</p>
+              <div className="info-collapse-list">
+                {INFO_SECTIONS.map((section) => (
+                  <InfoCollapseSection
+                    key={section.id}
+                    section={section}
+                    isOpen={!!openInfoSections[section.id]}
+                    onToggle={() => toggleInfoSection(section.id)}
+                    t={t}
+                  />
+                ))}
               </div>
             </div>
             <div className="info-modal-footer">
