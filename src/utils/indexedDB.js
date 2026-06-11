@@ -205,6 +205,44 @@ export const removeDefaultBackImageFromIndexedDB = async (binderId) => {
   }
 };
 
+// Binder'a ait tüm resimleri getir (imageKey -> data URL)
+export const getAllImagesForBinder = async (binderId) => {
+  const images = {};
+  try {
+    const database = await initIndexedDB();
+    const transaction = database.transaction([STORE_IMAGES], 'readonly');
+    const store = transaction.objectStore(STORE_IMAGES);
+    const index = store.index('binderId');
+    const binderKey = binderId || 'default';
+    const prefix = binderId ? `${binderId}-` : '';
+
+    await new Promise((resolve, reject) => {
+      const request = index.openCursor(IDBKeyRange.only(binderKey));
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          const record = cursor.value;
+          const fullKey = record.key;
+          const imageKey =
+            prefix && fullKey.startsWith(prefix)
+              ? fullKey.slice(prefix.length)
+              : fullKey;
+          if (record.imageData) {
+            images[imageKey] = record.imageData;
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.error(`Binder ${binderId} resimleri alınırken hata:`, error);
+  }
+  return images;
+};
+
 // IndexedDB'deki toplam resim sayısını al
 export const getTotalImageCountFromIndexedDB = async () => {
   try {

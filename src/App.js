@@ -18,6 +18,11 @@ import {
   cleanupAllImagesFromLocalStorage
 } from './utils/indexedDB.js';
 import { collectBinderUsedImages } from './utils/binderImages';
+import {
+  exportBinderToFile,
+  parseBinderImportFile,
+  applyBinderImport,
+} from './utils/binderExportImport';
 
 // Binder yönetimi için localStorage helper fonksiyonları
 const BINDERS_LIST_KEY = 'binders-list';
@@ -613,59 +618,63 @@ const cleanupUnusedImages = async (pageId, newContentRefs, newBackContentRefs, b
   }
 };
 
+const getInlineImageDataUrl = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string' && value.startsWith('data:image')) {
+    return value;
+  }
+  if (typeof value === 'object') {
+    const url = value.url || value.image;
+    if (url && typeof url === 'string' && url.startsWith('data:image')) {
+      return url;
+    }
+  }
+  return null;
+};
+
+const saveCellImageToStorage = async (pageId, side, cellKey, value, binderId) => {
+  const imageData = getInlineImageDataUrl(value);
+  if (!imageData) {
+    return value;
+  }
+
+  const imageKey = `${pageId}-${side}-${cellKey}`;
+  try {
+    await saveImageToStorage(imageKey, imageData, binderId);
+    return `__IMAGE_REF__${imageKey}`;
+  } catch (e) {
+    const imageSize = imageData.length;
+    if (imageSize < 50 * 1024) {
+      return value;
+    }
+    console.warn(`Resim ${imageKey} kaydedilemedi, atlandı.`);
+    return null;
+  }
+};
+
 // Sayfa içeriğindeki resimleri ayrı key'lere kaydet ve referansları değiştir
 const savePageWithSeparateImages = async (page, binderId) => {
   try {
-    // Content'teki resimleri ayrı key'lere kaydet
     const contentWithRefs = {};
     for (const key of Object.keys(page.content || {})) {
-      const value = page.content[key];
-      if (value && typeof value === 'string' && value.startsWith('data:image')) {
-        // Bu bir resim, ayrı key'e kaydet
-        const imageKey = `${page.id}-content-${key}`;
-        try {
-          await saveImageToStorage(imageKey, value, binderId);
-          // Referans olarak sakla
-          contentWithRefs[key] = `__IMAGE_REF__${imageKey}`;
-        } catch (e) {
-          // Kaydedilemediyse, küçük resimler için orijinal değeri sakla
-          const imageSize = value.length;
-          if (imageSize < 50 * 1024) { // 50KB'den küçükse direkt kaydet
-            contentWithRefs[key] = value;
-          } else {
-            console.warn(`Resim ${imageKey} kaydedilemedi, atlandı.`);
-            contentWithRefs[key] = null;
-          }
-        }
-      } else {
-        contentWithRefs[key] = value;
-      }
+      contentWithRefs[key] = await saveCellImageToStorage(
+        page.id,
+        'content',
+        key,
+        page.content[key],
+        binderId
+      );
     }
-    
-    // BackContent'teki resimleri ayrı key'lere kaydet
+
     const backContentWithRefs = {};
     for (const key of Object.keys(page.backContent || {})) {
-      const value = page.backContent[key];
-      if (value && typeof value === 'string' && value.startsWith('data:image')) {
-        // Bu bir resim, ayrı key'e kaydet
-        const imageKey = `${page.id}-back-${key}`;
-        try {
-          await saveImageToStorage(imageKey, value, binderId);
-          // Referans olarak sakla
-          backContentWithRefs[key] = `__IMAGE_REF__${imageKey}`;
-        } catch (e) {
-          // Kaydedilemediyse, küçük resimler için orijinal değeri sakla
-          const imageSize = value.length;
-          if (imageSize < 50 * 1024) { // 50KB'den küçükse direkt kaydet
-            backContentWithRefs[key] = value;
-          } else {
-            console.warn(`Resim ${imageKey} kaydedilemedi, atlandı.`);
-            backContentWithRefs[key] = null;
-          }
-        }
-      } else {
-        backContentWithRefs[key] = value;
-      }
+      backContentWithRefs[key] = await saveCellImageToStorage(
+        page.id,
+        'back',
+        key,
+        page.backContent[key],
+        binderId
+      );
     }
     
     // Sayfa verisini referanslarla kaydet
@@ -1249,6 +1258,75 @@ function App() {
   
   const handleSelectBinder = (binderId) => {
     setSelectedBinderId(binderId);
+  };
+
+  const flushCurrentBinderState = async () => {
+    if (!selectedBinderId) return;
+
+    const widthRatioToSave = widthRatio === '' ? 1.9 : widthRatio;
+    const heightRatioToSave = heightRatio === '' ? 1 : heightRatio;
+
+    saveSettings(
+      {
+        binderColor,
+        ringColor,
+        widthRatio: widthRatioToSave,
+        heightRatio: heightRatioToSave,
+        gridSize,
+        pageType,
+        imageInputMode,
+        containerColor,
+        binderType,
+      },
+      selectedBinderId
+    );
+    saveGalleryUrls(galleryUrls, selectedBinderId);
+    await saveDefaultBackImage(defaultBackImage, selectedBinderId);
+
+    const pagesToSave = [...pages].sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : a.id;
+      const orderB = b.order !== undefined ? b.order : b.id;
+      return orderA - orderB;
+    });
+    await saveAllPages(pagesToSave, selectedBinderId);
+  };
+
+  const handleExportBinder = async () => {
+    if (!selectedBinderId) return;
+
+    const binder = binders.find((b) => b.id === selectedBinderId);
+    try {
+      await flushCurrentBinderState();
+      await exportBinderToFile(selectedBinderId, binder?.name || 'Binder');
+    } catch (error) {
+      console.error('Binder dışa aktarılırken hata:', error);
+      alert(t('binder.exportFailed'));
+    }
+  };
+
+  const handleImportBinder = async (file) => {
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = parseBinderImportFile(text);
+      const newBinderId = `binder-${Date.now()}`;
+      const imported = await applyBinderImport(data, newBinderId);
+
+      const newBinder = {
+        id: newBinderId,
+        name: imported.name || t('binder.defaultBinderName', { number: binders.length + 1 }),
+        createdAt: Date.now(),
+      };
+
+      const updatedBinders = [...binders, newBinder];
+      setBinders(updatedBinders);
+      saveBindersList(updatedBinders);
+      setSelectedBinderId(newBinderId);
+    } catch (error) {
+      console.error('Binder içe aktarılırken hata:', error);
+      alert(t('binder.importFailed'));
+    }
   };
 
   // Spread değiştiğinde selectedPageIndex'i güncelle
@@ -2029,6 +2107,8 @@ function App() {
         onCreateBinder={handleCreateBinder}
         onDeleteBinder={handleDeleteBinder}
         onRenameBinder={handleRenameBinder}
+        onExportBinder={handleExportBinder}
+        onImportBinder={handleImportBinder}
         binderUsedImages={binderUsedImages}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}

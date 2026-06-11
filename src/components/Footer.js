@@ -15,7 +15,7 @@ const INFO_SECTIONS = [
   {
     id: 'binder',
     titleKey: 'info.sec.binder.title',
-    itemKeys: ['info.sec.binder.1', 'info.sec.binder.2', 'info.sec.binder.3', 'info.sec.binder.4'],
+    itemKeys: ['info.sec.binder.1', 'info.sec.binder.2', 'info.sec.binder.3', 'info.sec.binder.4', 'info.sec.binder.5', 'info.sec.binder.6'],
   },
   {
     id: 'pages',
