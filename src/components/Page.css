@@ -495,10 +495,10 @@
   z-index: 6;
   box-sizing: border-box;
   border: none;
-  border-top: 3px dashed var(--grid-stitch-color, #ffffff);
-  border-right: 3px dashed var(--grid-stitch-color, #ffffff);
-  border-bottom: 3px dashed var(--grid-stitch-color, #ffffff);
-  border-left: 3px dashed var(--grid-stitch-color, #ffffff);
+  border-top: 3px dashed var(--grid-stitch-color, rgba(215, 215, 220, 0.98));
+  border-right: 3px dashed var(--grid-stitch-color, rgba(215, 215, 220, 0.98));
+  border-bottom: 3px dashed var(--grid-stitch-color, rgba(215, 215, 220, 0.98));
+  border-left: 3px dashed var(--grid-stitch-color, rgba(215, 215, 220, 0.98));
 }
 
 /* Komşu kenarda çift çizgi olmasın: sol ve üst komşunun sağ/alt çizgisini kullan */
