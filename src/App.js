@@ -23,6 +23,12 @@ import {
   parseBinderImportFile,
   applyBinderImport,
 } from './utils/binderExportImport';
+import { Analytics } from '@vercel/analytics/react';
+import {
+  markDefaultBinderCreated,
+  flushPendingAnalytics,
+  trackBinderCreated,
+} from './utils/analytics';
 
 // Binder yönetimi için localStorage helper fonksiyonları
 const BINDERS_LIST_KEY = 'binders-list';
@@ -910,6 +916,10 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  useEffect(() => {
+    flushPendingAnalytics();
+  }, []);
   
   // Binder yönetimi
   const [binders, setBinders] = useState(() => {
@@ -924,6 +934,7 @@ function App() {
       };
       saveBindersList([newBinder]);
       saveSelectedBinderId(newBinderId);
+      markDefaultBinderCreated();
       return [newBinder];
     }
     return bindersList;
@@ -1223,6 +1234,7 @@ function App() {
     setBinders(updatedBinders);
     saveBindersList(updatedBinders);
     setSelectedBinderId(newBinderId);
+    trackBinderCreated('new');
   };
   
   const handleDeleteBinder = async (binderId) => {
@@ -1338,6 +1350,7 @@ function App() {
       setBinders(updatedBinders);
       saveBindersList(updatedBinders);
       setSelectedBinderId(newBinderId);
+      trackBinderCreated('import');
     } catch (error) {
       console.error('Binder içe aktarılırken hata:', error);
       alert(t('binder.importFailed'));
@@ -2189,7 +2202,7 @@ function App() {
         onAddPage={handleAddPage}
       />
       <Footer />
-    
+      <Analytics />
     </div>
   );
 }
