@@ -142,8 +142,20 @@
   pointer-events: none;
 }
 
-.page-back .grid-cell {
+.page-container:not(.flipped) .page-front .grid-cell {
   pointer-events: auto;
+}
+
+.page-container.flipped .page-back .grid-cell {
+  pointer-events: auto;
+}
+
+.page-container:not(.flipped) .page-back .grid-cell {
+  pointer-events: none;
+}
+
+.page-container.flipped .page-front .grid-cell {
+  pointer-events: none;
 }
 
 .page-container.flipped .page-front {
@@ -510,8 +522,8 @@
   border-top: none;
 }
 
-/* Resim içeren grid-cell'lerde cursor default - sadece butonlarla işlem yapılır */
-.grid-cell:has(.cell-image) {
+/* Resim içeren grid-cell'lerde sürükleme imleci */
+.grid-cell:has(.cell-image):not(.cell-draggable) {
   cursor: default;
 }
 
@@ -644,6 +656,7 @@
   cursor: grab;
   touch-action: none;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 .grid-cell.cell-draggable:active {
@@ -676,6 +689,8 @@
   display: block;
   position: relative;
   border-radius: 8px;
+  -webkit-user-drag: none;
+  user-select: none;
   /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
   z-index: inherit;
   pointer-events: none; /* Resim tıklamalarını engelle, sadece butonlar tıklanabilir */

@@ -20,6 +20,7 @@ const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
 const SLEEVE_RING_PX = 6; // Resmin dışına çizilen çerçeve kalınlığı (px)
 const IMAGE_TOUCH_DRAG_DELAY_MS = 250;
 const IMAGE_TOUCH_SCROLL_CANCEL_PX = 12;
+const IMAGE_MOUSE_DRAG_START_PX = 5;
 
 const Page = ({
   page,
@@ -72,8 +73,10 @@ const Page = ({
     dragging: false,
     longPressTimer: null,
     lastTarget: null,
+    inputType: null,
   });
   const performCellMoveOrSwapRef = useRef(null);
+  const draggedCellRef = useRef(null);
 
   (function () {
     let el = null;
@@ -176,7 +179,13 @@ const Page = ({
     return null;
   }, [page.id]);
 
-  const resetTouchDrag = useCallback(() => {
+  const beginPointerDrag = useCallback((cell) => {
+    draggedCellRef.current = cell;
+    setDraggedCell(cell);
+    setDragOverCell(cell);
+  }, []);
+
+  const resetPointerDrag = useCallback(() => {
     const ts = touchDragRef.current;
     if (ts.longPressTimer) {
       clearTimeout(ts.longPressTimer);
@@ -185,14 +194,31 @@ const Page = ({
     ts.cell = null;
     ts.dragging = false;
     ts.lastTarget = null;
+    ts.inputType = null;
+    draggedCellRef.current = null;
     setDraggedCell(null);
     setDragOverCell(null);
   }, []);
 
+  const updateDragTargetAtPoint = useCallback((x, y) => {
+    const ts = touchDragRef.current;
+    if (!ts.cell || !ts.dragging) return;
+
+    const target = findCellAtPoint(x, y);
+    if (
+      target &&
+      target.side === ts.cell.side &&
+      (target.row !== ts.cell.row || target.col !== ts.cell.col)
+    ) {
+      ts.lastTarget = target;
+      setDragOverCell(target);
+    }
+  }, [findCellAtPoint]);
+
   useEffect(() => {
     const onTouchMove = (e) => {
       const ts = touchDragRef.current;
-      if (!ts.cell || e.touches.length !== 1) return;
+      if (!ts.cell || ts.inputType !== 'touch' || e.touches.length !== 1) return;
 
       const touch = e.touches[0];
 
@@ -200,43 +226,67 @@ const Page = ({
         const dx = Math.abs(touch.clientX - ts.startX);
         const dy = Math.abs(touch.clientY - ts.startY);
         if (dx > IMAGE_TOUCH_SCROLL_CANCEL_PX || dy > IMAGE_TOUCH_SCROLL_CANCEL_PX) {
-          resetTouchDrag();
+          resetPointerDrag();
         }
         return;
       }
 
       e.preventDefault();
-      const target = findCellAtPoint(touch.clientX, touch.clientY);
-      if (
-        target &&
-        target.side === ts.cell.side &&
-        (target.row !== ts.cell.row || target.col !== ts.cell.col)
-      ) {
-        ts.lastTarget = target;
-        setDragOverCell(target);
-      }
+      updateDragTargetAtPoint(touch.clientX, touch.clientY);
     };
 
     const onTouchEnd = () => {
       const ts = touchDragRef.current;
-      if (!ts.cell) return;
+      if (!ts.cell || ts.inputType !== 'touch') return;
 
       if (ts.dragging && ts.lastTarget && performCellMoveOrSwapRef.current) {
         performCellMoveOrSwapRef.current(ts.cell, ts.lastTarget);
       }
-      resetTouchDrag();
+      resetPointerDrag();
+    };
+
+    const onMouseMove = (e) => {
+      const ts = touchDragRef.current;
+      if (!ts.cell || ts.inputType !== 'mouse') return;
+
+      if (!ts.dragging) {
+        const dx = Math.abs(e.clientX - ts.startX);
+        const dy = Math.abs(e.clientY - ts.startY);
+        if (dx > IMAGE_MOUSE_DRAG_START_PX || dy > IMAGE_MOUSE_DRAG_START_PX) {
+          ts.dragging = true;
+          beginPointerDrag(ts.cell);
+        }
+        return;
+      }
+
+      e.preventDefault();
+      updateDragTargetAtPoint(e.clientX, e.clientY);
+    };
+
+    const onMouseUp = () => {
+      const ts = touchDragRef.current;
+      if (!ts.cell || ts.inputType !== 'mouse') return;
+
+      if (ts.dragging && ts.lastTarget && performCellMoveOrSwapRef.current) {
+        performCellMoveOrSwapRef.current(ts.cell, ts.lastTarget);
+      }
+      resetPointerDrag();
     };
 
     document.addEventListener('touchmove', onTouchMove, { passive: false });
     document.addEventListener('touchend', onTouchEnd);
     document.addEventListener('touchcancel', onTouchEnd);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
 
     return () => {
       document.removeEventListener('touchmove', onTouchMove);
       document.removeEventListener('touchend', onTouchEnd);
       document.removeEventListener('touchcancel', onTouchEnd);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
     };
-  }, [findCellAtPoint, resetTouchDrag]);
+  }, [beginPointerDrag, resetPointerDrag, updateDragTargetAtPoint]);
 
   // Güncel state'leri ref'lerde sakla (closure sorunlarını önlemek için)
   const contentRef = useRef(content);
@@ -1079,68 +1129,37 @@ const Page = ({
 
   performCellMoveOrSwapRef.current = performCellMoveOrSwap;
 
-  const handleImageDragStart = (e, side, row, col) => {
-    if (pointerEvents === 'none' || !isTopPage) {
-      e.preventDefault();
-      return;
-    }
-    e.stopPropagation();
-    setDraggedCell({ side, row, col });
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', `${side}-${row}-${col}`);
-  };
-
-  const handleImageDragOver = (e, side, row, col) => {
-    if (!draggedCell || draggedCell.side !== side) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (draggedCell.row !== row || draggedCell.col !== col) {
-      setDragOverCell({ side, row, col });
-    }
-  };
-
-  const handleImageDragLeave = () => {
-    setDragOverCell(null);
-  };
-
-  const handleImageDrop = (e, side, row, col) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!draggedCell) return;
-    performCellMoveOrSwap(draggedCell, { side, row, col });
-    setDraggedCell(null);
-    setDragOverCell(null);
-  };
-
-  const handleImageDragEnd = () => {
-    setDraggedCell(null);
-    setDragOverCell(null);
-  };
-
-  const handleCellTouchStart = (side, row, col, isDraggable) => (e) => {
+  const handleCellPointerDown = (side, row, col, isDraggable, inputType) => (e) => {
     if (!isDraggable || pointerEvents === 'none' || !isTopPage) return;
-    if (e.touches.length !== 1) return;
     if (e.target.closest('.cell-control-btn, .cell-sleeve-picker')) return;
 
-    const touch = e.touches[0];
+    if (inputType === 'touch') {
+      if (e.touches.length !== 1) return;
+    } else if (e.button !== 0) {
+      return;
+    }
+
+    const point = inputType === 'touch' ? e.touches[0] : e;
     const ts = touchDragRef.current;
     const cell = { side, row, col };
 
     if (ts.longPressTimer) clearTimeout(ts.longPressTimer);
 
     ts.cell = cell;
-    ts.startX = touch.clientX;
-    ts.startY = touch.clientY;
+    ts.startX = point.clientX;
+    ts.startY = point.clientY;
     ts.dragging = false;
     ts.lastTarget = null;
+    ts.inputType = inputType;
 
-    ts.longPressTimer = setTimeout(() => {
-      ts.dragging = true;
-      ts.longPressTimer = null;
-      setDraggedCell(cell);
-      setDragOverCell(cell);
-      if (navigator.vibrate) navigator.vibrate(12);
-    }, IMAGE_TOUCH_DRAG_DELAY_MS);
+    if (inputType === 'touch') {
+      ts.longPressTimer = setTimeout(() => {
+        ts.dragging = true;
+        ts.longPressTimer = null;
+        beginPointerDrag(cell);
+        if (navigator.vibrate) navigator.vibrate(12);
+      }, IMAGE_TOUCH_DRAG_DELAY_MS);
+    }
   };
 
   const getCellDragClassName = (side, row, col, isDraggable) => {
@@ -1392,6 +1411,7 @@ const Page = ({
         <img
           src={imageUrl}
           alt={imageName || ''}
+          draggable={false}
           className={[
             'cell-image',
             extraImgClass,
@@ -1758,13 +1778,8 @@ const Page = ({
                       e.stopPropagation();
                       handleCellClick(row, col);
                     }}
-                    draggable={isImage && pointerEvents !== 'none' && isTopPage}
-                    onTouchStart={handleCellTouchStart('front', row, col, isImage)}
-                    onDragStart={(e) => handleImageDragStart(e, 'front', row, col)}
-                    onDragOver={(e) => handleImageDragOver(e, 'front', row, col)}
-                    onDragLeave={handleImageDragLeave}
-                    onDrop={(e) => handleImageDrop(e, 'front', row, col)}
-                    onDragEnd={handleImageDragEnd}
+                    onMouseDown={handleCellPointerDown('front', row, col, isImage, 'mouse')}
+                    onTouchStart={handleCellPointerDown('front', row, col, isImage, 'touch')}
                     title={isImage && imageName ? imageName : undefined}
                     data-page-id={page.id}
                     data-side="front"
@@ -1975,13 +1990,8 @@ const Page = ({
                       // Çünkü backContent normal pozisyonda saklanıyor
                       handleBackCellClick(row, col);
                     }}
-                    draggable={canDragBack && pointerEvents !== 'none' && isTopPage}
-                    onTouchStart={handleCellTouchStart('back', row, col, canDragBack)}
-                    onDragStart={(e) => handleImageDragStart(e, 'back', row, col)}
-                    onDragOver={(e) => handleImageDragOver(e, 'back', row, col)}
-                    onDragLeave={handleImageDragLeave}
-                    onDrop={(e) => handleImageDrop(e, 'back', row, col)}
-                    onDragEnd={handleImageDragEnd}
+                    onMouseDown={handleCellPointerDown('back', row, col, canDragBack, 'mouse')}
+                    onTouchStart={handleCellPointerDown('back', row, col, canDragBack, 'touch')}
                     title={isImage && backImageName ? backImageName : undefined}
                     data-page-id={page.id}
                     data-side="back"

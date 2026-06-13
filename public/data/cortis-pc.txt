@@ -214,6 +214,9 @@ COTL | https://i.pinimg.com/236x/24/51/ad/2451ad7957ab3e63c32a16e52b3bdd8b.jpg |
 COTL | https://i.pinimg.com/236x/dd/2d/d0/dd2dd0262fbb5d3f46fe2a581241ee23.jpg | Studio Choom seonghyeon
 COTL | https://i.pinimg.com/236x/95/44/2d/95442d981f595e1237de1ced736dd20b.jpg | Studio Choom juhoon
 COTL | https://i.pinimg.com/236x/2d/37/3b/2d373bbda2097417791e045e9e644c41.jpg | Studio Choom juhoon
+COTL | https://i.pinimg.com/736x/cb/ea/68/cbea6810322b918c3180fe4bc2733fd6.jpg | Studio Choom juhoon 2
+
+
 COTL | https://i.pinimg.com/236x/e9/52/d9/e952d949152700cbadf8855dd29f043c.jpg | Studio Choom martin
 COTL | https://i.pinimg.com/236x/79/ce/7c/79ce7cc4a6bab3347fd722080249502c.jpg | Studio Choom martin
 
@@ -381,6 +384,16 @@ COTL | https://i.pinimg.com/236x/4b/1f/d6/4b1fd6e0db852d6d0488d7d9d0c3e84f.jpg |
 COTL | https://i.pinimg.com/236x/02/64/18/02641818ef931f6ede226a693db1dbb8.jpg | Juhoon CORTIS 1st EP 'Color Outside The Lines' Music Art SG 
 COTL | https://i.pinimg.com/236x/97/8e/02/978e0282842d8865fb858fde2f05be70.jpg | James CORTIS 1st EP 'Color Outside The Lines' Music Art SG 
 COTL | https://i.pinimg.com/236x/55/a2/a1/55a2a1ce7035ad557ef05723ef420396.jpg | Martin CORTIS 1st EP 'Color Outside The Lines' Music Art SG 
+
+
+
+
+COTL | https://i.pinimg.com/736x/88/b8/f4/88b8f4df0ba9f0841f2672c53394e628.jpg | Keonho  CORTIS 1st EP 'Color Outside The Lines' YIZHIYU Voice Call Event 1.0 yzy 
+COTL | https://i.pinimg.com/736x/04/5c/78/045c78ba42945b87542c13f2b8cf2de8.jpg | Seonghyeon  CORTIS 1st EP 'Color Outside The Lines' YIZHIYU Voice Call Event 1.0 yzy 
+COTL | https://i.pinimg.com/736x/1f/61/8f/1f618fbf8e7c9bb9e41364b2a84d7fe6.jpg | Juhoon  CORTIS 1st EP 'Color Outside The Lines' YIZHIYU Voice Call Event 1.0 yzy 
+COTL | https://i.pinimg.com/736x/07/7d/73/077d73f53b8e8c330e4f6df4cee293fd.jpg | James  CORTIS 1st EP 'Color Outside The Lines' YIZHIYU Voice Call Event 1.0 yzy 
+COTL | https://i.pinimg.com/736x/60/5c/cb/605ccb83b2a97f92475d5f18d2140279.jpg | Martin  CORTIS 1st EP 'Color Outside The Lines' YIZHIYU Voice Call Event 1.0 yzy 
+
 
 
 GREENGREEN | https://i.pinimg.com/474x/79/9e/a9/799ea9054b2ad1b7613b188e82ac6fe5.jpg | GreenGreen POB UMS
