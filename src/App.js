@@ -966,19 +966,6 @@ function App() {
     }
   }, [selectedBinderId]);
 
-  // Seçili binder değiştiğinde sayfaları ve defaultBackImage'ı yükle
-  useEffect(() => {
-    const loadBinderData = async () => {
-      if (selectedBinderId) {
-        const loadedPages = await loadAllPages(selectedBinderId);
-        setPages(loadedPages);
-        const loadedDefaultBackImage = await loadDefaultBackImage(selectedBinderId);
-        setDefaultBackImage(loadedDefaultBackImage);
-      }
-    };
-    loadBinderData();
-  }, [selectedBinderId]);
-  
   // localStorage'dan ayarları yükle (seçili binder'a göre)
   const savedSettings = selectedBinderId ? loadSettings(selectedBinderId) : null;
   const [binderColor, setBinderColor] = useState(savedSettings?.binderColor || '#E6E6E6');
@@ -1029,8 +1016,6 @@ function App() {
         setDefaultBackImage(loadedDefaultBackImage);
         const loadedPages = await loadAllPages(selectedBinderId);
         setPages(loadedPages);
-        setCurrentSpreadIndex(0);
-        setSelectedPageIndex(null);
       }
     };
     
@@ -1059,6 +1044,12 @@ function App() {
   const maxSpreadIndex = Math.max(0, sortedPages.length); // En fazla pages.length spread olabilir
   
   const [selectedPageIndex, setSelectedPageIndex] = useState(null);
+
+  useEffect(() => {
+    setCurrentSpreadIndex(0);
+    setSelectedPageIndex(null);
+  }, [selectedBinderId]);
+
   const [editingGridPageId, setEditingGridPageId] = useState(null);
   const [editingGridSize, setEditingGridSize] = useState('');
   const saveTimeoutRef = useRef(null); // Debounce için timeout ref'i
@@ -1070,8 +1061,8 @@ function App() {
     const rightPageIndex = currentSpreadIndex < sortedPages.length ? currentSpreadIndex : null;
     
     return {
-      leftPageId: leftPageIndex !== null ? sortedPages[leftPageIndex].id : null,
-      rightPageId: rightPageIndex !== null ? sortedPages[rightPageIndex].id : null,
+      leftPageId: leftPageIndex !== null && sortedPages[leftPageIndex] ? sortedPages[leftPageIndex].id : null,
+      rightPageId: rightPageIndex !== null && sortedPages[rightPageIndex] ? sortedPages[rightPageIndex].id : null,
       leftPageIndex,
       rightPageIndex
     };
