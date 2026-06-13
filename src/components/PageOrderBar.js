@@ -18,6 +18,7 @@ const PageOrderBar = ({
   const t = (key) => getTranslation(key, language);
   const [draggedPageId, setDraggedPageId] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [dragGhost, setDragGhost] = useState(null);
   const [swapPage1, setSwapPage1] = useState('');
   const [swapPage2, setSwapPage2] = useState('');
   const [expandedRange, setExpandedRange] = useState(null);
@@ -52,8 +53,10 @@ const PageOrderBar = ({
     ts.pageId = null;
     ts.dragging = false;
     ts.lastIndex = null;
+    ts.pageLabel = null;
     setDraggedPageId(null);
     setDragOverIndex(null);
+    setDragGhost(null);
     listRef.current?.classList.remove('is-touch-dragging');
   }, []);
 
@@ -74,6 +77,11 @@ const PageOrderBar = ({
       }
 
       e.preventDefault();
+      setDragGhost({
+        x: touch.clientX,
+        y: touch.clientY,
+        label: ts.pageLabel,
+      });
       const index = findPageIndexAtPoint(touch.clientX, touch.clientY);
       if (index !== null && pages[index]?.id !== ts.pageId) {
         ts.lastIndex = index;
@@ -118,12 +126,18 @@ const PageOrderBar = ({
     ts.startY = touch.clientY;
     ts.dragging = false;
     ts.lastIndex = absoluteIndex;
+    ts.pageLabel = absoluteIndex + 1;
 
     ts.longPressTimer = setTimeout(() => {
       ts.dragging = true;
       ts.longPressTimer = null;
       setDraggedPageId(page.id);
       setDragOverIndex(absoluteIndex);
+      setDragGhost({
+        x: touch.clientX,
+        y: touch.clientY,
+        label: absoluteIndex + 1,
+      });
       listRef.current?.classList.add('is-touch-dragging');
       if (navigator.vibrate) navigator.vibrate(12);
     }, TOUCH_DRAG_DELAY_MS);
@@ -252,7 +266,7 @@ const PageOrderBar = ({
   };
 
   return (
-    <div className="page-order-bar">
+    <div className={`page-order-bar${draggedPageId ? ' is-dragging-active' : ''}`}>
       <div className="page-order-header">
         <div className="page-order-icon" title={t('pageOrder.sort') || 'Sırala'}>⇅</div>
       </div>
@@ -317,7 +331,10 @@ const PageOrderBar = ({
         </button>
       </div>
 
-      <div className="page-order-list" ref={listRef}>
+      <div
+        className={`page-order-list${draggedPageId ? ' has-drag-active' : ''}`}
+        ref={listRef}
+      >
         {pages.length === 0 ? (
           <div className="page-order-empty">
             <div className="page-order-empty-text">{t('pageOrder.noPages')}</div>
@@ -378,6 +395,7 @@ const PageOrderBar = ({
               onDragEnd={() => {
                 setDraggedPageId(null);
                 setDragOverIndex(null);
+                setDragGhost(null);
               }}
             >
               <span className="page-order-number">{absoluteIndex + 1}</span>
@@ -403,6 +421,16 @@ const PageOrderBar = ({
           </>
         )}
       </div>
+
+      {dragGhost && (
+        <div
+          className="page-order-drag-ghost"
+          style={{ left: dragGhost.x, top: dragGhost.y }}
+          aria-hidden="true"
+        >
+          <span className="page-order-drag-ghost-label">{dragGhost.label}</span>
+        </div>
+      )}
     </div>
   );
 };
