@@ -18,6 +18,8 @@ const SLEEVE_PRESETS = [
 ];
 const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
 const SLEEVE_RING_PX = 6; // Resmin dışına çizilen çerçeve kalınlığı (px)
+const IMAGE_TOUCH_DRAG_DELAY_MS = 250;
+const IMAGE_TOUCH_SCROLL_CANCEL_PX = 12;
 
 const Page = ({
   page,
@@ -63,6 +65,15 @@ const Page = ({
   const backFileInputRefs = useRef({});
   const sleevePickerRef = useRef(null);
   const colorPickerActiveRef = useRef(false);
+  const touchDragRef = useRef({
+    cell: null,
+    startX: 0,
+    startY: 0,
+    dragging: false,
+    longPressTimer: null,
+    lastTarget: null,
+  });
+  const performCellMoveOrSwapRef = useRef(null);
 
   (function () {
     let el = null;
@@ -150,6 +161,82 @@ const Page = ({
     }
     return () => document.body.classList.remove('cell-drag-active');
   }, [draggedCell]);
+
+  const findCellAtPoint = useCallback((x, y) => {
+    const elements = document.elementsFromPoint(x, y);
+    for (const el of elements) {
+      const cell = el.closest?.(`[data-page-id="${page.id}"][data-row][data-col]`);
+      if (!cell) continue;
+      const side = cell.getAttribute('data-side') || 'front';
+      const row = parseInt(cell.getAttribute('data-row'), 10);
+      const col = parseInt(cell.getAttribute('data-col'), 10);
+      if (Number.isNaN(row) || Number.isNaN(col)) continue;
+      return { side, row, col };
+    }
+    return null;
+  }, [page.id]);
+
+  const resetTouchDrag = useCallback(() => {
+    const ts = touchDragRef.current;
+    if (ts.longPressTimer) {
+      clearTimeout(ts.longPressTimer);
+      ts.longPressTimer = null;
+    }
+    ts.cell = null;
+    ts.dragging = false;
+    ts.lastTarget = null;
+    setDraggedCell(null);
+    setDragOverCell(null);
+  }, []);
+
+  useEffect(() => {
+    const onTouchMove = (e) => {
+      const ts = touchDragRef.current;
+      if (!ts.cell || e.touches.length !== 1) return;
+
+      const touch = e.touches[0];
+
+      if (!ts.dragging) {
+        const dx = Math.abs(touch.clientX - ts.startX);
+        const dy = Math.abs(touch.clientY - ts.startY);
+        if (dx > IMAGE_TOUCH_SCROLL_CANCEL_PX || dy > IMAGE_TOUCH_SCROLL_CANCEL_PX) {
+          resetTouchDrag();
+        }
+        return;
+      }
+
+      e.preventDefault();
+      const target = findCellAtPoint(touch.clientX, touch.clientY);
+      if (
+        target &&
+        target.side === ts.cell.side &&
+        (target.row !== ts.cell.row || target.col !== ts.cell.col)
+      ) {
+        ts.lastTarget = target;
+        setDragOverCell(target);
+      }
+    };
+
+    const onTouchEnd = () => {
+      const ts = touchDragRef.current;
+      if (!ts.cell) return;
+
+      if (ts.dragging && ts.lastTarget && performCellMoveOrSwapRef.current) {
+        performCellMoveOrSwapRef.current(ts.cell, ts.lastTarget);
+      }
+      resetTouchDrag();
+    };
+
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+    document.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+      document.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [findCellAtPoint, resetTouchDrag]);
 
   // Güncel state'leri ref'lerde sakla (closure sorunlarını önlemek için)
   const contentRef = useRef(content);
@@ -990,6 +1077,8 @@ const Page = ({
     }
   };
 
+  performCellMoveOrSwapRef.current = performCellMoveOrSwap;
+
   const handleImageDragStart = (e, side, row, col) => {
     if (pointerEvents === 'none' || !isTopPage) {
       e.preventDefault();
@@ -1026,6 +1115,32 @@ const Page = ({
   const handleImageDragEnd = () => {
     setDraggedCell(null);
     setDragOverCell(null);
+  };
+
+  const handleCellTouchStart = (side, row, col, isDraggable) => (e) => {
+    if (!isDraggable || pointerEvents === 'none' || !isTopPage) return;
+    if (e.touches.length !== 1) return;
+    if (e.target.closest('.cell-control-btn, .cell-sleeve-picker')) return;
+
+    const touch = e.touches[0];
+    const ts = touchDragRef.current;
+    const cell = { side, row, col };
+
+    if (ts.longPressTimer) clearTimeout(ts.longPressTimer);
+
+    ts.cell = cell;
+    ts.startX = touch.clientX;
+    ts.startY = touch.clientY;
+    ts.dragging = false;
+    ts.lastTarget = null;
+
+    ts.longPressTimer = setTimeout(() => {
+      ts.dragging = true;
+      ts.longPressTimer = null;
+      setDraggedCell(cell);
+      setDragOverCell(cell);
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, IMAGE_TOUCH_DRAG_DELAY_MS);
   };
 
   const getCellDragClassName = (side, row, col, isDraggable) => {
@@ -1644,6 +1759,7 @@ const Page = ({
                       handleCellClick(row, col);
                     }}
                     draggable={isImage && pointerEvents !== 'none' && isTopPage}
+                    onTouchStart={handleCellTouchStart('front', row, col, isImage)}
                     onDragStart={(e) => handleImageDragStart(e, 'front', row, col)}
                     onDragOver={(e) => handleImageDragOver(e, 'front', row, col)}
                     onDragLeave={handleImageDragLeave}
@@ -1651,6 +1767,7 @@ const Page = ({
                     onDragEnd={handleImageDragEnd}
                     title={isImage && imageName ? imageName : undefined}
                     data-page-id={page.id}
+                    data-side="front"
                     data-row={row}
                     data-col={col}
                   >
@@ -1859,6 +1976,7 @@ const Page = ({
                       handleBackCellClick(row, col);
                     }}
                     draggable={canDragBack && pointerEvents !== 'none' && isTopPage}
+                    onTouchStart={handleCellTouchStart('back', row, col, canDragBack)}
                     onDragStart={(e) => handleImageDragStart(e, 'back', row, col)}
                     onDragOver={(e) => handleImageDragOver(e, 'back', row, col)}
                     onDragLeave={handleImageDragLeave}
@@ -1866,9 +1984,9 @@ const Page = ({
                     onDragEnd={handleImageDragEnd}
                     title={isImage && backImageName ? backImageName : undefined}
                     data-page-id={page.id}
-                    data-row={row}
-                    data-col={mirroredCol}
                     data-side="back"
+                    data-row={row}
+                    data-col={col}
                   >
                     {isImage ? (
                       <>

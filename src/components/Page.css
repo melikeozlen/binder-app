@@ -642,6 +642,8 @@
 
 .grid-cell.cell-draggable {
   cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
 }
 
 .grid-cell.cell-draggable:active {
@@ -650,6 +652,7 @@
 
 .grid-cell.cell-dragging {
   opacity: 0.45;
+  pointer-events: none;
 }
 
 .grid-cell.cell-drag-over {

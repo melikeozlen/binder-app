@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import './PageOrderBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
+
+const TOUCH_DRAG_DELAY_MS = 220;
+const TOUCH_SCROLL_CANCEL_PX = 10;
 
 const PageOrderBar = ({ 
   pages = [],
@@ -18,6 +21,113 @@ const PageOrderBar = ({
   const [swapPage1, setSwapPage1] = useState('');
   const [swapPage2, setSwapPage2] = useState('');
   const [expandedRange, setExpandedRange] = useState(null);
+  const listRef = useRef(null);
+  const touchRef = useRef({
+    pageId: null,
+    startX: 0,
+    startY: 0,
+    dragging: false,
+    longPressTimer: null,
+    lastIndex: null,
+  });
+
+  const findPageIndexAtPoint = useCallback((x, y) => {
+    const elements = document.elementsFromPoint(x, y);
+    for (const el of elements) {
+      const item = el.closest?.('[data-page-index]');
+      if (item) {
+        const index = parseInt(item.getAttribute('data-page-index'), 10);
+        if (!Number.isNaN(index)) return index;
+      }
+    }
+    return null;
+  }, []);
+
+  const resetTouchDrag = useCallback(() => {
+    const ts = touchRef.current;
+    if (ts.longPressTimer) {
+      clearTimeout(ts.longPressTimer);
+      ts.longPressTimer = null;
+    }
+    ts.pageId = null;
+    ts.dragging = false;
+    ts.lastIndex = null;
+    setDraggedPageId(null);
+    setDragOverIndex(null);
+    listRef.current?.classList.remove('is-touch-dragging');
+  }, []);
+
+  useEffect(() => {
+    const onTouchMove = (e) => {
+      const ts = touchRef.current;
+      if (!ts.pageId || e.touches.length !== 1) return;
+
+      const touch = e.touches[0];
+
+      if (!ts.dragging) {
+        const dx = Math.abs(touch.clientX - ts.startX);
+        const dy = Math.abs(touch.clientY - ts.startY);
+        if (dx > TOUCH_SCROLL_CANCEL_PX || dy > TOUCH_SCROLL_CANCEL_PX) {
+          resetTouchDrag();
+        }
+        return;
+      }
+
+      e.preventDefault();
+      const index = findPageIndexAtPoint(touch.clientX, touch.clientY);
+      if (index !== null && pages[index]?.id !== ts.pageId) {
+        ts.lastIndex = index;
+        setDragOverIndex(index);
+      }
+    };
+
+    const onTouchEnd = () => {
+      const ts = touchRef.current;
+      if (!ts.pageId) return;
+
+      if (ts.dragging && ts.pageId && ts.lastIndex !== null && onMovePageTo) {
+        const targetPage = pages[ts.lastIndex];
+        if (targetPage && targetPage.id !== ts.pageId) {
+          onMovePageTo(ts.pageId, ts.lastIndex);
+        }
+      }
+      resetTouchDrag();
+    };
+
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+    document.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+      document.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [pages, onMovePageTo, findPageIndexAtPoint, resetTouchDrag]);
+
+  const handleItemTouchStart = (page, absoluteIndex) => (e) => {
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const ts = touchRef.current;
+
+    if (ts.longPressTimer) clearTimeout(ts.longPressTimer);
+
+    ts.pageId = page.id;
+    ts.startX = touch.clientX;
+    ts.startY = touch.clientY;
+    ts.dragging = false;
+    ts.lastIndex = absoluteIndex;
+
+    ts.longPressTimer = setTimeout(() => {
+      ts.dragging = true;
+      ts.longPressTimer = null;
+      setDraggedPageId(page.id);
+      setDragOverIndex(absoluteIndex);
+      listRef.current?.classList.add('is-touch-dragging');
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, TOUCH_DRAG_DELAY_MS);
+  };
 
   // Aktif sayfanın index'ini bul (sağ sayfa varsa onu, yoksa sol sayfayı kullan)
   const activePageId = useMemo(() => {
@@ -207,7 +317,7 @@ const PageOrderBar = ({
         </button>
       </div>
 
-      <div className="page-order-list">
+      <div className="page-order-list" ref={listRef}>
         {pages.length === 0 ? (
           <div className="page-order-empty">
             <div className="page-order-empty-text">{t('pageOrder.noPages')}</div>
@@ -239,7 +349,9 @@ const PageOrderBar = ({
               key={page.id} 
               className={`page-order-item ${absoluteIndex === activePageIndex ? 'active' : ''} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
               title={`${t('pageOrder.page')} ${absoluteIndex + 1}`}
+              data-page-index={absoluteIndex}
               draggable
+              onTouchStart={handleItemTouchStart(page, absoluteIndex)}
               onDragStart={(e) => {
                 setDraggedPageId(page.id);
                 e.dataTransfer.effectAllowed = 'move';

@@ -144,6 +144,8 @@
   transition: all 0.15s ease;
   font-size: 0.7rem;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-x pan-y;
   min-height: 36px;
   background-color: #f8f9fa;
   border: 1px solid #e0e0e0;
@@ -159,6 +161,15 @@
   cursor: grabbing;
   transform: scale(0.95);
   z-index: 100;
+  pointer-events: none;
+}
+
+.page-order-list.is-touch-dragging {
+  overflow: hidden;
+}
+
+.page-order-list.is-touch-dragging .page-order-item {
+  touch-action: none;
 }
 
 .page-order-item.drag-over {
