@@ -107,7 +107,7 @@ body {
   :root {
     --app-chrome-max-header: 28dvh;
     --app-chrome-max-footer: 22dvh;
-    --app-chrome-max-page-order: 26px;
+    --app-chrome-max-page-order: 44px;
   }
 
   html,
@@ -172,6 +172,12 @@ body {
     flex-shrink: 0;
   }
 
+  .App > .page-order-bar.is-mobile-expanded {
+    max-height: min(38dvh, 200px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .App > .app-footer {
     grid-row: 4;
     position: relative;
@@ -219,6 +225,10 @@ body {
   :root {
     --app-chrome-max-header: 32dvh;
     --app-chrome-max-footer: 18dvh;
-    --app-chrome-max-page-order: 22px;
+    --app-chrome-max-page-order: 42px;
+  }
+
+  .App > .page-order-bar.is-mobile-expanded {
+    max-height: min(36dvh, 190px);
   }
 }

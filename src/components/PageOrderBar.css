@@ -193,12 +193,12 @@
 }
 
 .page-order-item.drag-over {
-  background-color: #90caf9;
-  border: 2px solid #1565c0;
+  background-color: #ffe0b2;
+  border: 2px solid #ef6c00;
   transform: scale(1.1);
   box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.7),
-    0 0 12px rgba(21, 101, 192, 0.35);
+    inset 0 0 0 2px rgba(255, 255, 255, 0.85),
+    0 0 12px rgba(239, 108, 0, 0.35);
   animation: page-order-drop-pulse 0.55s ease-in-out infinite;
 }
 
@@ -210,9 +210,14 @@
   top: -5px;
   height: 4px;
   border-radius: 4px;
-  background: #1565c0;
-  box-shadow: 0 0 8px rgba(21, 101, 192, 0.6);
+  background: #ef6c00;
+  box-shadow: 0 0 8px rgba(239, 108, 0, 0.55);
   animation: page-order-insert-line 0.55s ease-in-out infinite;
+}
+
+.page-order-item.drag-over .page-order-number {
+  color: #bf360c;
+  font-weight: 800;
 }
 
 .page-order-item.dragging .page-order-number {
@@ -263,11 +268,11 @@
 
 @keyframes page-order-drop-pulse {
   0%, 100% {
-    background-color: #bbdefb;
+    background-color: #ffe0b2;
     transform: scale(1.08);
   }
   50% {
-    background-color: #64b5f6;
+    background-color: #ffcc80;
     transform: scale(1.12);
   }
 }
@@ -317,6 +322,29 @@
   background-color: #e3f2fd;
   border-color: #2196f3;
   font-weight: 600;
+}
+
+/* Sürükleme sırasında seçili sayfa: sadece nokta mavi kalsın, arka plan karışmasın */
+.page-order-list.has-drag-active .page-order-item.active:not(.drag-over):not(.dragging) {
+  background-color: #f8f9fa;
+  border: 1px solid #bdbdbd;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.page-order-list.has-drag-active .page-order-item.active:not(.drag-over):not(.dragging) .page-order-number {
+  color: #555;
+  font-weight: 600;
+}
+
+.page-order-item.active.drag-over {
+  background-color: #ffe0b2;
+  border-color: #ef6c00;
+}
+
+.page-order-item.active.drag-over .page-order-active-dot {
+  background-color: #ef6c00;
+  animation: none;
 }
 
 .page-order-number {
@@ -392,7 +420,11 @@
   line-height: 1.4;
 }
 
-/* Mobil: binder altında yatay ince şerit */
+/* Mobil: binder altında yatay şerit + açılır panel */
+.page-order-mobile-toggle {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .page-order-bar {
     display: flex !important;
@@ -402,11 +434,11 @@
     bottom: auto !important;
     width: 100%;
     height: auto;
-    max-height: 26px;
-    min-height: 0;
+    min-height: 40px;
     flex-direction: row;
     align-items: center;
-    padding: 0.12rem 0.3rem;
+    gap: 0.35rem;
+    padding: 0.28rem 0.4rem;
     border-left: none;
     border-top: 1px solid #e8e8e8;
     box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.04);
@@ -415,10 +447,74 @@
     flex-shrink: 0;
   }
 
+  .page-order-mobile-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+    min-height: 30px;
+    padding: 0.2rem 0.45rem;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    background: #f5f5f5;
+    color: #444;
+    font-size: 0.62rem;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .page-order-mobile-toggle:active {
+    background: #e8e8e8;
+    border-color: #bdbdbd;
+  }
+
+  .page-order-mobile-toggle-icon {
+    font-size: 0.75rem;
+    color: #666;
+  }
+
+  .page-order-mobile-toggle-text {
+    max-width: 4.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .page-order-mobile-toggle-chevron {
+    font-size: 0.55rem;
+    color: #888;
+  }
+
+  .page-order-bar.is-mobile-collapsed {
+    max-height: none;
+  }
+
+  .page-order-bar.is-mobile-expanded {
+    flex-direction: column;
+    align-items: stretch;
+    min-height: auto;
+    padding: 0.4rem 0.45rem 0.45rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-top-color: #90caf9;
+    box-shadow: 0 -3px 12px rgba(25, 118, 210, 0.1);
+  }
+
+  .page-order-bar.is-mobile-expanded .page-order-mobile-toggle {
+    align-self: flex-start;
+    background: #e3f2fd;
+    border-color: #90caf9;
+    color: #1565c0;
+  }
+
   .page-order-bar.is-dragging-active {
     overflow: visible;
-    max-height: none;
-    min-height: 34px;
+    min-height: 38px;
     padding-top: 0.35rem;
     padding-bottom: 0.35rem;
     z-index: 1100;
@@ -430,19 +526,52 @@
     overflow: visible;
   }
 
-  .page-order-header,
+  .page-order-header {
+    display: none;
+  }
+
   .page-order-swap {
     display: none;
   }
 
+  .page-order-bar.is-mobile-expanded .page-order-swap {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  .page-order-bar.is-mobile-expanded .page-order-swap-inputs {
+    flex-direction: row;
+    flex: 1;
+    gap: 0.3rem;
+    margin-bottom: 0;
+  }
+
+  .page-order-bar.is-mobile-expanded .page-order-swap-input {
+    font-size: 0.72rem;
+    padding: 0.35rem 0.25rem;
+  }
+
+  .page-order-bar.is-mobile-expanded .page-order-swap-button {
+    width: auto;
+    min-width: 36px;
+    padding: 0.35rem 0.45rem;
+    font-size: 0.9rem;
+  }
+
   .page-order-bar > .page-order-list {
     justify-content: flex-start;
+    flex: 1;
+    min-width: 0;
   }
 
   .page-order-list {
     flex-direction: row;
-    flex: 1;
-    gap: 0.12rem;
+    gap: 0.22rem;
     padding: 0;
     overflow-x: auto;
     overflow-y: hidden;
@@ -451,16 +580,32 @@
     align-items: center;
   }
 
+  .page-order-bar.is-mobile-expanded .page-order-list {
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 120px;
+    gap: 0.3rem;
+    padding: 0.1rem 0;
+  }
+
   .page-order-list::-webkit-scrollbar {
     display: none;
   }
 
   .page-order-item {
-    min-height: 20px;
-    min-width: 20px;
-    padding: 0.1rem 0.28rem;
-    border-radius: 4px;
+    min-height: 28px;
+    min-width: 34px;
+    padding: 0.2rem 0.55rem;
+    border-radius: 7px;
     flex-shrink: 0;
+  }
+
+  .page-order-bar.is-mobile-expanded .page-order-item {
+    min-height: 34px;
+    min-width: 40px;
+    padding: 0.28rem 0.65rem;
+    border-radius: 8px;
   }
 
   .page-order-item.dragging {
@@ -484,17 +629,14 @@
     bottom: -6px;
     width: 4px;
     height: auto;
+    background: #ef6c00;
+    box-shadow: 0 0 8px rgba(239, 108, 0, 0.55);
     animation: page-order-insert-line-vertical 0.55s ease-in-out infinite;
   }
 
-  .page-order-drag-ghost {
-    min-width: 32px;
-    min-height: 32px;
-    border-radius: 8px;
-  }
-
-  .page-order-drag-ghost-label {
-    font-size: 0.95rem;
+  .page-order-list.has-drag-active .page-order-item.active:not(.drag-over):not(.dragging) .page-order-active-dot {
+    width: 5px;
+    height: 5px;
   }
 
   @keyframes page-order-insert-line-vertical {
@@ -508,8 +650,99 @@
     }
   }
 
+  .page-order-drag-ghost {
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 8px;
+  }
+
+  .page-order-drag-ghost-label {
+    font-size: 0.95rem;
+  }
+
   .page-order-number {
-    font-size: 0.58rem;
+    font-size: 0.72rem;
+  }
+
+  .page-order-bar.is-mobile-expanded .page-order-number {
+    font-size: 0.82rem;
+  }
+
+  .page-order-active-dot {
+    width: 5px;
+    height: 5px;
+    top: 2px;
+    right: 2px;
+  }
+
+  .page-order-ellipsis {
+    font-size: 0.62rem;
+    padding: 0.15rem 0.2rem;
+    margin: 0;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .page-order-ellipsis.clickable {
+    min-width: 22px;
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .page-order-empty {
+    padding: 0.2rem 0.4rem;
+  }
+
+  .page-order-empty-text {
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 1024px) and (orientation: portrait) {
+  .page-order-bar.is-mobile-collapsed {
+    min-height: 42px;
+    padding: 0.32rem 0.45rem;
+  }
+
+  .page-order-mobile-toggle {
+    min-height: 32px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  .page-order-item {
+    min-height: 30px;
+    min-width: 36px;
+    padding: 0.22rem 0.6rem;
+  }
+
+  .page-order-number {
+    font-size: 0.76rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-order-bar.is-mobile-collapsed {
+    min-height: 40px;
+    padding: 0.28rem 0.35rem;
+    gap: 0.28rem;
+  }
+
+  .page-order-list {
+    gap: 0.18rem;
+  }
+
+  .page-order-item {
+    min-height: 28px;
+    min-width: 32px;
+    padding: 0.18rem 0.5rem;
+    border-radius: 6px;
+  }
+
+  .page-order-number {
+    font-size: 0.68rem;
   }
 
   .page-order-active-dot {
@@ -521,64 +754,11 @@
 
   .page-order-ellipsis {
     font-size: 0.55rem;
-    padding: 0.1rem 0.15rem;
-    margin: 0;
-    flex-shrink: 0;
-    line-height: 1;
   }
 
   .page-order-ellipsis.clickable {
-    min-width: 16px;
-    min-height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .page-order-empty {
-    padding: 0.2rem 0.4rem;
-  }
-
-  .page-order-empty-text {
-    font-size: 0.55rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-order-bar {
-    max-height: 22px;
-    padding: 0.08rem 0.2rem;
-  }
-
-  .page-order-list {
-    gap: 0.08rem;
-  }
-
-  .page-order-item {
-    min-height: 16px;
-    min-width: 16px;
-    padding: 0.05rem 0.2rem;
-    border-radius: 3px;
-  }
-
-  .page-order-number {
-    font-size: 0.5rem;
-  }
-
-  .page-order-active-dot {
-    width: 3px;
-    height: 3px;
-    top: 0;
-    right: 0;
-  }
-
-  .page-order-ellipsis {
-    font-size: 0.48rem;
-  }
-
-  .page-order-ellipsis.clickable {
-    min-width: 14px;
-    min-height: 14px;
+    min-width: 20px;
+    min-height: 24px;
   }
 }
 

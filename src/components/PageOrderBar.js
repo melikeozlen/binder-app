@@ -22,6 +22,7 @@ const PageOrderBar = ({
   const [swapPage1, setSwapPage1] = useState('');
   const [swapPage2, setSwapPage2] = useState('');
   const [expandedRange, setExpandedRange] = useState(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const listRef = useRef(null);
   const touchRef = useRef({
     pageId: null,
@@ -112,6 +113,20 @@ const PageOrderBar = ({
       document.removeEventListener('touchcancel', onTouchEnd);
     };
   }, [pages, onMovePageTo, findPageIndexAtPoint, resetTouchDrag]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1024px)');
+    const onChange = () => {
+      if (!mq.matches) setMobileExpanded(false);
+    };
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const handleMobileToggle = () => {
+    setMobileExpanded((prev) => !prev);
+  };
 
   const handleItemTouchStart = (page, absoluteIndex) => (e) => {
     if (e.touches.length !== 1) return;
@@ -266,7 +281,29 @@ const PageOrderBar = ({
   };
 
   return (
-    <div className={`page-order-bar${draggedPageId ? ' is-dragging-active' : ''}`}>
+    <div
+      className={[
+        'page-order-bar',
+        draggedPageId ? 'is-dragging-active' : '',
+        mobileExpanded ? 'is-mobile-expanded' : 'is-mobile-collapsed',
+      ].filter(Boolean).join(' ')}
+    >
+      <button
+        type="button"
+        className="page-order-mobile-toggle"
+        onClick={handleMobileToggle}
+        aria-expanded={mobileExpanded}
+        aria-label={mobileExpanded ? t('pageOrder.hide') : t('pageOrder.show')}
+      >
+        <span className="page-order-mobile-toggle-icon" aria-hidden="true">⇅</span>
+        <span className="page-order-mobile-toggle-text">
+          {mobileExpanded ? t('pageOrder.hide') : t('pageOrder.show')}
+        </span>
+        <span className="page-order-mobile-toggle-chevron" aria-hidden="true">
+          {mobileExpanded ? '▾' : '▴'}
+        </span>
+      </button>
+
       <div className="page-order-header">
         <div className="page-order-icon" title={t('pageOrder.sort') || 'Sırala'}>⇅</div>
       </div>
