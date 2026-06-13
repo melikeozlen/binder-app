@@ -1927,6 +1927,12 @@ function App() {
     }
   }, [pages.length, currentSpreadIndex]);
 
+  const handleGoToPage = useCallback((pageId) => {
+    const sortedIndex = sortedPages.findIndex((p) => p.id === pageId);
+    if (sortedIndex === -1) return;
+    setCurrentSpreadIndex(Math.min(sortedIndex, maxSpreadIndex));
+  }, [sortedPages, maxSpreadIndex]);
+
   // Sayfayı yukarı taşı (order'ı azalt)
   const handleMovePageUp = (pageId) => {
     const pageIndex = pages.findIndex(p => p.id === pageId);
@@ -2165,6 +2171,7 @@ function App() {
         onMovePageUp={handleMovePageUp}
         onMovePageDown={handleMovePageDown}
         onMovePageTo={handleMovePageTo}
+        onGoToPage={handleGoToPage}
         isVisible={true}
       />
       <Binder 

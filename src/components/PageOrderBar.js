@@ -12,6 +12,7 @@ const PageOrderBar = ({
   onMovePageUp,
   onMovePageDown,
   onMovePageTo,
+  onGoToPage,
   isVisible = true
 }) => {
   const { language } = useLanguage();
@@ -24,6 +25,7 @@ const PageOrderBar = ({
   const [expandedRange, setExpandedRange] = useState(null);
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const listRef = useRef(null);
+  const suppressClickRef = useRef(false);
   const touchRef = useRef({
     pageId: null,
     startX: 0,
@@ -59,6 +61,27 @@ const PageOrderBar = ({
     setDragOverIndex(null);
     setDragGhost(null);
     listRef.current?.classList.remove('is-touch-dragging');
+    document.body.classList.remove('page-order-no-select');
+    window.getSelection?.()?.removeAllRanges();
+  }, []);
+
+  const clearTextSelection = useCallback(() => {
+    window.getSelection?.()?.removeAllRanges();
+  }, []);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return undefined;
+
+    const blockSelect = (e) => e.preventDefault();
+
+    list.addEventListener('selectstart', blockSelect);
+    list.addEventListener('contextmenu', blockSelect);
+
+    return () => {
+      list.removeEventListener('selectstart', blockSelect);
+      list.removeEventListener('contextmenu', blockSelect);
+    };
   }, []);
 
   useEffect(() => {
@@ -78,6 +101,7 @@ const PageOrderBar = ({
       }
 
       e.preventDefault();
+      clearTextSelection();
       setDragGhost({
         x: touch.clientX,
         y: touch.clientY,
@@ -94,10 +118,24 @@ const PageOrderBar = ({
       const ts = touchRef.current;
       if (!ts.pageId) return;
 
-      if (ts.dragging && ts.pageId && ts.lastIndex !== null && onMovePageTo) {
+      const pageId = ts.pageId;
+      const wasDragging = ts.dragging;
+      const hadPendingPress = !!ts.longPressTimer;
+
+      if (hadPendingPress) {
+        clearTimeout(ts.longPressTimer);
+        ts.longPressTimer = null;
+        if (!wasDragging && onGoToPage) {
+          onGoToPage(pageId);
+          suppressClickRef.current = true;
+          window.setTimeout(() => {
+            suppressClickRef.current = false;
+          }, 400);
+        }
+      } else if (wasDragging && ts.lastIndex !== null && onMovePageTo) {
         const targetPage = pages[ts.lastIndex];
-        if (targetPage && targetPage.id !== ts.pageId) {
-          onMovePageTo(ts.pageId, ts.lastIndex);
+        if (targetPage && targetPage.id !== pageId) {
+          onMovePageTo(pageId, ts.lastIndex);
         }
       }
       resetTouchDrag();
@@ -112,7 +150,7 @@ const PageOrderBar = ({
       document.removeEventListener('touchend', onTouchEnd);
       document.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [pages, onMovePageTo, findPageIndexAtPoint, resetTouchDrag]);
+  }, [pages, onMovePageTo, onGoToPage, findPageIndexAtPoint, resetTouchDrag]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1024px)');
@@ -128,8 +166,16 @@ const PageOrderBar = ({
     setMobileExpanded((prev) => !prev);
   };
 
+  const handlePageClick = (pageId) => (e) => {
+    if (suppressClickRef.current) return;
+    e.stopPropagation();
+    onGoToPage?.(pageId);
+  };
+
   const handleItemTouchStart = (page, absoluteIndex) => (e) => {
     if (e.touches.length !== 1) return;
+
+    clearTextSelection();
 
     const touch = e.touches[0];
     const ts = touchRef.current;
@@ -146,6 +192,8 @@ const PageOrderBar = ({
     ts.longPressTimer = setTimeout(() => {
       ts.dragging = true;
       ts.longPressTimer = null;
+      clearTextSelection();
+      document.body.classList.add('page-order-no-select');
       setDraggedPageId(page.id);
       setDragOverIndex(absoluteIndex);
       setDragGhost({
@@ -380,7 +428,19 @@ const PageOrderBar = ({
           <>
         {showStartEllipsis && (
           <>
-            <div className="page-order-item" title={`${t('pageOrder.page')} 1`}>
+            <div
+              className="page-order-item"
+              title={`${t('pageOrder.page')} 1`}
+              onClick={pages[0] ? handlePageClick(pages[0].id) : undefined}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && pages[0]) {
+                  e.preventDefault();
+                  onGoToPage?.(pages[0].id);
+                }
+              }}
+            >
               <span className="page-order-number">1</span>
             </div>
             <div 
@@ -405,8 +465,18 @@ const PageOrderBar = ({
               title={`${t('pageOrder.page')} ${absoluteIndex + 1}`}
               data-page-index={absoluteIndex}
               draggable
+              role="button"
+              tabIndex={0}
+              onClick={handlePageClick(page.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onGoToPage?.(page.id);
+                }
+              }}
               onTouchStart={handleItemTouchStart(page, absoluteIndex)}
               onDragStart={(e) => {
+                suppressClickRef.current = false;
                 setDraggedPageId(page.id);
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/html', page.id);
@@ -433,6 +503,10 @@ const PageOrderBar = ({
                 setDraggedPageId(null);
                 setDragOverIndex(null);
                 setDragGhost(null);
+                suppressClickRef.current = true;
+                window.setTimeout(() => {
+                  suppressClickRef.current = false;
+                }, 100);
               }}
             >
               <span className="page-order-number">{absoluteIndex + 1}</span>
@@ -450,7 +524,19 @@ const PageOrderBar = ({
             >
               ...
             </div>
-            <div className="page-order-item" title={`${t('pageOrder.page')} ${pages.length}`}>
+            <div
+              className="page-order-item"
+              title={`${t('pageOrder.page')} ${pages.length}`}
+              onClick={pages.length > 0 ? handlePageClick(pages[pages.length - 1].id) : undefined}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && pages.length > 0) {
+                  e.preventDefault();
+                  onGoToPage?.(pages[pages.length - 1].id);
+                }
+              }}
+            >
               <span className="page-order-number">{pages.length}</span>
             </div>
           </>
