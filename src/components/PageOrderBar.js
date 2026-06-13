@@ -150,7 +150,7 @@ const PageOrderBar = ({
       document.removeEventListener('touchend', onTouchEnd);
       document.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [pages, onMovePageTo, onGoToPage, findPageIndexAtPoint, resetTouchDrag]);
+  }, [pages, onMovePageTo, onGoToPage, findPageIndexAtPoint, resetTouchDrag, clearTextSelection]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1024px)');
