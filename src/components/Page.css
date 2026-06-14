@@ -1363,6 +1363,7 @@
   display: block;
   flex-shrink: 0;
   border-radius: 4px 4px 0 0;
+  background-color: #ece8f2;
 }
 
 .gallery-item-name {

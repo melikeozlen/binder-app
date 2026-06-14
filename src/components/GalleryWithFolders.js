@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import {
@@ -14,7 +14,10 @@ import {
   saveGalleryUiState,
   validateSavedFolder,
 } from '../utils/galleryUiState';
+import LazyGalleryImage from './LazyGalleryImage';
 import './GalleryFolders.css';
+
+const GALLERY_BATCH_SIZE = 48;
 
 const GalleryWithFolders = ({
   items = [],
@@ -43,6 +46,9 @@ const GalleryWithFolders = ({
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [stateRestored, setStateRestored] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(GALLERY_BATCH_SIZE);
+  const gridRef = useRef(null);
+  const loadMoreRef = useRef(null);
 
   const normalizedItems = useMemo(
     () =>
@@ -96,6 +102,53 @@ const GalleryWithFolders = ({
       return nameMatch || fileMatch;
     });
   }, [displayItems, searchTerm, selectedFolder]);
+
+  useEffect(() => {
+    setVisibleCount(GALLERY_BATCH_SIZE);
+    if (gridRef.current) {
+      gridRef.current.scrollTop = 0;
+    }
+  }, [selectedFolder, searchTerm]);
+
+  useEffect(() => {
+    const root = gridRef.current;
+    const sentinel = loadMoreRef.current;
+    if (!root || !sentinel || visibleCount >= filteredItems.length) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount((count) =>
+            Math.min(count + GALLERY_BATCH_SIZE, filteredItems.length)
+          );
+        }
+      },
+      { root, rootMargin: '500px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filteredItems.length, visibleCount]);
+
+  const visibleItems = useMemo(
+    () => filteredItems.slice(0, visibleCount),
+    [filteredItems, visibleCount]
+  );
+
+  const handleImageError = useCallback(
+    (e, prefix) => {
+      e.target.style.display = 'none';
+      const err = e.target.nextElementSibling;
+      if (err?.classList?.contains(`${prefix}-item-error`)) {
+        err.style.display = 'flex';
+      }
+    },
+    []
+  );
+
+  const handleImageLoad = useCallback((e) => {
+    e.target.style.display = 'block';
+  }, []);
 
   const getFolderAccentHue = (folderName) => {
     let hash = 0;
@@ -182,8 +235,11 @@ const GalleryWithFolders = ({
   );
 
   const renderImageGrid = () => (
-    <div className={isBackImage ? 'back-image-gallery-grid' : 'gallery-grid'}>
-      {filteredItems.map((item, index) => {
+    <div
+      ref={gridRef}
+      className={isBackImage ? 'back-image-gallery-grid' : 'gallery-grid'}
+    >
+      {visibleItems.map((item, index) => {
         const displayName = truncateGalleryName(item.name);
         const showFileBadge =
           selectedFolder === GALLERY_ALL_KEY && item.fileLabel;
@@ -213,20 +269,11 @@ const GalleryWithFolders = ({
                 ✓
               </span>
             )}
-            <img
+            <LazyGalleryImage
               src={item.url}
               alt={item.name || `Gallery ${index + 1}`}
-              draggable="false"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                const err = e.target.nextElementSibling;
-                if (err?.classList?.contains(`${prefix}-item-error`)) {
-                  err.style.display = 'flex';
-                }
-              }}
-              onLoad={(e) => {
-                e.target.style.display = 'block';
-              }}
+              onError={(e) => handleImageError(e, prefix)}
+              onLoad={handleImageLoad}
             />
             {(item.name || showFileBadge) && (
               <div
@@ -248,6 +295,13 @@ const GalleryWithFolders = ({
           </div>
         );
       })}
+      {visibleCount < filteredItems.length && (
+        <div
+          ref={loadMoreRef}
+          className="gallery-load-more-sentinel"
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 
