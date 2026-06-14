@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
 import GalleryWithFolders from './GalleryWithFolders';
+import CellImage from './CellImage';
 import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
 
 const SLEEVE_PRESETS = [
@@ -1402,35 +1403,18 @@ const Page = ({
   const renderCellImage = (imageUrl, imageName, rotationKey, sleeveColor, wrapperClasses, extraImgClass = '') => {
     const angle = rotatedImages[rotationKey] || 0;
     const rotationClass = angle ? `rotated rotated-${angle}` : '';
-    const wrapperWithSleeve = sleeveColor
-      ? `${wrapperClasses} cell-image-wrapper--sleeve`
-      : wrapperClasses;
 
     return (
-      <div className={wrapperWithSleeve} title={imageName || undefined}>
-        <img
-          src={imageUrl}
-          alt={imageName || ''}
-          draggable={false}
-          className={[
-            'cell-image',
-            extraImgClass,
-            rotationClass,
-            sleeveColor ? 'has-sleeve' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          style={
-            sleeveColor
-              ? { '--sleeve-color': sleeveColor, '--sleeve-width': `${SLEEVE_RING_PX}px` }
-              : undefined
-          }
-          onLoad={(e) => {
-            const wrapper = e.target.closest('.cell-image-wrapper');
-            if (wrapper) fitImageToWrapper(e.target, wrapper);
-          }}
-        />
-      </div>
+      <CellImage
+        src={imageUrl}
+        alt={imageName}
+        rotationClass={rotationClass}
+        sleeveColor={sleeveColor}
+        wrapperClasses={wrapperClasses}
+        extraImgClass={extraImgClass}
+        sleeveRingPx={SLEEVE_RING_PX}
+        onFit={fitImageToWrapper}
+      />
     );
   };
 
