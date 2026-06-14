@@ -7,6 +7,7 @@ import { loadDefaultGallery } from '../utils/defaultGallery';
 import GalleryWithFolders from './GalleryWithFolders';
 import CellImage from './CellImage';
 import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
+import { parseGridLayout, getMirroredCol, getRowSideGapUnits } from '../utils/gridLayout';
 
 const SLEEVE_PRESETS = [
   '#A8CCE8',
@@ -1231,11 +1232,6 @@ const Page = ({
     );
   };
 
-  const getGridSize = () => {
-    const [rows, cols] = gridSize.split('x').map(Number);
-    return { rows, cols };
-  };
-
   const handleBackCellClick = (row, col) => {
     // Alttaki sayfalar için tıklamaları engelle
     if (pointerEvents === 'none' || !isTopPage) {
@@ -1683,7 +1679,19 @@ const Page = ({
     );
   }
 
-  const { rows, cols } = getGridSize();
+  const layout = parseGridLayout(page.gridSize || gridSize);
+  const gridClassName = [
+    'page-grid',
+    layout.type === 'custom' ? 'page-grid--custom' : `grid-${layout.storageKey}`,
+  ].join(' ');
+  const gridStyle =
+    layout.type === 'uniform'
+      ? {
+          gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
+          gridTemplateRows: `repeat(${layout.rows}, 1fr)`,
+        }
+      : { '--grid-max-cols': layout.maxCols };
+
   const isTransparent = page.transparent !== false; // Varsayılan olarak şeffaf
   const ringHoles = 6; // 6 ring deliği
 
@@ -1692,6 +1700,396 @@ const Page = ({
   // Sol pozisyon → arka yüz gösterilmeli
   const shouldShowBack = pagePosition === 'left';
   const shouldShowFront = pagePosition === 'right';
+
+  const isRowHorizontal = (rowCellCount) =>
+    layout.type === 'uniform' && layout.rows > layout.cols;
+
+  const renderFrontCell = (cell) => {
+    const { row, col, key, isFirstCol, isFirstRow, isLastCol, isLastRow, rowCellCount } = cell;
+    const cellContent = content[key] || '';
+    const isImage = isImageContent(cellContent);
+    const isText = cellContent && !isImage && typeof cellContent === 'string';
+    const imageUrl = getImageUrl(cellContent);
+    const imageName = getCellImageName(cellContent);
+    const isHorizontal = isRowHorizontal(rowCellCount);
+    const cellClasses = [
+      'grid-cell',
+      isFirstCol ? 'cell-first-col' : '',
+      isFirstRow ? 'cell-first-row' : '',
+      isLastCol ? 'cell-last-col' : '',
+      isLastRow ? 'cell-last-row' : '',
+      getCellDragClassName('front', row, col, isImage),
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const imageWrapperClasses = [
+      'cell-image-wrapper',
+      isHorizontal && coverSide === 'right' ? 'align-right' : '',
+      isHorizontal && coverSide === 'left' ? 'align-left' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    return (
+      <div
+        key={`${page.id}-${row}-${col}`}
+        className={cellClasses}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleCellClick(row, col);
+        }}
+        onMouseDown={handleCellPointerDown('front', row, col, isImage, 'mouse')}
+        onTouchStart={handleCellPointerDown('front', row, col, isImage, 'touch')}
+        title={isImage && imageName ? imageName : undefined}
+        data-page-id={page.id}
+        data-side="front"
+        data-row={row}
+        data-col={col}
+      >
+        {isImage ? (
+          <>
+            {renderCellImage(imageUrl, imageName, key, sleeves[key], imageWrapperClasses)}
+            <div className={getImageControlsClassName('front', row, col)}>
+              <div className="cell-image-controls-buttons">
+                {renderSleeveButton('front', row, col)}
+                <button
+                  type="button"
+                  className="cell-control-btn cell-control-rotate"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRotateImage(e, row, col);
+                  }}
+                  title={t('page.rotateImage')}
+                >
+                  ↻
+                </button>
+                <button
+                  type="button"
+                  className="cell-control-btn cell-control-remove"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRemoveImage(e, row, col);
+                  }}
+                  title={t('page.removeImage')}
+                >
+                  ×
+                </button>
+                <button
+                  type="button"
+                  className="cell-control-btn cell-control-replace"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleReplaceImage(e, row, col);
+                  }}
+                  title={t('page.replaceImage')}
+                >
+                  +
+                </button>
+              </div>
+              {renderSleevePicker('front', row, col)}
+            </div>
+          </>
+        ) : isText ? (
+          <textarea
+            className="cell-input"
+            value={cellContent}
+            onChange={(e) => handleCellChange(row, col, e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            placeholder={t('page.textPlaceholder')}
+          />
+        ) : urlInputCell &&
+          urlInputCell.row === row &&
+          urlInputCell.col === col &&
+          urlInputCell.side === 'front' ? (
+          <div className="cell-url-input-container" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="text"
+              value={urlInputValue}
+              onChange={(e) => setUrlInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleUrlSubmit(row, col, 'front');
+                } else if (e.key === 'Escape') {
+                  setUrlInputCell(null);
+                  setUrlInputValue('');
+                }
+              }}
+              placeholder={t('settings.imageUrlPlaceholder')}
+              className="cell-url-input"
+              autoFocus
+            />
+            <div className="cell-url-buttons">
+              <button
+                className="cell-url-btn"
+                onClick={() => handleUrlSubmit(row, col, 'front')}
+                title={t('settings.apply')}
+              >
+                ✓
+              </button>
+              <button
+                className="cell-url-btn"
+                onClick={() => {
+                  setUrlInputCell(null);
+                  setUrlInputValue('');
+                }}
+                title={t('binder.cancel')}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="cell-placeholder">+</div>
+        )}
+      </div>
+    );
+  };
+
+  const renderBackCell = (cell) => {
+    const { row, col, isFirstCol, isFirstRow, isLastCol, isLastRow, rowCellCount } = cell;
+    const mirroredCol = getMirroredCol(col, rowCellCount);
+    const frontKey = `${row}-${mirroredCol}`;
+    const backKey = `${row}-${col}`;
+    const frontCellContent = content[frontKey];
+    const hasFrontImage = isImageContent(frontCellContent);
+    const backCellContent = backContent[backKey];
+    const shouldShowDefault =
+      hasFrontImage && !isImageContent(backCellContent) && defaultBackImage;
+    const backImageUrl = getImageUrl(backCellContent);
+    const backImageName = getCellImageName(backCellContent);
+    const isFrontImageRotated = rotatedImages[frontKey] === true;
+    const displayDefaultImage =
+      shouldShowDefault && isFrontImageRotated && rotatedDefaultBackImage
+        ? rotatedDefaultBackImage
+        : defaultBackImage;
+    const displayImage = backImageUrl || (shouldShowDefault ? displayDefaultImage : null);
+    const isImage =
+      displayImage &&
+      (displayImage.startsWith('data:image') ||
+        displayImage.startsWith('http://') ||
+        displayImage.startsWith('https://'));
+    const isDefaultImage = !backImageUrl && shouldShowDefault;
+    const isHorizontalBack = isRowHorizontal(rowCellCount);
+    const canDragBack = !!backImageUrl;
+    const backCellClasses = [
+      'grid-cell',
+      isFirstCol ? 'cell-first-col' : '',
+      isFirstRow ? 'cell-first-row' : '',
+      isLastCol ? 'cell-last-col' : '',
+      isLastRow ? 'cell-last-row' : '',
+      getCellDragClassName('back', row, col, canDragBack),
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const backImageWrapperClasses = [
+      'cell-image-wrapper',
+      isHorizontalBack && coverSide === 'right' ? 'align-left' : '',
+      isHorizontalBack && coverSide === 'left' ? 'align-right' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    return (
+      <div
+        key={`${page.id}-back-${row}-${mirroredCol}`}
+        className={backCellClasses}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleBackCellClick(row, col);
+        }}
+        onMouseDown={handleCellPointerDown('back', row, col, canDragBack, 'mouse')}
+        onTouchStart={handleCellPointerDown('back', row, col, canDragBack, 'touch')}
+        title={isImage && backImageName ? backImageName : undefined}
+        data-page-id={page.id}
+        data-side="back"
+        data-row={row}
+        data-col={col}
+      >
+        {isImage ? (
+          <>
+            {renderCellImage(
+              displayImage,
+              backImageName,
+              `back-${backKey}`,
+              !isDefaultImage ? sleeves[`back-${backKey}`] : null,
+              backImageWrapperClasses,
+              isDefaultImage ? 'default-image' : ''
+            )}
+            <div className={getImageControlsClassName('back', row, col)}>
+              <div className="cell-image-controls-buttons">
+                {isDefaultImage ? (
+                  <>
+                    <button
+                      type="button"
+                      className="cell-control-btn cell-control-rotate"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRotateBackImage(e, row, col);
+                      }}
+                      title={t('page.rotateImage')}
+                    >
+                      ↻
+                    </button>
+                    <button
+                      type="button"
+                      className="cell-control-btn cell-control-replace"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleBackCellClick(row, col);
+                      }}
+                      title={t('page.replaceImage')}
+                    >
+                      +
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {renderSleeveButton('back', row, col)}
+                    <button
+                      type="button"
+                      className="cell-control-btn cell-control-rotate"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRotateBackImage(e, row, col);
+                      }}
+                      title={t('page.rotateImage')}
+                    >
+                      ↻
+                    </button>
+                    <button
+                      type="button"
+                      className="cell-control-btn cell-control-remove"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRemoveBackImage(e, row, col);
+                      }}
+                      title={t('page.removeImage')}
+                    >
+                      ×
+                    </button>
+                    <button
+                      type="button"
+                      className="cell-control-btn cell-control-replace"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleReplaceBackImage(e, row, col);
+                      }}
+                      title={t('page.replaceImage')}
+                    >
+                      +
+                    </button>
+                  </>
+                )}
+              </div>
+              {!isDefaultImage && renderSleevePicker('back', row, col)}
+            </div>
+          </>
+        ) : urlInputCell &&
+          urlInputCell.row === row &&
+          urlInputCell.col === col &&
+          urlInputCell.side === 'back' ? (
+          <div className="cell-url-input-container" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="text"
+              value={urlInputValue}
+              onChange={(e) => setUrlInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleUrlSubmit(row, col, 'back');
+                } else if (e.key === 'Escape') {
+                  setUrlInputCell(null);
+                  setUrlInputValue('');
+                }
+              }}
+              placeholder={t('settings.imageUrlPlaceholder')}
+              className="cell-url-input"
+              autoFocus
+            />
+            <div className="cell-url-buttons">
+              <button
+                className="cell-url-btn"
+                onClick={() => handleUrlSubmit(row, col, 'back')}
+                title={t('settings.apply')}
+              >
+                ✓
+              </button>
+              <button
+                className="cell-url-btn"
+                onClick={() => {
+                  setUrlInputCell(null);
+                  setUrlInputValue('');
+                }}
+                title={t('binder.cancel')}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="cell-placeholder">+</div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCustomGridRow = (rowIndex, renderCell) => {
+    const rowCellCount = layout.rowCounts[rowIndex];
+    const sideGapUnits = getRowSideGapUnits(layout.maxCols, rowCellCount);
+    const spacerWidth =
+      sideGapUnits > 0
+        ? `calc(100% / ${layout.maxCols} * ${sideGapUnits})`
+        : null;
+
+    return (
+      <div key={`row-${rowIndex}`} className="page-grid-row">
+        {spacerWidth && (
+          <div
+            className="page-grid-spacer"
+            style={{ flex: `0 0 ${spacerWidth}` }}
+            aria-hidden="true"
+          />
+        )}
+        {layout.cells
+          .filter((cell) => cell.row === rowIndex)
+          .map((cell) => renderCell(cell))}
+        {spacerWidth && (
+          <div
+            className="page-grid-spacer"
+            style={{ flex: `0 0 ${spacerWidth}` }}
+            aria-hidden="true"
+          />
+        )}
+      </div>
+    );
+  };
+
+  const renderFrontGridCells = () => {
+    if (layout.type === 'custom') {
+      return layout.rowCounts.map((count, rowIndex) =>
+        renderCustomGridRow(rowIndex, renderFrontCell)
+      );
+    }
+    return layout.cells.map((cell) => renderFrontCell(cell));
+  };
+
+  const renderBackGridCells = () => {
+    if (layout.type === 'custom') {
+      return layout.rowCounts.map((count, rowIndex) =>
+        renderCustomGridRow(rowIndex, renderBackCell)
+      );
+    }
+    return layout.cells.map((cell) => renderBackCell(cell));
+  };
 
   return (
     <>
@@ -1715,160 +2113,8 @@ const Page = ({
           </div>
 
           <div className="page-content">
-            <div
-              className={`page-grid grid-${gridSize}`}
-              style={{
-                gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                gridTemplateRows: `repeat(${rows}, 1fr)`,
-              }}
-            >
-              {Array.from({ length: rows * cols }).map((_, index) => {
-                const row = Math.floor(index / cols);
-                const col = index % cols;
-                const key = `${row}-${col}`;
-                const cellContent = content[key] || '';
-
-                const isImage = isImageContent(cellContent);
-                const isText = cellContent && !isImage && typeof cellContent === 'string';
-                const imageUrl = getImageUrl(cellContent);
-                const imageName = getCellImageName(cellContent);
-
-                const isLastCol = col === cols - 1;
-                const isLastRow = row === rows - 1;
-                const isFirstCol = col === 0;
-                const isFirstRow = row === 0;
-                const isHorizontal = rows > cols; // Yatay uzun cep (örneğin 3x1, 4x1)
-                const cellClasses = [
-                  'grid-cell',
-                  isFirstCol ? 'cell-first-col' : '',
-                  isFirstRow ? 'cell-first-row' : '',
-                  isLastCol ? 'cell-last-col' : '',
-                  isLastRow ? 'cell-last-row' : '',
-                  getCellDragClassName('front', row, col, isImage)
-                ].filter(Boolean).join(' ');
-
-                // Yatay uzun cepler için resim hizalaması
-                const imageWrapperClasses = [
-                  'cell-image-wrapper',
-                  isHorizontal && coverSide === 'right' ? 'align-right' : '',
-                  isHorizontal && coverSide === 'left' ? 'align-left' : ''
-                ].filter(Boolean).join(' ');
-
-                return (
-                  <div
-                    key={`${page.id}-${row}-${col}`}
-                    className={cellClasses}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCellClick(row, col);
-                    }}
-                    onMouseDown={handleCellPointerDown('front', row, col, isImage, 'mouse')}
-                    onTouchStart={handleCellPointerDown('front', row, col, isImage, 'touch')}
-                    title={isImage && imageName ? imageName : undefined}
-                    data-page-id={page.id}
-                    data-side="front"
-                    data-row={row}
-                    data-col={col}
-                  >
-                    {isImage ? (
-                      <>
-                        {renderCellImage(imageUrl, imageName, key, sleeves[key], imageWrapperClasses)}
-                        <div className={getImageControlsClassName('front', row, col)}>
-                          <div className="cell-image-controls-buttons">
-                            {renderSleeveButton('front', row, col)}
-                            <button
-                              type="button"
-                              className="cell-control-btn cell-control-rotate"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleRotateImage(e, row, col);
-                              }}
-                              title={t('page.rotateImage')}
-                            >
-                              ↻
-                            </button>
-                            <button
-                              type="button"
-                              className="cell-control-btn cell-control-remove"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleRemoveImage(e, row, col);
-                              }}
-                              title={t('page.removeImage')}
-                            >
-                              ×
-                            </button>
-                            <button
-                              type="button"
-                              className="cell-control-btn cell-control-replace"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleReplaceImage(e, row, col);
-                              }}
-                              title={t('page.replaceImage')}
-                            >
-                              +
-                            </button>
-                          </div>
-                          {renderSleevePicker('front', row, col)}
-                        </div>
-                      </>
-                    ) : isText ? (
-                      <textarea
-                        className="cell-input"
-                        value={cellContent}
-                        onChange={(e) => handleCellChange(row, col, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        placeholder={t('page.textPlaceholder')}
-                      />
-                    ) : urlInputCell && urlInputCell.row === row && urlInputCell.col === col && urlInputCell.side === 'front' ? (
-                      <div className="cell-url-input-container" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          value={urlInputValue}
-                          onChange={(e) => setUrlInputValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleUrlSubmit(row, col, 'front');
-                            } else if (e.key === 'Escape') {
-                              setUrlInputCell(null);
-                              setUrlInputValue('');
-                            }
-                          }}
-                          placeholder={t('settings.imageUrlPlaceholder')}
-                          className="cell-url-input"
-                          autoFocus
-                        />
-                        <div className="cell-url-buttons">
-                          <button
-                            className="cell-url-btn"
-                            onClick={() => handleUrlSubmit(row, col, 'front')}
-                            title={t('settings.apply')}
-                          >
-                            ✓
-                          </button>
-                          <button
-                            className="cell-url-btn"
-                            onClick={() => {
-                              setUrlInputCell(null);
-                              setUrlInputValue('');
-                            }}
-                            title={t('binder.cancel')}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="cell-placeholder">+</div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className={gridClassName} style={gridStyle}>
+              {renderFrontGridCells()}
             </div>
 
 
@@ -1884,7 +2130,7 @@ const Page = ({
 
         {/* Arka yüz */}
         <div
-          className={`page transparent ${coverSide === 'left' ? 'page-left' : 'page-right'} page-type-${pageType} page-back`}
+          className={`page ${isTransparent ? 'transparent' : ''} ${coverSide === 'left' ? 'page-left' : 'page-right'} page-type-${pageType} page-back`}
           data-density="hard"
         >
           {/* Ring delikleri - arka yüzde de görünür */}
@@ -1895,222 +2141,8 @@ const Page = ({
           </div>
 
           <div className="page-content">
-            <div
-              className={`page-grid grid-${gridSize}`}
-              style={{
-                gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                gridTemplateRows: `repeat(${rows}, 1fr)`,
-              }}
-            >
-              {Array.from({ length: rows * cols }).map((_, index) => {
-                const row = Math.floor(index / cols);
-                const col = index % cols;
-
-                // Ayna efekti: Arka yüzde kolonları ters çevir (sol-sağ yer değiştir)
-                const mirroredCol = cols - 1 - col;
-                // Arka yüzde görünen pozisyon (row, col) için, ön yüzdeki karşılık gelen pozisyon (row, mirroredCol)
-                const frontKey = `${row}-${mirroredCol}`;
-                // Arka yüz içeriği normal pozisyonda saklanıyor (mirroredCol değil, col kullanılmalı)
-                // Çünkü handleBackCellClick ve handleGalleryImageSelect'te normal pozisyon kullanılıyor
-                const backKey = `${row}-${col}`;
-
-                // Ön yüz içeriğini kontrol et (ayna pozisyonundan - çünkü arka yüzde görünen hücrenin karşılığı)
-                const frontCellContent = content[frontKey];
-                const hasFrontImage = isImageContent(frontCellContent);
-
-                // Arka yüz içeriğini kontrol et (normal pozisyondan - çünkü backContent normal pozisyonda saklanıyor)
-                const backCellContent = backContent[backKey];
-
-                // Eğer ön yüzde resim VAR ve arka yüzde resim YOK ise default görüntü göster
-                // Eğer ön yüzde resim YOK ise default görüntü gösterme
-                const shouldShowDefault = hasFrontImage && !isImageContent(backCellContent) && defaultBackImage;
-                const backImageUrl = getImageUrl(backCellContent);
-                const backImageName = getCellImageName(backCellContent);
-
-                // Ön yüzdeki resmin çevrilmiş olup olmadığını kontrol et
-                const isFrontImageRotated = rotatedImages[frontKey] === true;
-
-                // Eğer ön yüzdeki resim çevrilmişse, çevrilmiş default resmi kullan
-                const displayDefaultImage = (shouldShowDefault && isFrontImageRotated && rotatedDefaultBackImage)
-                  ? rotatedDefaultBackImage
-                  : defaultBackImage;
-
-                const displayImage = backImageUrl || (shouldShowDefault ? displayDefaultImage : null);
-                const isImage = displayImage && (displayImage.startsWith('data:image') || displayImage.startsWith('http://') || displayImage.startsWith('https://'));
-                const isDefaultImage = !backImageUrl && shouldShowDefault;
-
-                const isLastColBack = col === cols - 1;
-                const isLastRowBack = row === rows - 1;
-                const isFirstColBack = col === 0;
-                const isFirstRowBack = row === 0;
-                const isHorizontalBack = rows > cols; // Yatay uzun cep (örneğin 3x1, 4x1)
-                const canDragBack = !!backImageUrl;
-                const backCellClasses = [
-                  'grid-cell',
-                  isFirstColBack ? 'cell-first-col' : '',
-                  isFirstRowBack ? 'cell-first-row' : '',
-                  isLastColBack ? 'cell-last-col' : '',
-                  isLastRowBack ? 'cell-last-row' : '',
-                  getCellDragClassName('back', row, col, canDragBack)
-                ].filter(Boolean).join(' ');
-
-                // Arka yüz için yatay uzun cepler için resim hizalaması
-                // Ayna efekti nedeniyle hizalama ters olmalı:
-                // Sağ sayfa için: ön yüz sağa, arka yüz sola
-                // Sol sayfa için: ön yüz sola, arka yüz sağa
-                const backImageWrapperClasses = [
-                  'cell-image-wrapper',
-                  isHorizontalBack && coverSide === 'right' ? 'align-left' : '',
-                  isHorizontalBack && coverSide === 'left' ? 'align-right' : ''
-                ].filter(Boolean).join(' ');
-
-                return (
-                  <div
-                    key={`${page.id}-back-${row}-${mirroredCol}`}
-                    className={backCellClasses}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Arka yüzde görünen pozisyona tıklandığında, normal pozisyonu kullan
-                      // Çünkü backContent normal pozisyonda saklanıyor
-                      handleBackCellClick(row, col);
-                    }}
-                    onMouseDown={handleCellPointerDown('back', row, col, canDragBack, 'mouse')}
-                    onTouchStart={handleCellPointerDown('back', row, col, canDragBack, 'touch')}
-                    title={isImage && backImageName ? backImageName : undefined}
-                    data-page-id={page.id}
-                    data-side="back"
-                    data-row={row}
-                    data-col={col}
-                  >
-                    {isImage ? (
-                      <>
-                        {renderCellImage(
-                          displayImage,
-                          backImageName,
-                          `back-${backKey}`,
-                          !isDefaultImage ? sleeves[`back-${backKey}`] : null,
-                          backImageWrapperClasses,
-                          isDefaultImage ? 'default-image' : ''
-                        )}
-                        <div className={getImageControlsClassName('back', row, col)}>
-                          <div className="cell-image-controls-buttons">
-                            {isDefaultImage ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="cell-control-btn cell-control-rotate"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleRotateBackImage(e, row, col);
-                                  }}
-                                  title={t('page.rotateImage')}
-                                >
-                                  ↻
-                                </button>
-                                <button
-                                  type="button"
-                                  className="cell-control-btn cell-control-replace"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleBackCellClick(row, col);
-                                  }}
-                                  title={t('page.replaceImage')}
-                                >
-                                  +
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                {renderSleeveButton('back', row, col)}
-                                <button
-                                  type="button"
-                                  className="cell-control-btn cell-control-rotate"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleRotateBackImage(e, row, col);
-                                  }}
-                                  title={t('page.rotateImage')}
-                                >
-                                  ↻
-                                </button>
-                                <button
-                                  type="button"
-                                  className="cell-control-btn cell-control-remove"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleRemoveBackImage(e, row, col);
-                                  }}
-                                  title={t('page.removeImage')}
-                                >
-                                  ×
-                                </button>
-                                <button
-                                  type="button"
-                                  className="cell-control-btn cell-control-replace"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleReplaceBackImage(e, row, col);
-                                  }}
-                                  title={t('page.replaceImage')}
-                                >
-                                  +
-                                </button>
-                              </>
-                            )}
-                          </div>
-                          {!isDefaultImage && renderSleevePicker('back', row, col)}
-                        </div>
-                      </>
-                    ) : urlInputCell && urlInputCell.row === row && urlInputCell.col === col && urlInputCell.side === 'back' ? (
-                      <div className="cell-url-input-container" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          value={urlInputValue}
-                          onChange={(e) => setUrlInputValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleUrlSubmit(row, col, 'back');
-                            } else if (e.key === 'Escape') {
-                              setUrlInputCell(null);
-                              setUrlInputValue('');
-                            }
-                          }}
-                          placeholder={t('settings.imageUrlPlaceholder')}
-                          className="cell-url-input"
-                          autoFocus
-                        />
-                        <div className="cell-url-buttons">
-                          <button
-                            className="cell-url-btn"
-                            onClick={() => handleUrlSubmit(row, col, 'back')}
-                            title={t('settings.apply')}
-                          >
-                            ✓
-                          </button>
-                          <button
-                            className="cell-url-btn"
-                            onClick={() => {
-                              setUrlInputCell(null);
-                              setUrlInputValue('');
-                            }}
-                            title={t('binder.cancel')}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="cell-placeholder">+</div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className={gridClassName} style={gridStyle}>
+              {renderBackGridCells()}
             </div>
             {/* Sayfa numarası - arka yüz, sadece sol pozisyonda göster */}
             {backPageNumber !== null && shouldShowBack && (

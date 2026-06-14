@@ -20,7 +20,7 @@ const INFO_SECTIONS = [
   {
     id: 'pages',
     titleKey: 'info.sec.pages.title',
-    itemKeys: ['info.sec.pages.1', 'info.sec.pages.2', 'info.sec.pages.3', 'info.sec.pages.4', 'info.sec.pages.5'],
+    itemKeys: ['info.sec.pages.1', 'info.sec.pages.2', 'info.sec.pages.3', 'info.sec.pages.4', 'info.sec.pages.5', 'info.sec.pages.6'],
   },
   {
     id: 'look',

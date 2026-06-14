@@ -8,6 +8,7 @@ import { loadDefaultGallery } from '../utils/defaultGallery';
 import { parseGalleryText } from '../utils/galleryParse';
 import GalleryWithFolders from './GalleryWithFolders';
 import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
+import { isValidGridSize, normalizeGridSizeInput } from '../utils/gridLayout';
 
 const COLOR_PRESETS = [
   '#E6E6E6', '#FFFFFF', '#000000', '#A0A0A0', '#878787',
@@ -809,21 +810,16 @@ const SettingsBar = ({
           }}
           onBlur={(e) => {
             const value = e.target.value.trim();
-            // Focus kaybolduğunda format kontrolü yap
             if (value === '') {
-              // Boşsa varsayılan değeri kullan
               onGridSizeChange('2x2');
-            } else if (!/^\d+x\d+$/.test(value)) {
-              // Geçersiz format ise varsayılan değere dön
-              onGridSizeChange('2x2');
+            } else if (isValidGridSize(value)) {
+              onGridSizeChange(normalizeGridSizeInput(value));
             } else {
-              // Geçerli format ise olduğu gibi bırak
-              onGridSizeChange(value);
+              onGridSizeChange('2x2');
             }
           }}
-          placeholder="2x2"
+          placeholder="2x2 / 2-3-2"
           className="settings-control grid-input"
-          pattern="\d+x\d+"
           title={t('settings.gridHelp')}
         />
       </div>

@@ -23,6 +23,11 @@ import {
   parseBinderImportFile,
   applyBinderImport,
 } from './utils/binderExportImport';
+import {
+  isValidGridSize,
+  normalizeGridSizeInput,
+  formatGridSizeForInput,
+} from './utils/gridLayout';
 import { Analytics } from '@vercel/analytics/react';
 import {
   markDefaultBinderCreated,
@@ -1878,18 +1883,18 @@ function App() {
 
   const handlePageGridEdit = (pageId, currentGridSize) => {
     setEditingGridPageId(pageId);
-    setEditingGridSize(currentGridSize);
+    setEditingGridSize(formatGridSizeForInput(currentGridSize));
   };
 
   const handleGridSizeSave = () => {
-    if (editingGridPageId && editingGridSize && /^\d+x\d+$/.test(editingGridSize)) {
+    if (editingGridPageId && editingGridSize && isValidGridSize(editingGridSize)) {
+      const normalized = normalizeGridSizeInput(editingGridSize);
       const updatedPages = pages.map(page => 
         page.id === editingGridPageId 
-          ? { ...page, gridSize: editingGridSize }
+          ? { ...page, gridSize: normalized }
           : page
       );
       setPages(updatedPages);
-      // useEffect otomatik olarak localStorage'a kaydedecek
       setEditingGridPageId(null);
       setEditingGridSize('');
     }

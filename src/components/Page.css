@@ -205,8 +205,8 @@
 }
 
 .page-back.transparent {
-  background-color: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(0.5px);
+  background-color: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(1px);
 }
 
 .page-back.transparent .cell-image-wrapper {
@@ -500,6 +500,41 @@
   pointer-events: none;
 }
 
+.page-grid--custom {
+  display: flex;
+  flex-direction: column;
+  --grid-max-cols: 3;
+}
+
+.page-grid-row {
+  display: flex;
+  flex: 1;
+  justify-content: flex-start;
+  align-items: stretch;
+  min-height: 0;
+  width: 100%;
+}
+
+.page-grid-spacer {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.page-grid--custom .page-grid-row .grid-cell {
+  flex: 0 0 calc(100% / var(--grid-max-cols));
+  width: calc(100% / var(--grid-max-cols));
+  max-width: calc(100% / var(--grid-max-cols));
+  min-height: 0;
+}
+
+.page-grid--custom .cell-image-wrapper {
+  justify-content: center !important;
+}
+
+.page-grid--custom .cell-image-wrapper .cell-image {
+  object-position: center !important;
+}
+
 .grid-cell {
   border: none;
   border-radius: 0;
@@ -543,6 +578,20 @@
 
 .page-grid .grid-cell:not(.cell-first-row)::before {
   border-top: none;
+}
+
+/* Arka yüz: dikiş çizgileri ön yüz kadar belirgin */
+.page-back .page-grid .grid-cell::before {
+  opacity: 1;
+  z-index: 7;
+}
+
+.page-back.page-type-mat .grid-cell {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.page-back .page-grid {
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Resim içeren grid-cell'lerde sürükleme imleci */

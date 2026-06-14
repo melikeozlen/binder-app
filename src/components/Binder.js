@@ -552,13 +552,12 @@ const Binder = ({
                   ×
                 </button>
               </div>
-              <input
-                type="text"
+              <textarea
                 value={editingGridSize}
                 onChange={(e) => onGridSizeChange && onGridSizeChange(e.target.value)}
-                placeholder="2x2"
-                className="grid-edit-input"
-                pattern="\d+x\d+"
+                placeholder={'2x2\nveya\n2\n3\n2'}
+                className="grid-edit-input grid-edit-textarea"
+                rows={4}
                 autoFocus
               />
               <div className="grid-edit-buttons">
