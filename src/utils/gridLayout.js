@@ -43,7 +43,7 @@ export const isValidGridSize = (input) => {
   if (/^\d+(-\d+)+$/.test(value)) {
     const parts = value.split('-').map(Number);
     return (
-      parts.length >= 1 &&
+      parts.length >= 2 &&
       parts.length <= MAX_GRID_ROWS &&
       parts.every((n) => n >= 1 && n <= MAX_GRID_COLS)
     );
@@ -84,44 +84,33 @@ const buildCells = (rowCounts) => {
   return { rows, cols: maxCols, maxCols, rowCounts, cells };
 };
 
-/** Grid düzenini parse eder */
+/** Grid düzenini parse eder — 2x2 → 2 satır×2 sütun, 3-2 → üst 3 alt 2 cep */
 export const parseGridLayout = (gridSize) => {
   const storageKey = normalizeGridSizeInput(gridSize);
+  let rowCounts;
 
   if (/^\d+x\d+$/.test(storageKey)) {
     const [rows, cols] = storageKey.split('x').map(Number);
-    const rowCounts = Array.from({ length: rows }, () => cols);
-    const { cells } = buildCells(rowCounts);
-
-    return {
-      type: 'uniform',
-      storageKey,
-      rows,
-      cols,
-      maxCols: cols,
-      rowCounts,
-      cells,
-      totalCells: rows * cols,
-    };
+    rowCounts = Array.from({ length: rows }, () => cols);
+  } else if (/^\d+(-\d+)+$/.test(storageKey)) {
+    rowCounts = storageKey.split('-').map(Number);
+  } else {
+    return parseGridLayout('2x2');
   }
 
-  if (/^\d+(-\d+)+$/.test(storageKey)) {
-    const rowCounts = storageKey.split('-').map(Number);
-    const { rows, cols, maxCols, cells } = buildCells(rowCounts);
+  const { rows, cols, maxCols, cells } = buildCells(rowCounts);
+  const isUniform = rowCounts.every((count) => count === maxCols);
 
-    return {
-      type: 'custom',
-      storageKey,
-      rows,
-      cols,
-      maxCols,
-      rowCounts,
-      cells,
-      totalCells: cells.length,
-    };
-  }
-
-  return parseGridLayout('2x2');
+  return {
+    type: isUniform ? 'uniform' : 'custom',
+    storageKey,
+    rows,
+    cols,
+    maxCols,
+    rowCounts,
+    cells,
+    totalCells: cells.length,
+  };
 };
 
 export const getMirroredCol = (col, rowCellCount) => rowCellCount - 1 - col;

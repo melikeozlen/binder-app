@@ -1682,15 +1682,10 @@ const Page = ({
   const layout = parseGridLayout(page.gridSize || gridSize);
   const gridClassName = [
     'page-grid',
-    layout.type === 'custom' ? 'page-grid--custom' : `grid-${layout.storageKey}`,
+    'page-grid--custom',
+    `grid-${layout.storageKey}`,
   ].join(' ');
-  const gridStyle =
-    layout.type === 'uniform'
-      ? {
-          gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
-          gridTemplateRows: `repeat(${layout.rows}, 1fr)`,
-        }
-      : { '--grid-max-cols': layout.maxCols };
+  const gridStyle = { '--grid-max-cols': layout.maxCols };
 
   const isTransparent = page.transparent !== false; // Varsayılan olarak şeffaf
   const ringHoles = 6; // 6 ring deliği
@@ -2073,23 +2068,15 @@ const Page = ({
     );
   };
 
-  const renderFrontGridCells = () => {
-    if (layout.type === 'custom') {
-      return layout.rowCounts.map((count, rowIndex) =>
-        renderCustomGridRow(rowIndex, renderFrontCell)
-      );
-    }
-    return layout.cells.map((cell) => renderFrontCell(cell));
-  };
+  const renderFrontGridCells = () =>
+    layout.rowCounts.map((count, rowIndex) =>
+      renderCustomGridRow(rowIndex, renderFrontCell)
+    );
 
-  const renderBackGridCells = () => {
-    if (layout.type === 'custom') {
-      return layout.rowCounts.map((count, rowIndex) =>
-        renderCustomGridRow(rowIndex, renderBackCell)
-      );
-    }
-    return layout.cells.map((cell) => renderBackCell(cell));
-  };
+  const renderBackGridCells = () =>
+    layout.rowCounts.map((count, rowIndex) =>
+      renderCustomGridRow(rowIndex, renderBackCell)
+    );
 
   return (
     <>

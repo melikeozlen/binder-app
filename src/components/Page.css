@@ -506,6 +506,11 @@
   --grid-max-cols: 3;
 }
 
+/* x ve - formatları aynı satır düzenini kullanır */
+.page-grid.page-grid--custom {
+  display: flex;
+}
+
 .page-grid-row {
   display: flex;
   flex: 1;
@@ -525,6 +530,15 @@
   width: calc(100% / var(--grid-max-cols));
   max-width: calc(100% / var(--grid-max-cols));
   min-height: 0;
+}
+
+.page-grid--custom.grid-2x2 .grid-cell,
+.page-grid--custom.grid-2-2 .grid-cell {
+  min-height: 120px;
+}
+
+.page-grid--custom.grid-3x3 .grid-cell {
+  min-height: 80px;
 }
 
 .page-grid--custom .cell-image-wrapper {

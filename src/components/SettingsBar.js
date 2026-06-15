@@ -818,7 +818,7 @@ const SettingsBar = ({
               onGridSizeChange('2x2');
             }
           }}
-          placeholder="2x2 / 2-3-2"
+          placeholder="2x2 / 3-2 / 2-3-2"
           className="settings-control grid-input"
           title={t('settings.gridHelp')}
         />

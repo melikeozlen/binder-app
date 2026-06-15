@@ -11,6 +11,23 @@ describe('gridLayout', () => {
     expect(normalizeGridSizeInput('2\n3\n2')).toBe('2-3-2');
   });
 
+  test('parses 2x2 as two rows of two', () => {
+    const layout = parseGridLayout('2x2');
+    expect(layout.type).toBe('uniform');
+    expect(layout.rowCounts).toEqual([2, 2]);
+    expect(layout.maxCols).toBe(2);
+    expect(layout.totalCells).toBe(4);
+  });
+
+  test('parses 3-2 as three top and two bottom', () => {
+    const layout = parseGridLayout('3-2');
+    expect(layout.type).toBe('custom');
+    expect(layout.rowCounts).toEqual([3, 2]);
+    expect(layout.maxCols).toBe(3);
+    expect(layout.totalCells).toBe(5);
+    expect(isValidGridSize('3-2')).toBe(true);
+  });
+
   test('parses custom layout cells', () => {
     const layout = parseGridLayout('2-3-2');
     expect(layout.type).toBe('custom');
