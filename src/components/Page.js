@@ -1035,8 +1035,26 @@ const Page = ({
     const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
     const hasSleeve = img.classList.contains('has-sleeve');
     const sleeveInset = hasSleeve ? SLEEVE_RING_PX * 2 : 0;
-    const wrapperWidth = Math.max(0, wrapper.clientWidth - padX - sleeveInset);
-    const wrapperHeight = Math.max(0, wrapper.clientHeight - padY - sleeveInset);
+
+    const grid = wrapper.closest('.page-grid');
+    const gridStyle = grid ? getComputedStyle(grid) : null;
+    const stitchW = gridStyle
+      ? parseFloat(
+          gridStyle.getPropertyValue('--pocket-stitch-width') ||
+            gridStyle.getPropertyValue('--grid-stitch-width') ||
+            '0'
+        )
+      : 0;
+    const pocketInset = Number.isFinite(stitchW) && stitchW > 0 ? Math.ceil(stitchW) : 0;
+
+    const wrapperWidth = Math.max(
+      0,
+      wrapper.clientWidth - padX - sleeveInset - pocketInset * 2
+    );
+    const wrapperHeight = Math.max(
+      0,
+      wrapper.clientHeight - padY - sleeveInset - pocketInset * 2
+    );
 
     if (wrapperWidth < 2 || wrapperHeight < 2) {
       return;
