@@ -441,10 +441,11 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   /* Page content tıklamaları engellemeli - sadece grid-cell'ler tıklanabilir */
   pointer-events: none;
   position: relative;
-  overflow: visible; /* Sayfa numarasının görünmesi için */
+  overflow: hidden;
   z-index: 1; /* Işık efektinin üzerinde olmalı */
 }
 
@@ -529,7 +530,10 @@
   flex: 0 0 calc(100% / var(--grid-max-cols));
   width: calc(100% / var(--grid-max-cols));
   max-width: calc(100% / var(--grid-max-cols));
+  min-width: 0;
   min-height: 0;
+  max-height: 100%;
+  align-self: stretch;
 }
 
 .page-grid--custom.grid-2x2 .grid-cell,
@@ -558,6 +562,8 @@
   align-items: center;
   justify-content: center;
   min-height: 60px;
+  min-width: 0;
+  max-height: 100%;
   position: relative;
   overflow: hidden;
   padding: 2px;
@@ -718,6 +724,10 @@
   position: relative;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -848,7 +858,9 @@
   object-position: center;
   cursor: inherit;
   box-sizing: border-box;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  min-height: 0;
   opacity: 1 !important;
   background-color: transparent;
   display: block;
@@ -1286,7 +1298,7 @@
   }
 
   .page-content {
-    padding: 10px 6px 5px 6px;
+    padding: 8px 4px 4px 4px;
     min-height: 0;
     overflow: hidden;
   }
@@ -1297,8 +1309,28 @@
 
   .page-grid {
     min-height: 0;
+    overflow: hidden;
   }
 
+  .page-grid-row {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  /* Sabit min-height kurallarını geçersiz kıl — küçük ekranda cepler sığsın */
+  .page-grid--custom.grid-1x1 .grid-cell,
+  .page-grid--custom.grid-2x2 .grid-cell,
+  .page-grid--custom.grid-2-2 .grid-cell,
+  .page-grid--custom.grid-3x3 .grid-cell,
+  .page-grid--custom.grid-4x4 .grid-cell,
+  .page-grid--custom.grid-4x6 .grid-cell,
+  .grid-1x1 .grid-cell,
+  .grid-2x2 .grid-cell,
+  .grid-3x3 .grid-cell,
+  .grid-4x4 .grid-cell {
+    min-height: 0 !important;
+    max-height: 100%;
+  }
 
   .grid-cell,
   .grid-1x1 .grid-cell,
@@ -1307,6 +1339,10 @@
   .grid-4x4 .grid-cell {
     min-height: 0;
     padding: 1px;
+  }
+
+  .cell-image-wrapper {
+    padding: 2px 1px;
   }
 
   .gallery-content {
@@ -1344,7 +1380,7 @@
 
 @media (max-width: 480px) {
   .page-content {
-    padding: 5px 3px 3px 3px;
+    padding: 4px 2px 2px 2px;
   }
 
   .page-number {
@@ -1381,6 +1417,14 @@
   .grid-3x3 .grid-cell,
   .grid-4x4 .grid-cell {
     padding: 0;
+  }
+
+  .cell-image-wrapper {
+    padding: 1px;
+  }
+
+  .page-grid .grid-cell::before {
+    border-width: 2px;
   }
 
   .cell-control-btn {
@@ -1591,8 +1635,8 @@
   transform-origin: center;
   width: auto;
   height: auto;
-  max-width: none;
-  max-height: none;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
 

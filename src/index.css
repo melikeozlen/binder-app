@@ -1,3 +1,8 @@
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,6 +10,25 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Küçük ekranlarda rem tabanlı UI okunaklı kalsın */
+@media (max-width: 480px) {
+  html {
+    font-size: clamp(14px, 3.6vw, 16px);
+  }
+}
+
+@media (max-width: 360px) {
+  html {
+    font-size: clamp(14px, 4.2vw, 15px);
+  }
+}
+
+@media (max-width: 320px) {
+  html {
+    font-size: 14px;
+  }
 }
 
 code {

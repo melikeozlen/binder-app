@@ -1038,6 +1038,10 @@ const Page = ({
     const wrapperWidth = Math.max(0, wrapper.clientWidth - padX - sleeveInset);
     const wrapperHeight = Math.max(0, wrapper.clientHeight - padY - sleeveInset);
 
+    if (wrapperWidth < 2 || wrapperHeight < 2) {
+      return;
+    }
+
     let rotationAngle = 0;
     if (img.classList.contains('rotated-90')) rotationAngle = 90;
     else if (img.classList.contains('rotated-180')) rotationAngle = 180;
@@ -1050,8 +1054,13 @@ const Page = ({
     const rotatedH = imgW * sin + imgH * cos;
     const scale = Math.min(wrapperWidth / rotatedW, wrapperHeight / rotatedH);
 
-    img.style.width = `${imgW * scale}px`;
-    img.style.height = `${imgH * scale}px`;
+    const fittedW = Math.floor(imgW * scale);
+    const fittedH = Math.floor(imgH * scale);
+
+    img.style.width = `${fittedW}px`;
+    img.style.height = `${fittedH}px`;
+    img.style.maxWidth = `${wrapperWidth}px`;
+    img.style.maxHeight = `${wrapperHeight}px`;
   }, []);
 
   const getCellKey = (row, col) => `${row}-${col}`;
@@ -1284,21 +1293,27 @@ const Page = ({
   useEffect(() => {
     const wrappers = document.querySelectorAll('.cell-image-wrapper');
 
+    const refitWrapper = (wrapper) => {
+      const img = wrapper.querySelector('.cell-image');
+      if (!img) return;
+      requestAnimationFrame(() => fitImageToWrapper(img, wrapper));
+    };
+
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const wrapper = entry.target;
-        const img = wrapper.querySelector('.cell-image');
-        if (!img) continue;
-        requestAnimationFrame(() => fitImageToWrapper(img, wrapper));
+        const wrapper =
+          entry.target.classList?.contains('cell-image-wrapper')
+            ? entry.target
+            : entry.target.querySelector?.('.cell-image-wrapper');
+        if (wrapper) refitWrapper(wrapper);
       }
     });
 
     wrappers.forEach((wrapper) => {
       observer.observe(wrapper);
-      const img = wrapper.querySelector('.cell-image');
-      if (img?.complete) {
-        fitImageToWrapper(img, wrapper);
-      }
+      const cell = wrapper.closest('.grid-cell');
+      if (cell) observer.observe(cell);
+      refitWrapper(wrapper);
     });
 
     return () => observer.disconnect();
