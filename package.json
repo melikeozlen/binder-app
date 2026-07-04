@@ -38,5 +38,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^@vercel/analytics/react$": "<rootDir>/src/__mocks__/vercel-analytics.js",
+      "^@vercel/analytics$": "<rootDir>/src/__mocks__/vercel-analytics-core.js"
+    }
   }
 }
