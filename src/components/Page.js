@@ -1036,25 +1036,8 @@ const Page = ({
     const hasSleeve = img.classList.contains('has-sleeve');
     const sleeveInset = hasSleeve ? SLEEVE_RING_PX * 2 : 0;
 
-    const grid = wrapper.closest('.page-grid');
-    const gridStyle = grid ? getComputedStyle(grid) : null;
-    const stitchW = gridStyle
-      ? parseFloat(
-          gridStyle.getPropertyValue('--pocket-stitch-width') ||
-            gridStyle.getPropertyValue('--grid-stitch-width') ||
-            '0'
-        )
-      : 0;
-    const pocketInset = Number.isFinite(stitchW) && stitchW > 0 ? Math.ceil(stitchW) : 0;
-
-    const wrapperWidth = Math.max(
-      0,
-      wrapper.clientWidth - padX - sleeveInset - pocketInset * 2
-    );
-    const wrapperHeight = Math.max(
-      0,
-      wrapper.clientHeight - padY - sleeveInset - pocketInset * 2
-    );
+    const wrapperWidth = Math.max(0, wrapper.clientWidth - padX - sleeveInset);
+    const wrapperHeight = Math.max(0, wrapper.clientHeight - padY - sleeveInset);
 
     if (wrapperWidth < 2 || wrapperHeight < 2) {
       return;
@@ -1072,11 +1055,11 @@ const Page = ({
     const rotatedH = imgW * sin + imgH * cos;
     const scale = Math.min(wrapperWidth / rotatedW, wrapperHeight / rotatedH);
 
-    const fittedW = Math.floor(imgW * scale);
-    const fittedH = Math.floor(imgH * scale);
+    const fittedW = Math.min(Math.floor(imgW * scale), wrapperWidth);
+    const fittedH = Math.min(Math.floor(imgH * scale), wrapperHeight);
 
-    img.style.width = `${fittedW}px`;
-    img.style.height = `${fittedH}px`;
+    img.style.width = `${Math.max(0, fittedW)}px`;
+    img.style.height = `${Math.max(0, fittedH)}px`;
     img.style.maxWidth = `${wrapperWidth}px`;
     img.style.maxHeight = `${wrapperHeight}px`;
   }, []);

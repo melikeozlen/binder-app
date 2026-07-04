@@ -496,6 +496,7 @@
   --pocket-stitch-width: var(--grid-stitch-width, 3px);
   --pocket-dash-length: 5px;
   --pocket-dash-gap: 4px;
+  --pocket-fit-slack: 1px;
   /* Üst kenar açık - resim eklenebilsin diye */
   /* Sağ ve alt kenar yok - hücrelerin kenarlarındaki border yeterli */
   border: none;
@@ -765,11 +766,12 @@
   align-items: center;
   justify-content: center;
   background-color: rgba(255, 255, 255, 0.10);
-  padding: 5px 2px 5px 2px;
+  padding: calc(var(--pocket-stitch-width, 3px) + var(--pocket-fit-slack, 1px));
   box-sizing: border-box;
   overflow: hidden;
   z-index: 1;
   border: none;
+  border-radius: clamp(3px, 0.9vw, 8px);
 }
 
 .cell-image-wrapper--loading {
@@ -898,7 +900,7 @@
   background-color: transparent;
   display: block;
   position: relative;
-  border-radius: 8px;
+  border-radius: inherit;
   -webkit-user-drag: none;
   user-select: none;
   /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
@@ -1346,6 +1348,7 @@
     --pocket-stitch-width: 1.5px;
     --pocket-dash-length: 3px;
     --pocket-dash-gap: 2.5px;
+    --pocket-fit-slack: 2px;
   }
 
   .page-grid-row {
@@ -1374,15 +1377,11 @@
   .grid-3x3 .grid-cell,
   .grid-4x4 .grid-cell {
     min-height: 0;
-    padding: 1px;
-  }
-
-  .cell-image-wrapper {
     padding: 0;
   }
 
-  .cell-image {
-    border-radius: clamp(3px, 1vw, 8px);
+  .cell-image-wrapper {
+    border-radius: clamp(2px, 0.85vw, 7px);
   }
 
   .gallery-content {
@@ -1427,6 +1426,7 @@
     --pocket-stitch-width: 1px;
     --pocket-dash-length: 2px;
     --pocket-dash-gap: 2px;
+    --pocket-fit-slack: 2px;
   }
 
   .page-number {
@@ -1466,11 +1466,7 @@
   }
 
   .cell-image-wrapper {
-    padding: 0;
-  }
-
-  .cell-image {
-    border-radius: clamp(2px, 0.8vw, 6px);
+    border-radius: clamp(2px, 0.75vw, 5px);
   }
 
   .cell-control-btn {
