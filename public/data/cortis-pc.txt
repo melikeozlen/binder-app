@@ -894,7 +894,7 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmove9hd70029i50479oixefv-back-1778296123158.webp | BACK  - Juhoon - GREENGREEN Album ums japan (universal music store) pob (pre-order benefit)
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmove23ev000kl804daxet00q-front-1778296117468.webp |  - Juhoon - GREENGREEN Album weverse japan shop (wvj) pob (pre-order benefit)
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmove23ev000kl804daxet00q-back-1778296123148.webp | BACK  - Juhoon - GREENGREEN Album weverse japan shop (wvj) pob (pre-order benefit)
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovcggrq0021jo04cssdgqjr-front-1778296175621.webp |  - Juhoon - GREENGREEN Album weverse global shop (wvg) lucky draw
+GREENGREEN | https://i.hizliresim.com/98i06sl.png |  - Juhoon - GREENGREEN Album weverse global shop (wvg) lucky draw
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovcays4000jl80461a8oa6v-front-1778296198892.webp |  - Juhoon - GREENGREEN Album makestar lucky draw
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovc8oqu001akz04hh76ov0x-front-1779683555636.webp |  - Juhoon - GREENGREEN Album everline lucky draw
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmovc8oqu001akz04hh76ov0x-back-1779683560766.webp | BACK  - Juhoon - GREENGREEN Album everline lucky draw
@@ -1865,11 +1865,11 @@ GREENGREEN   |  https://i.hizliresim.com/tjsqq1w.png  |  Seonghyeon 2 yzy vce 0.
 GREENGREEN   |  https://i.hizliresim.com/eqyn2kj.png  |  Martin 2 yzy vce 0.1 YIZHIYU
 
 
-GREENGREEN   |   https://i.hizliresim.com/d9a8ojq.png | Martin Hellolive ld 0.2
-GREENGREEN   |   https://i.hizliresim.com/mwuotod.png | James Hellolive ld 0.2
-GREENGREEN   |   https://i.hizliresim.com/nmx60y9.png | Juhoon Hellolive ld 0.2
-GREENGREEN   |   https://i.hizliresim.com/nxas73a.png | Seonghyeon Hellolive ld 0.2
-GREENGREEN   |   https://i.hizliresim.com/9ph882p.png | Keonho Hellolive ld 0.2
+GREENGREEN   |   https://i.hizliresim.com/kpgusox.png | Martin Hellolive ld 0.2
+GREENGREEN   |   https://i.hizliresim.com/ka5mt6r.png | James Hellolive ld 0.2
+GREENGREEN   |   https://i.hizliresim.com/2f85fxh.png | Juhoon Hellolive ld 0.2
+GREENGREEN   |   https://i.hizliresim.com/ci45t5q.png | Seonghyeon Hellolive ld 0.2
+GREENGREEN   |   https://i.hizliresim.com/5e0nnzo.png | Keonho Hellolive ld 0.2
 
 
 
