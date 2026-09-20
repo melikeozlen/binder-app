@@ -1971,3 +1971,50 @@
   opacity: 0.45;
   pointer-events: none;
 }
+
+/* Buluta kaydet butonu (üst çubuk): kaydedilmemiş değişiklik varsa dikkat çekici */
+.cloud-save-now-btn {
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cloud-save-now-btn--dirty {
+  background-color: #1a5fb4;
+  border-color: #1a5fb4;
+  color: #fff;
+  animation: cloud-save-pulse 1.6s ease-in-out infinite;
+}
+
+.cloud-save-now-btn--dirty:hover {
+  background-color: #154c90;
+  border-color: #154c90;
+}
+
+.cloud-save-now-btn--saving,
+.cloud-save-now-btn--saved {
+  background-color: #f2f5f9;
+  border-color: #d5dde8;
+  color: #4a6a8f;
+  opacity: 1;
+  cursor: default;
+}
+
+@keyframes cloud-save-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 95, 180, 0.45); }
+  50% { box-shadow: 0 0 0 5px rgba(26, 95, 180, 0); }
+}
+
+@media (max-width: 768px) {
+  .cloud-save-now-btn {
+    min-height: 32px;
+    padding: 0.3rem 0.5rem;
+  }
+}
+
+/* Çok dar ekranda yalnızca simge */
+@media (max-width: 420px) {
+  .cloud-save-now-btn--saving .cloud-save-now-label,
+  .cloud-save-now-btn--saved .cloud-save-now-label {
+    display: none;
+  }
+}

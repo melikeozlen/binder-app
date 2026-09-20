@@ -18,6 +18,8 @@ const FOCUS_THROTTLE_MS = 15 * 1000;
  * - Bulut kaydı opt-in: saveBinder(id) ile hesaba kaydedilen binder'lar (cloudBinderIds)
  *   otomatik eşitlenir; diğerleri yerel kalır.
  * - notifyChange(): seçili binder değişti → (kayıtlıysa) debounce ile push
+ * - markDirty(): kullanıcı düzenlemesi → dirty=true; push tamamlanınca false ("Kaydet" butonu / beforeunload)
+ * - pushNow(): debounce'u beklemeden seçili binder'ı hemen push et
  * - Giriş: tam reconcile; sonrasında 60 sn'de bir ve sekme odaklanınca hafif reconcile
  * - Rename: ilgili binder (kayıtlıysa) anında push
  * - deleteBinder(): buluttan da sil
@@ -33,9 +35,15 @@ export function useCloudSync({
   onBinderPulled,
   onUnauthorized,
   copySuffix,
+  // Hesabın yerel binder listesi yüklendi mi? false iken giriş reconcile'ı bekletilir;
+  // aksi halde eski (misafir) liste ile çalışır ve buluttaki sürüm yerel değişiklikleri ezer.
+  ready = true,
 }) {
   const [status, setStatus] = useState('idle'); // idle | syncing | synced | error
   const [lastError, setLastError] = useState(null);
+  // Seçili binder'da buluta henüz yazılmamış kullanıcı değişikliği var mı?
+  const [dirty, setDirty] = useState(false);
+  const changeSeqRef = useRef(0);
   // Bu hesaba kaydedilmiş binder id'leri (UI: ☁ rozeti / "Kaydet" butonu)
   const [cloudBinderIds, setCloudBinderIds] = useState(() => new Set());
   // "Kaydet" işlemi süren binder id'leri
@@ -110,20 +118,49 @@ export function useCloudSync({
         const currentUser = userRef.current;
         const binder = bindersRef.current.find((b) => b.id === binderId);
         if (!currentUser || !binder) return null;
+        const isSelected = binderId === selectedRef.current;
+        const seqAtStart = changeSeqRef.current;
         // Sadece görüntüleme yetkisi: sunucu 403 döner, hiç deneme
-        if (isViewOnlyBinder(binder)) return null;
-        if (!adopt && !isCloudBinder(binderId, currentUser.id)) return null;
-        if (binderId === selectedRef.current && flushRef.current) {
+        if (isViewOnlyBinder(binder)) {
+          if (isSelected) setDirty(false);
+          return null;
+        }
+        if (!adopt && !isCloudBinder(binderId, currentUser.id)) {
+          if (isSelected) setDirty(false);
+          return null;
+        }
+        if (isSelected && flushRef.current) {
           await flushRef.current();
         }
-        return pushBinder(
+        const result = await pushBinder(
           binderId,
           { name: binder.name, createdAt: binder.createdAt, userId: currentUser.id },
           { force: adopt }
         );
+        // Push sırasında yeni bir değişiklik olmadıysa artık temiz
+        if (isSelected && changeSeqRef.current === seqAtStart) setDirty(false);
+        return result;
       }),
     [run]
   );
+
+  // Kullanıcı seçili binder'da içerik/ayar değiştirdi → "kaydedilmemiş değişiklik" işareti
+  const markDirty = useCallback(() => {
+    changeSeqRef.current += 1;
+    if (!userRef.current || !selectedRef.current) return;
+    const binder = bindersRef.current.find((b) => b.id === selectedRef.current);
+    if (!binder || isViewOnlyBinder(binder)) return;
+    if (!isCloudBinder(binder.id, userRef.current.id)) return;
+    setDirty(true);
+  }, []);
+
+  // "Kaydet" butonu: debounce'u beklemeden seçili binder'ı hemen push et
+  const pushNow = useCallback(() => {
+    const binderId = selectedRef.current;
+    if (!userRef.current || !binderId) return Promise.resolve(null);
+    clearTimeout(pushTimerRef.current);
+    return pushOne(binderId);
+  }, [pushOne]);
 
   // "Kaydet": yerel binder'ı hesaba yükle, sonrasında otomatik eşitlensin
   const saveBinder = useCallback(
@@ -217,14 +254,22 @@ export function useCloudSync({
     refreshCloudIds();
   }, [user, binders, refreshCloudIds]);
 
+  // Seçili binder değişince "kirli" bayrağı o binder'a ait değildir
+  useEffect(() => {
+    setDirty(false);
+  }, [selectedBinderId]);
+
   // Giriş/çıkış → tam reconcile, periyodik ve odaklanmada hafif reconcile
   useEffect(() => {
     if (!user) {
       setStatus('idle');
       setLastError(null);
+      setDirty(false);
       clearTimeout(pushTimerRef.current);
       return undefined;
     }
+    // Hesabın yerel listesi henüz yüklenmedi → bekle (yerel değişiklikler ezilmesin)
+    if (!ready) return undefined;
 
     runReconcile(true);
 
@@ -242,7 +287,7 @@ export function useCloudSync({
       document.removeEventListener('visibilitychange', onFocus);
       window.removeEventListener('focus', onFocus);
     };
-  }, [user, runReconcile]);
+  }, [user, ready, runReconcile]);
 
   // Rename → ilgili binder'ı anında push
   useEffect(() => {
@@ -278,11 +323,14 @@ export function useCloudSync({
       lastError,
       cloudBinderIds,
       savingBinderIds,
+      dirty,
       notifyChange,
+      markDirty,
+      pushNow,
       deleteBinder,
       saveBinder,
       syncNow,
     }),
-    [status, lastError, cloudBinderIds, savingBinderIds, notifyChange, deleteBinder, saveBinder, syncNow]
+    [status, lastError, cloudBinderIds, savingBinderIds, dirty, notifyChange, markDirty, pushNow, deleteBinder, saveBinder, syncNow]
   );
 }

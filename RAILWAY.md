@@ -117,6 +117,10 @@ Eşitleme davranışı:
 - Yerel binder listesi hesaba özeldir (`binders-list:guest` / `binders-list:user:<username>`).
   Girişte misafir binder'lar o hesaba taşınır; hesap değiştirince diğer hesabın listesi görünmez.
 - Kayıtlı seçili binder'daki her değişiklik 2.5 sn sonra push edilir; içerik hash'i aynıysa istek atılmaz.
+  Üst çubuktaki **💾 Kaydet** butonu kaydedilmemiş değişiklik varken aktif olur (beklemeden push);
+  buluta yazılmamış değişiklik varken sayfa yenilenirse/kapatılırsa tarayıcı onay ister (`beforeunload`).
+- Girişteki reconcile, hesabın yerel binder listesi yüklenmeden başlamaz; binder değişiminde de yükleme bitmeden
+  state yazılmaz. Böylece buluttaki sürüm yereldeki henüz gönderilmemiş değişiklikleri ezmez.
 - Resimler hash ile karşılaştırılır; yalnızca yeni/değişenler yüklenir. Doküman kaydında referanssız resimler sunucuda silinir.
 - Girişte tam uzlaştırma: buluttaki binder'lar çekilir, kayıtlı yerel binder'lardaki değişiklikler gönderilir; kaydedilmemiş yerel binder'lara dokunulmaz.
 - Her iki tarafta da değişmişse veri kaybı yoktur: bulut sürümü "… (bulut kopyası)" adıyla ayrı binder olarak eklenir, yerel sürüm push edilir.

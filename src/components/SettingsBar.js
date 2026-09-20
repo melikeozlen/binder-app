@@ -78,7 +78,10 @@ const SettingsBar = ({
   onExportBinder,
   onImportBinder,
   binderUsedImages = null,
-  readOnly = false
+  readOnly = false,
+  // null → gizli; 'dirty' → kaydedilmemiş değişiklik (aktif); 'saving' | 'saved' → pasif
+  cloudSaveState = null,
+  onCloudSaveNow
 }) => {
   const binderImportInputRef = useRef(null);
   const { language } = useLanguage();
@@ -721,6 +724,35 @@ const SettingsBar = ({
         {/* Binder menüsü — masaüstü: dropdown */}
         {showBinderMenu && !isMobileLayout && renderBinderMenu()}
       </div>
+
+      {/* Buluta kaydet: kaydedilmemiş değişiklik varsa aktif */}
+      {cloudSaveState && (
+        <div className="setting-item">
+          <button
+            type="button"
+            className={`settings-control action-button cloud-save-now-btn cloud-save-now-btn--${cloudSaveState}`}
+            disabled={cloudSaveState !== 'dirty'}
+            onClick={() => onCloudSaveNow && onCloudSaveNow()}
+            title={
+              cloudSaveState === 'dirty'
+                ? t('binder.unsavedChanges')
+                : cloudSaveState === 'saving'
+                  ? t('binder.saving')
+                  : t('binder.allSaved')
+            }
+            aria-live="polite"
+          >
+            {cloudSaveState === 'dirty' ? '💾 ' : cloudSaveState === 'saving' ? '⟳ ' : '✓ '}
+            <span className="cloud-save-now-label">
+              {cloudSaveState === 'dirty'
+                ? t('binder.saveNow')
+                : cloudSaveState === 'saving'
+                  ? t('binder.saving')
+                  : t('binder.saved')}
+            </span>
+          </button>
+        </div>
+      )}
 
       <div className="setting-item settings-add-page-mobile">
         <button

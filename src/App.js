@@ -956,6 +956,9 @@ function App() {
   // Hesap değişince (giriş / çıkış / başka kullanıcı): o hesabın listesini yükle.
   // useLayoutEffect: bulut reconcile'dan önce liste hazır olsun.
   const prevStorageAccountRef = useRef(null);
+  // `binders` state'i hangi hesabın listesini tutuyor? (bulut reconcile bunun storageAccount'a
+  // eşit olmasını bekler; aksi halde eski liste ile çalışıp yerel değişiklikleri ezer)
+  const [bindersAccount, setBindersAccount] = useState(GUEST_ACCOUNT);
   // t her render'da yeni referans; effect bağımlılığı olmasın diye ref üzerinden okunur
   const tRef = useRef(t);
   tRef.current = t;
@@ -967,7 +970,10 @@ function App() {
     prevStorageAccountRef.current = storageAccount;
 
     // İlk ready + misafir: useState zaten misafir listesini yükledi
-    if (prev === null && storageAccount === GUEST_ACCOUNT) return;
+    if (prev === null && storageAccount === GUEST_ACCOUNT) {
+      setBindersAccount(GUEST_ACCOUNT);
+      return;
+    }
 
     if (authUser) {
       claimGuestBindersIntoAccount(storageAccount);
@@ -985,6 +991,7 @@ function App() {
       markDefaultBinderCreated();
     }
     setBinders(list);
+    setBindersAccount(storageAccount);
 
     const savedSel = loadSelectedBinderId(storageAccount);
     const nextSel = list.find((b) => b.id === savedSel)?.id || list[0].id;
@@ -1027,9 +1034,14 @@ function App() {
     }
   });
   const [pages, setPages] = useState([]);
+  // `pages`/ayar state'i hangi binder'a ait ve yüklemesi bitti mi? Binder değişiminde
+  // eski state'in yeni binder'ın üzerine yazılmasını engeller (kaydet / flush korumaları).
+  const loadedBinderIdRef = useRef(null);
   
   // Binder değiştiğinde (veya buluttan güncellendiğinde) ayarları ve sayfaları yükle
   useEffect(() => {
+    loadedBinderIdRef.current = null;
+    let cancelled = false;
     const loadBinderData = async () => {
       if (selectedBinderId) {
         const settings = loadSettings(selectedBinderId);
@@ -1047,13 +1059,19 @@ function App() {
         }
         setGalleryUrls(loadGalleryUrls(selectedBinderId));
         const loadedDefaultBackImage = await loadDefaultBackImage(selectedBinderId);
+        if (cancelled) return;
         setDefaultBackImage(loadedDefaultBackImage);
         const loadedPages = await loadAllPages(selectedBinderId);
+        if (cancelled) return;
         setPages(loadedPages);
+        loadedBinderIdRef.current = selectedBinderId;
       }
     };
     
     loadBinderData();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedBinderId, binderReloadKey]);
   // Sayfaları order alanına göre sırala (yoksa ID'ye göre - geriye dönük uyumluluk)
   const sortedPages = useMemo(() => {
@@ -1105,6 +1123,8 @@ function App() {
   // Ayarları localStorage'a kaydet (defaultBackImage hariç - localStorage'da yer kaplamasın)
   useEffect(() => {
     if (!selectedBinderId) return;
+    // Binder yeni seçildi, state hâlâ önceki binder'a ait → yazma
+    if (loadedBinderIdRef.current !== selectedBinderId) return;
     
     // Boş string değerleri varsayılan değerlerle değiştir
     const widthRatioToSave = widthRatio === '' ? 1.9 : widthRatio;
@@ -1131,6 +1151,8 @@ function App() {
   // Sayfaları localStorage'a kaydet - debounce ile optimize edilmiş
   useEffect(() => {
     if (!selectedBinderId) return;
+    // Sayfalar henüz bu binder için yüklenmedi → önceki binder'ın sayfalarını yazma
+    if (loadedBinderIdRef.current !== selectedBinderId) return;
     
     // Önceki timeout'u temizle
     if (saveTimeoutRef.current) {
@@ -1139,6 +1161,7 @@ function App() {
     
     // Yeni timeout oluştur - 500ms sonra kaydet (kullanıcı yazmayı bitirdikten sonra)
     saveTimeoutRef.current = setTimeout(async () => {
+      saveTimeoutRef.current = null;
       if (pages.length > 0) {
         // Tüm sayfaları güncel sırasıyla ve tam detaylı verilerle kaydet
         // Her sayfa için ayrı key'e kaydedilecek
@@ -1321,6 +1344,8 @@ function App() {
 
   const flushCurrentBinderState = async () => {
     if (!selectedBinderId) return;
+    // State henüz bu binder'a ait değil (yükleme sürüyor) → yazarsan veriyi bozarsın
+    if (loadedBinderIdRef.current !== selectedBinderId) return;
 
     const widthRatioToSave = widthRatio === '' ? 1.9 : widthRatio;
     const heightRatioToSave = heightRatio === '' ? 1 : heightRatio;
@@ -1363,7 +1388,37 @@ function App() {
     onBinderPulled: () => setBinderReloadKey((k) => k + 1),
     onUnauthorized: authLogout,
     copySuffix: t('auth.cloudCopySuffix'),
+    ready: bindersAccount === storageAccount,
   });
+
+  // Sayfa kapanırken / yenilenirken: bekleyen yerel kaydı hemen yaz, buluta yazılmamış
+  // değişiklik varsa tarayıcı onayı iste.
+  const pagesRef = useRef(pages);
+  pagesRef.current = pages;
+  const selectedRefForUnload = useRef(selectedBinderId);
+  selectedRefForUnload.current = selectedBinderId;
+  const loadedRefForUnload = loadedBinderIdRef;
+  const { dirty: cloudDirty } = cloudSync;
+  useEffect(() => {
+    const onBeforeUnload = (e) => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+        const id = selectedRefForUnload.current;
+        if (id && loadedRefForUnload.current === id && pagesRef.current.length > 0) {
+          saveAllPages(pagesRef.current, id).catch(() => {});
+        }
+      }
+      if (cloudDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+      return undefined;
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [cloudDirty, loadedRefForUnload]);
 
   // Binder paylaşımları; kabul edilen (üye olunan) binder reconcile ile bu cihaza iner
   const { syncNow: cloudSyncNow } = cloudSync;
@@ -2221,6 +2276,25 @@ function App() {
   const selectedBinderEntry = binders.find((b) => b.id === selectedBinderId);
   const readOnly = isViewOnlyBinder(selectedBinderEntry);
   const guard = (fn) => (readOnly ? () => {} : fn);
+  // İçerik/ayar değiştiren kullanıcı eylemi: salt-okunur değilse çalıştır ve "kaydedilmemiş" işaretle
+  const { markDirty: markCloudDirty } = cloudSync;
+  const edit = (fn) =>
+    readOnly
+      ? () => {}
+      : (...args) => {
+          markCloudDirty();
+          return fn(...args);
+        };
+
+  // Üst çubuktaki "Kaydet" durumu (yalnızca hesaba kayıtlı, düzenlenebilir binder için)
+  const cloudSaveState =
+    authUser && selectedBinderId && !readOnly && cloudSync.cloudBinderIds.has(selectedBinderId)
+      ? cloudSync.dirty
+        ? cloudSync.status === 'syncing'
+          ? 'saving'
+          : 'dirty'
+        : 'saved'
+      : null;
 
   return (
     <div
@@ -2237,29 +2311,31 @@ function App() {
         gridSize={gridSize}
         pageType={pageType}
         defaultBackImage={defaultBackImage}
-        onColorChange={guard(handleColorChange)}
-        onRingColorChange={guard(handleRingColorChange)}
-        onContainerColorChange={guard(handleContainerColorChange)}
-        onGridStitchColorChange={guard(handleGridStitchColorChange)}
-        onBinderTypeChange={guard(handleBinderTypeChange)}
-        onWidthRatioChange={guard(handleWidthRatioChange)}
-        onHeightRatioChange={guard(handleHeightRatioChange)}
-        onGridSizeChange={guard(handleGridSizeChange)}
-        onPageTypeChange={guard(handlePageTypeChange)}
-        onDefaultBackImageChange={guard(handleDefaultBackImageChange)}
-        onAddPage={guard(handleAddPage)}
-        onDeleteAllPages={guard(handleDeleteAllPages)}
+        onColorChange={edit(handleColorChange)}
+        onRingColorChange={edit(handleRingColorChange)}
+        onContainerColorChange={edit(handleContainerColorChange)}
+        onGridStitchColorChange={edit(handleGridStitchColorChange)}
+        onBinderTypeChange={edit(handleBinderTypeChange)}
+        onWidthRatioChange={edit(handleWidthRatioChange)}
+        onHeightRatioChange={edit(handleHeightRatioChange)}
+        onGridSizeChange={edit(handleGridSizeChange)}
+        onPageTypeChange={edit(handlePageTypeChange)}
+        onDefaultBackImageChange={edit(handleDefaultBackImageChange)}
+        onAddPage={edit(handleAddPage)}
+        onDeleteAllPages={edit(handleDeleteAllPages)}
         pagesCount={pages.length}
         imageInputMode={imageInputMode}
-        onImageInputModeChange={guard(setImageInputMode)}
+        onImageInputModeChange={edit(setImageInputMode)}
         galleryUrls={galleryUrls}
-        onGalleryUrlsChange={guard((urls) => {
+        onGalleryUrlsChange={edit((urls) => {
           setGalleryUrls(urls);
           if (selectedBinderId) {
             saveGalleryUrls(urls, selectedBinderId);
           }
         })}
         readOnly={readOnly}
+        cloudSaveState={cloudSaveState}
+        onCloudSaveNow={cloudSync.pushNow}
         binders={binders}
         selectedBinderId={selectedBinderId}
         onSelectBinder={handleSelectBinder}
@@ -2272,7 +2348,7 @@ function App() {
         onSaveBinderToCloud={handleSaveBinderToCloud}
         onShareBinder={authUser ? handleShareBinder : undefined}
         onExportBinder={handleExportBinder}
-        onImportBinder={guard(handleImportBinder)}
+        onImportBinder={edit(handleImportBinder)}
         binderUsedImages={binderUsedImages}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
@@ -2287,9 +2363,9 @@ function App() {
       <PageOrderBar
         pages={sortedPages}
         currentSpread={currentSpread}
-        onMovePageUp={guard(handleMovePageUp)}
-        onMovePageDown={guard(handleMovePageDown)}
-        onMovePageTo={guard(handleMovePageTo)}
+        onMovePageUp={edit(handleMovePageUp)}
+        onMovePageDown={edit(handleMovePageDown)}
+        onMovePageTo={edit(handleMovePageTo)}
         onGoToPage={handleGoToPage}
         isVisible={true}
       />
@@ -2313,19 +2389,19 @@ function App() {
         binderUsedImages={binderUsedImages}
         binderId={selectedBinderId}
         onPageSelect={handlePageSelect}
-        onPageUpdate={guard(handlePageUpdate)}
+        onPageUpdate={edit(handlePageUpdate)}
         onPageGridEdit={guard(handlePageGridEdit)}
         editingGridPageId={editingGridPageId}
         editingGridSize={editingGridSize}
         onGridSizeChange={guard(setEditingGridSize)}
-        onGridSizeSave={guard(handleGridSizeSave)}
+        onGridSizeSave={edit(handleGridSizeSave)}
         onGridSizeCancel={handleGridSizeCancel}
         onNextPage={handleNextPage}
         onPrevPage={handlePrevPage}
-        onDeletePage={guard(handleDeletePage)}
+        onDeletePage={edit(handleDeletePage)}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
-        onAddPage={guard(handleAddPage)}
+        onAddPage={edit(handleAddPage)}
         readOnly={readOnly}
       />
       <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} shares={authUser ? shares : null} />
