@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import './App.css';
+import { isViewOnlyBinder } from './utils/cloudSync';
 import SettingsBar from './components/SettingsBar';
 import PageOrderBar from './components/PageOrderBar';
 import Binder from './components/Binder';
@@ -955,6 +956,9 @@ function App() {
   // Hesap değişince (giriş / çıkış / başka kullanıcı): o hesabın listesini yükle.
   // useLayoutEffect: bulut reconcile'dan önce liste hazır olsun.
   const prevStorageAccountRef = useRef(null);
+  // t her render'da yeni referans; effect bağımlılığı olmasın diye ref üzerinden okunur
+  const tRef = useRef(t);
+  tRef.current = t;
   useLayoutEffect(() => {
     if (authStatus !== 'ready') return;
 
@@ -973,7 +977,7 @@ function App() {
     if (list.length === 0) {
       const newBinder = {
         id: `binder-${Date.now()}`,
-        name: t('binder.defaultBinderName', { number: 1 }),
+        name: tRef.current('binder.defaultBinderName', { number: 1 }),
         createdAt: Date.now(),
       };
       list = [newBinder];
@@ -987,7 +991,7 @@ function App() {
     setSelectedBinderId(nextSel);
     saveSelectedBinderId(storageAccount, nextSel);
     setBinderReloadKey((k) => k + 1);
-  }, [authStatus, authUser, storageAccount, t]);
+  }, [authStatus, authUser, storageAccount]);
   
   // Seçili binder değiştiğinde bu hesabın seçimini kaydet
   useEffect(() => {
@@ -1258,49 +1262,52 @@ function App() {
     trackBinderCreated('new');
   };
   
-  const handleDeleteBinder = async (binderId) => {
-    if (window.confirm(t('binder.deleteBinderConfirm'))) {
-      // Binder'ın tüm verilerini sil
-      const prefix = getBinderKeyPrefix(binderId);
-      const keysToRemove = [];
-      for (let key in localStorage) {
-        if (localStorage.hasOwnProperty(key) && key.startsWith(prefix)) {
-          keysToRemove.push(key);
-        }
+  // Binder'ı yalnızca bu cihazdan kaldır (localStorage + IndexedDB + liste); buluta dokunmaz
+  const removeBinderLocally = async (binderId) => {
+    const prefix = getBinderKeyPrefix(binderId);
+    const keysToRemove = [];
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key) && key.startsWith(prefix)) {
+        keysToRemove.push(key);
       }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-      
-      // IndexedDB'den de tüm resimleri sil
-      try {
-        await removeAllImagesForBinder(binderId);
-        await removeDefaultBackImageFromIndexedDB(binderId);
-      } catch (e) {
-        console.error('IndexedDB temizleme sırasında hata:', e);
-      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
 
-      // Buluttan da sil (giriş yapılmışsa)
-      cloudSync.deleteBinder(binderId).catch((e) => {
-        console.warn('Bulut binder silinemedi:', e);
-      });
-      
-      // Binder'ı listeden çıkar
-      const updatedBinders = binders.filter(b => b.id !== binderId);
-      setBinders(updatedBinders);
-      persistBinders(updatedBinders);
-      
-      // Eğer silinen binder seçiliyse, başka bir binder seç
-      if (selectedBinderId === binderId) {
-        if (updatedBinders.length > 0) {
-          setSelectedBinderId(updatedBinders[0].id);
-        } else {
-          // Hiç binder kalmadıysa yeni bir tane oluştur
-          handleCreateBinder();
-        }
+    try {
+      await removeAllImagesForBinder(binderId);
+      await removeDefaultBackImageFromIndexedDB(binderId);
+    } catch (e) {
+      console.error('IndexedDB temizleme sırasında hata:', e);
+    }
+
+    const updatedBinders = binders.filter(b => b.id !== binderId);
+    setBinders(updatedBinders);
+    persistBinders(updatedBinders);
+
+    // Eğer silinen binder seçiliyse, başka bir binder seç
+    if (selectedBinderId === binderId) {
+      if (updatedBinders.length > 0) {
+        setSelectedBinderId(updatedBinders[0].id);
+      } else {
+        // Hiç binder kalmadıysa yeni bir tane oluştur
+        handleCreateBinder();
       }
     }
   };
+
+  // Onay SettingsBar'da alınır (benimle paylaşılan binder için "ayrıl" metni gösterir)
+  const handleDeleteBinder = async (binderId) => {
+    // Bulut: sahipse siler, üyeyse paylaşımdan ayrılır (giriş yapılmışsa)
+    cloudSync.deleteBinder(binderId).catch((e) => {
+      console.warn('Bulut binder silinemedi:', e);
+    });
+
+    await removeBinderLocally(binderId);
+  };
   
   const handleRenameBinder = (binderId, newName) => {
+    // Sadece görüntüleme yetkisiyle paylaşılan binder yeniden adlandırılamaz
+    if (isViewOnlyBinder(binders.find((b) => b.id === binderId))) return;
     const updatedBinders = binders.map(b => 
       b.id === binderId ? { ...b, name: newName.trim() || t('binder.defaultBinderName', { number: 1 }) } : b
     );
@@ -1358,11 +1365,12 @@ function App() {
     copySuffix: t('auth.cloudCopySuffix'),
   });
 
-  // Binder paylaşımları; kabul edilen kopya reconcile ile bu cihaza iner
+  // Binder paylaşımları; kabul edilen (üye olunan) binder reconcile ile bu cihaza iner
   const { syncNow: cloudSyncNow } = cloudSync;
   const shares = useShares({
     user: authUser,
     onAccepted: () => cloudSyncNow(),
+    onLeft: (binderId) => removeBinderLocally(binderId),
   });
   const [shareBinderId, setShareBinderId] = useState(null);
   const shareBinderName = binders.find((b) => b.id === shareBinderId)?.name || '';
@@ -2208,9 +2216,15 @@ function App() {
     });
   };
 
+  // Seçili binder "sadece görüntüleme" yetkisiyle paylaşılmışsa tüm düzenleme eylemleri kapalı.
+  // Düzenleme yapılamadığı için buluta push da olmaz (useCloudSync + sunucu 403 ile de korunur).
+  const selectedBinderEntry = binders.find((b) => b.id === selectedBinderId);
+  const readOnly = isViewOnlyBinder(selectedBinderEntry);
+  const guard = (fn) => (readOnly ? () => {} : fn);
+
   return (
     <div
-      className={`App ${isFullscreen ? 'fullscreen-mode' : ''} ${!footerVisible ? 'footer-hidden' : ''}`}
+      className={`App ${isFullscreen ? 'fullscreen-mode' : ''} ${!footerVisible ? 'footer-hidden' : ''} ${readOnly ? 'read-only' : ''}`}
     >
       <SettingsBar
         binderColor={binderColor}
@@ -2223,28 +2237,29 @@ function App() {
         gridSize={gridSize}
         pageType={pageType}
         defaultBackImage={defaultBackImage}
-        onColorChange={handleColorChange}
-        onRingColorChange={handleRingColorChange}
-        onContainerColorChange={handleContainerColorChange}
-        onGridStitchColorChange={handleGridStitchColorChange}
-        onBinderTypeChange={handleBinderTypeChange}
-        onWidthRatioChange={handleWidthRatioChange}
-        onHeightRatioChange={handleHeightRatioChange}
-        onGridSizeChange={handleGridSizeChange}
-        onPageTypeChange={handlePageTypeChange}
-        onDefaultBackImageChange={handleDefaultBackImageChange}
-        onAddPage={handleAddPage}
-        onDeleteAllPages={handleDeleteAllPages}
+        onColorChange={guard(handleColorChange)}
+        onRingColorChange={guard(handleRingColorChange)}
+        onContainerColorChange={guard(handleContainerColorChange)}
+        onGridStitchColorChange={guard(handleGridStitchColorChange)}
+        onBinderTypeChange={guard(handleBinderTypeChange)}
+        onWidthRatioChange={guard(handleWidthRatioChange)}
+        onHeightRatioChange={guard(handleHeightRatioChange)}
+        onGridSizeChange={guard(handleGridSizeChange)}
+        onPageTypeChange={guard(handlePageTypeChange)}
+        onDefaultBackImageChange={guard(handleDefaultBackImageChange)}
+        onAddPage={guard(handleAddPage)}
+        onDeleteAllPages={guard(handleDeleteAllPages)}
         pagesCount={pages.length}
         imageInputMode={imageInputMode}
-        onImageInputModeChange={setImageInputMode}
+        onImageInputModeChange={guard(setImageInputMode)}
         galleryUrls={galleryUrls}
-        onGalleryUrlsChange={(urls) => {
+        onGalleryUrlsChange={guard((urls) => {
           setGalleryUrls(urls);
           if (selectedBinderId) {
             saveGalleryUrls(urls, selectedBinderId);
           }
-        }}
+        })}
+        readOnly={readOnly}
         binders={binders}
         selectedBinderId={selectedBinderId}
         onSelectBinder={handleSelectBinder}
@@ -2257,19 +2272,24 @@ function App() {
         onSaveBinderToCloud={handleSaveBinderToCloud}
         onShareBinder={authUser ? handleShareBinder : undefined}
         onExportBinder={handleExportBinder}
-        onImportBinder={handleImportBinder}
+        onImportBinder={guard(handleImportBinder)}
         binderUsedImages={binderUsedImages}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
         footerVisible={footerVisible}
         onToggleFooter={toggleFooterVisibility}
       />
+      {readOnly && (
+        <div className="read-only-banner" role="status">
+          👁 {t('binder.viewOnlyBanner', { username: selectedBinderEntry?.ownerUsername || '?' })}
+        </div>
+      )}
       <PageOrderBar
         pages={sortedPages}
         currentSpread={currentSpread}
-        onMovePageUp={handleMovePageUp}
-        onMovePageDown={handleMovePageDown}
-        onMovePageTo={handleMovePageTo}
+        onMovePageUp={guard(handleMovePageUp)}
+        onMovePageDown={guard(handleMovePageDown)}
+        onMovePageTo={guard(handleMovePageTo)}
         onGoToPage={handleGoToPage}
         isVisible={true}
       />
@@ -2293,26 +2313,27 @@ function App() {
         binderUsedImages={binderUsedImages}
         binderId={selectedBinderId}
         onPageSelect={handlePageSelect}
-        onPageUpdate={handlePageUpdate}
-        onPageGridEdit={handlePageGridEdit}
+        onPageUpdate={guard(handlePageUpdate)}
+        onPageGridEdit={guard(handlePageGridEdit)}
         editingGridPageId={editingGridPageId}
         editingGridSize={editingGridSize}
-        onGridSizeChange={setEditingGridSize}
-        onGridSizeSave={handleGridSizeSave}
+        onGridSizeChange={guard(setEditingGridSize)}
+        onGridSizeSave={guard(handleGridSizeSave)}
         onGridSizeCancel={handleGridSizeCancel}
         onNextPage={handleNextPage}
         onPrevPage={handlePrevPage}
-        onDeletePage={handleDeletePage}
+        onDeletePage={guard(handleDeletePage)}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
-        onAddPage={handleAddPage}
+        onAddPage={guard(handleAddPage)}
+        readOnly={readOnly}
       />
       <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} shares={authUser ? shares : null} />
       <ShareModal
         open={Boolean(shareBinderId)}
         binderName={shareBinderName}
         onClose={() => setShareBinderId(null)}
-        onSend={(toUsername) => shares.send(shareBinderId, toUsername)}
+        onSend={(toUsername, role) => shares.send(shareBinderId, toUsername, role)}
       />
       <Analytics />
     </div>

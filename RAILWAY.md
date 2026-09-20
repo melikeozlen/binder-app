@@ -74,27 +74,40 @@ server/
   app.js            Express: /api/health, /api/auth, /api/binders, /api/drive-*, static build
   auth.js           kullanıcı adı (3-32, harf/rakam/_/.) + bcrypt şifre, httpOnly oturum çerezi
   routes/auth.js    POST register|login|logout, GET me  (rate limit: 30 / 15 dk)
-  routes/binders.js GET list, GET/PUT/DELETE :id, GET :id/images, POST :id/images/fetch, PUT :id/images
-  routes/shares.js  GET list, POST (gönder), POST :id/accept | :id/reject, DELETE :id (iptal)
-  db/schema.sql     users, sessions, binders (JSONB doküman), images (data URL + hash + kota), binder_shares
+  routes/binders.js GET list (kendi + paylaşılan), GET/PUT/DELETE :id, GET :id/images, POST :id/images/fetch, PUT :id/images
+                    (binder sahip ya da üye olunan hesapta çözülür; DELETE üye için "ayrıl" anlamına gelir)
+  routes/shares.js  GET list (bekleyen + üyelikler), POST (davet), POST :id/accept | :id/reject, DELETE :id (iptal),
+                    DELETE members/:binderId/:userId (sahip üyeyi kaldırır)
+  db/schema.sql     users, sessions, binders (JSONB doküman), images (data URL + hash + kota), binder_members, binder_shares
 
 src/
   contexts/AuthContext.js   user / login / register / logout
   utils/apiClient.js        fetch sarmalayıcı (credentials: include)
   utils/cloudSync.js        push / pull / reconcile (hash tabanlı fark, çakışmada kopya)
   hooks/useCloudSync.js     App ↔ sync köprüsü (debounce push, 60 sn poll, odaklanmada pull)
-  hooks/useShares.js        gelen/giden paylaşımlar (60 sn poll), gönder / kabul / reddet / iptal
+  hooks/useShares.js        bekleyen davetler + üyelikler (60 sn poll), gönder / kabul / reddet / iptal / kaldır / ayrıl
   components/AuthModal.js   Giriş / Kayıt / Hesap + Paylaşımlar penceresi (Footer'daki 👤 butonu)
 ```
 
-Binder paylaşımı (kopya gönderme):
+Binder paylaşımı (tek sahip + üyeler, kopya yok):
 
-- Binder menüsünde **kayıtlı** (☁️ Kayıtlı) bir binder'ın yanındaki **↗ Paylaş** → kullanıcı adı yazılır → karşı tarafa bekleyen paylaşım gider.
+- Bir binder'ın **tek sahibi** vardır (`binders.user_id`). Paylaşımı kabul eden kişi `binder_members` tablosuna
+  **üye** olur ve **aynı binder'a** erişir: herkesin düzenlemesi herkese yansır, resimler sahibin kotasından düşer.
+- Binder menüsünde **kayıtlı** (☁️ Kayıtlı) bir binder'ın yanındaki **↗ Paylaş** → kullanıcı adı + **yetki** → karşı tarafa bekleyen davet gider.
+  Yalnızca sahip paylaşabilir; üyeler paylaşamaz.
+- Yetki (`binder_members.role`): **Düzenleyebilir** (`edit`, varsayılan) veya **Sadece görüntüleme** (`view`).
+  `view` üyesi için sunucu tüm yazma isteklerini 403 `READ_ONLY` ile reddeder; istemci de düzenleme kontrollerini kapatır,
+  banner gösterir (👁) ve buluta push yapmaz; bulut her zaman kazanır. Sahip, hesap penceresinden yetkiyi
+  sonradan değiştirebilir (`PATCH /api/shares/members/:binderId/:userId { role }`).
 - Alıcı hesap penceresinde (footer'daki 👤 butonu, kırmızı rozet = bekleyen sayısı) **Kabul** / **Reddet** eder.
-  Kabulde binder + resimler alıcının hesabına **yeni bir binder olarak kopyalanır** ve eşitleme ile cihazına iner.
-  Kopya bağımsızdır: iki taraf birbirinin binder'ını etkilemez (canlı ortak düzenleme yoktur).
-- Gönderen, alıcı yanıtlamadan **İptal** edebilir. Gönderen binder'ı silerse bekleyen paylaşım otomatik iptal olur.
-- Aynı binder aynı kişiye ikinci kez bekleyen paylaşım olarak gönderilemez; alıcının kotası yetmezse kabul 413 döner ve paylaşım beklemede kalır.
+  Kabulde binder eşitleme ile alıcının cihazına iner ve menüde **👥 @sahip** (düzenleyebilir) ya da **👁 @sahip** (sadece görüntüleme) rozetiyle görünür.
+- Gönderen, alıcı yanıtlamadan **İptal** edebilir. Sahip binder'ı silerse bekleyen davetler iptal olur, üyelikler silinir
+  ve binder üyelerin cihazından da kaldırılır.
+- Hesap penceresinde **Paylaştıklarım** (sahip → üyeyi **Kaldır**) ve **Benimle paylaşılan** (üye → **Ayrıl**) listeleri vardır.
+  Üye, binder menüsündeki ⏏ ile de ayrılabilir; bu sahibin binder'ını etkilemez.
+- Aynı kişiye ikinci davet gönderilemez (bekleyen varsa 409 `SHARE_EXISTS`, zaten üyeyse 409 `ALREADY_MEMBER`).
+- İki taraf aynı anda düzenlemişse çakışma kuralı geçerlidir: bulut sürümü "… (bulut kopyası)" adıyla o kişinin
+  **kendi** hesabına ayrı binder olarak eklenir, yerel sürüm paylaşılan binder'a yazılır.
 
 Eşitleme davranışı:
 

@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const config = require('../config');
 const { HttpError, badRequest, notFound, wrap } = require('../errors');
 const { requireAuth, normalizeUsername, isValidUsername } = require('../auth');
 const { withTransaction } = require('../db');
@@ -11,6 +10,13 @@ const BINDER_ID_RE = /^[A-Za-z0-9_.:-]{1,120}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const toMs = (d) => (d instanceof Date ? d.getTime() : Number(d) || null);
+
+const ROLES = new Set(['edit', 'view']);
+const validateRole = (role, fallback = 'edit') => {
+  if (role === undefined || role === null || role === '') return fallback;
+  if (!ROLES.has(role)) throw badRequest('INVALID_ROLE', "role must be 'edit' or 'view'");
+  return role;
+};
 
 const validateShareId = (id) => {
   if (!UUID_RE.test(String(id || ''))) throw badRequest('INVALID_SHARE_ID', 'Invalid share id');
@@ -24,16 +30,22 @@ const mapShare = (r) => ({
   status: r.status,
   fromUsername: r.from_username,
   toUsername: r.to_username,
+  role: r.role === 'view' ? 'view' : 'edit',
   createdAt: toMs(r.created_at),
 });
 
 /**
- * Binder paylaşımı (kopya gönderme).
- *  GET    /            bekleyen paylaşımlar: gelen (incoming) + gönderilen (outgoing)
- *  POST   /            { binderId, toUsername } → bekleyen paylaşım oluştur
- *  POST   /:id/accept  alıcı: binder + resimleri kendi hesabına kopyala
- *  POST   /:id/reject  alıcı: reddet
- *  DELETE /:id         gönderen: bekleyen paylaşımı iptal et
+ * Binder paylaşımı: binder'ın tek sahibi vardır, kabul eden kişi üye olur (aynı binder).
+ *  GET    /                              bekleyenler (incoming/outgoing) + aktif üyelikler
+ *                                        (members: benim binder'larımdaki üyeler,
+ *                                         sharedWithMe: bana paylaşılan binder'lar)
+ *  POST   /                              { binderId, toUsername, role? } → bekleyen davet (yalnızca sahip)
+ *                                        role: 'edit' (varsayılan) | 'view' (sadece görüntüleme)
+ *  POST   /:id/accept                    alıcı: üye ol
+ *  POST   /:id/reject                    alıcı: reddet
+ *  DELETE /:id                           gönderen: bekleyen daveti iptal et
+ *  PATCH  /members/:binderId/:userId     sahip: { role } üyenin yetkisini değiştir
+ *  DELETE /members/:binderId/:userId     sahip: üyeyi kaldır
  */
 function createSharesRouter(pool) {
   const router = express.Router();
@@ -51,7 +63,7 @@ function createSharesRouter(pool) {
   });
 
   const selectShares = `
-    SELECT s.id, s.binder_id, s.binder_name, s.status, s.created_at, s.from_user_id, s.to_user_id,
+    SELECT s.id, s.binder_id, s.binder_name, s.status, s.role, s.created_at, s.from_user_id, s.to_user_id,
            fu.username AS from_username, tu.username AS to_username
       FROM binder_shares s
       JOIN users fu ON fu.id = s.from_user_id
@@ -60,15 +72,53 @@ function createSharesRouter(pool) {
   router.get(
     '/',
     wrap(async (req, res) => {
-      const { rows } = await pool.query(
-        `${selectShares}
-          WHERE s.status = 'pending' AND (s.to_user_id = $1 OR s.from_user_id = $1)
-          ORDER BY s.created_at DESC`,
-        [req.user.id]
-      );
+      const [{ rows }, { rows: memberRows }, { rows: sharedRows }] = await Promise.all([
+        pool.query(
+          `${selectShares}
+            WHERE s.status = 'pending' AND (s.to_user_id = $1 OR s.from_user_id = $1)
+            ORDER BY s.created_at DESC`,
+          [req.user.id]
+        ),
+        // Benim binder'larıma erişimi olan üyeler
+        pool.query(
+          `SELECT m.binder_id, b.name AS binder_name, m.user_id, u.username, m.role, m.created_at
+             FROM binder_members m
+             JOIN binders b ON b.user_id = m.owner_id AND b.id = m.binder_id
+             JOIN users u ON u.id = m.user_id
+            WHERE m.owner_id = $1
+            ORDER BY b.name, u.username`,
+          [req.user.id]
+        ),
+        // Bana paylaşılan binder'lar
+        pool.query(
+          `SELECT m.binder_id, b.name AS binder_name, m.owner_id, u.username AS owner_username, m.role, m.created_at
+             FROM binder_members m
+             JOIN binders b ON b.user_id = m.owner_id AND b.id = m.binder_id
+             JOIN users u ON u.id = m.owner_id
+            WHERE m.user_id = $1
+            ORDER BY b.name`,
+          [req.user.id]
+        ),
+      ]);
       res.json({
         incoming: rows.filter((r) => r.to_user_id === req.user.id).map(mapShare),
         outgoing: rows.filter((r) => r.from_user_id === req.user.id).map(mapShare),
+        members: memberRows.map((r) => ({
+          binderId: r.binder_id,
+          binderName: r.binder_name,
+          userId: r.user_id,
+          username: r.username,
+          role: r.role === 'view' ? 'view' : 'edit',
+          since: toMs(r.created_at),
+        })),
+        sharedWithMe: sharedRows.map((r) => ({
+          binderId: r.binder_id,
+          binderName: r.binder_name,
+          ownerId: r.owner_id,
+          ownerUsername: r.owner_username,
+          role: r.role === 'view' ? 'view' : 'edit',
+          since: toMs(r.created_at),
+        })),
       });
     })
   );
@@ -84,6 +134,7 @@ function createSharesRouter(pool) {
       if (!isValidUsername(toUsername)) {
         throw badRequest('INVALID_USERNAME', 'Invalid username');
       }
+      const role = validateRole(req.body?.role);
 
       const { rows: users } = await pool.query(
         'SELECT id, username FROM users WHERE lower(username) = lower($1)',
@@ -93,20 +144,29 @@ function createSharesRouter(pool) {
       if (!target) throw notFound('USER_NOT_FOUND');
       if (target.id === req.user.id) throw badRequest('SELF_SHARE', 'Cannot share with yourself');
 
+      // Yalnızca sahip paylaşabilir
       const { rows: binders } = await pool.query(
         'SELECT name FROM binders WHERE user_id = $1 AND id = $2',
         [req.user.id, binderId]
       );
       if (!binders[0]) throw notFound('BINDER_NOT_FOUND');
 
+      const { rowCount: alreadyMember } = await pool.query(
+        'SELECT 1 FROM binder_members WHERE owner_id = $1 AND binder_id = $2 AND user_id = $3',
+        [req.user.id, binderId, target.id]
+      );
+      if (alreadyMember > 0) {
+        throw new HttpError(409, 'ALREADY_MEMBER', 'User already has access to this binder');
+      }
+
       const id = crypto.randomUUID();
       let row;
       try {
         const result = await pool.query(
-          `INSERT INTO binder_shares (id, from_user_id, to_user_id, binder_id, binder_name)
-           VALUES ($1, $2, $3, $4, $5)
-           RETURNING id, binder_id, binder_name, status, created_at`,
-          [id, req.user.id, target.id, binderId, binders[0].name]
+          `INSERT INTO binder_shares (id, from_user_id, to_user_id, binder_id, binder_name, role)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id, binder_id, binder_name, status, role, created_at`,
+          [id, req.user.id, target.id, binderId, binders[0].name, role]
         );
         row = result.rows[0];
       } catch (error) {
@@ -129,7 +189,10 @@ function createSharesRouter(pool) {
 
       const outcome = await withTransaction(pool, async (client) => {
         const { rows } = await client.query(
-          'SELECT * FROM binder_shares WHERE id = $1 AND to_user_id = $2 FOR UPDATE',
+          `SELECT s.*, fu.username AS from_username
+             FROM binder_shares s JOIN users fu ON fu.id = s.from_user_id
+            WHERE s.id = $1 AND s.to_user_id = $2
+            FOR UPDATE OF s`,
           [shareId, req.user.id]
         );
         const share = rows[0];
@@ -145,43 +208,30 @@ function createSharesRouter(pool) {
         // Kaynak silinmişse transaction dışında iptal olarak işaretlenir
         if (!src[0]) return { sourceDeleted: true };
 
-        // Alıcı kotası: mevcut toplam + kopyalanacak resimler
-        const [{ rows: mine }, { rows: theirs }] = await Promise.all([
-          client.query(
-            'SELECT COALESCE(SUM(size_bytes), 0)::bigint AS total FROM images WHERE user_id = $1',
-            [req.user.id]
-          ),
-          client.query(
-            `SELECT COALESCE(SUM(size_bytes), 0)::bigint AS total FROM images
-              WHERE user_id = $1 AND binder_id = $2`,
-            [share.from_user_id, share.binder_id]
-          ),
-        ]);
-        if (Number(mine[0].total) + Number(theirs[0].total) > config.maxUserStorageBytes) {
-          throw new HttpError(413, 'QUOTA_EXCEEDED', 'Storage quota exceeded');
-        }
-
-        const newId = `binder-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-
-        await client.query(
-          `INSERT INTO binders
-             (user_id, id, name, settings, gallery_urls, page_ids, pages, default_back_image, created_at, updated_at)
-           SELECT $1, $2, name, settings, gallery_urls, page_ids, pages, default_back_image, now(), now()
-             FROM binders WHERE user_id = $3 AND id = $4`,
-          [req.user.id, newId, share.from_user_id, share.binder_id]
+        // Aynı id ile kendi binder'ı varsa çakışma (pratikte olası değil)
+        const { rowCount: clash } = await client.query(
+          'SELECT 1 FROM binders WHERE user_id = $1 AND id = $2',
+          [req.user.id, share.binder_id]
         );
+        if (clash > 0) throw new HttpError(409, 'BINDER_ID_CLASH', 'You already have a binder with this id');
+
         await client.query(
-          `INSERT INTO images (user_id, binder_id, key, hash, data, size_bytes, updated_at)
-           SELECT $1, $2, key, hash, data, size_bytes, now()
-             FROM images WHERE user_id = $3 AND binder_id = $4`,
-          [req.user.id, newId, share.from_user_id, share.binder_id]
+          `INSERT INTO binder_members (owner_id, binder_id, user_id, role)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (owner_id, binder_id, user_id) DO UPDATE SET role = EXCLUDED.role`,
+          [share.from_user_id, share.binder_id, req.user.id, share.role === 'view' ? 'view' : 'edit']
         );
         await client.query(
           `UPDATE binder_shares SET status = 'accepted', responded_at = now() WHERE id = $1`,
           [shareId]
         );
 
-        return { binderId: newId, name: src[0].name };
+        return {
+          binderId: share.binder_id,
+          name: src[0].name,
+          ownerUsername: share.from_username,
+          role: share.role === 'view' ? 'view' : 'edit',
+        };
       });
 
       if (outcome.sourceDeleted) {
@@ -207,6 +257,42 @@ function createSharesRouter(pool) {
         [shareId, req.user.id]
       );
       if (rowCount === 0) throw notFound('SHARE_NOT_FOUND');
+      res.status(204).end();
+    })
+  );
+
+  // Sahip: üyenin yetkisini değiştir
+  router.patch(
+    '/members/:binderId/:userId',
+    wrap(async (req, res) => {
+      const binderId = String(req.params.binderId || '');
+      if (!BINDER_ID_RE.test(binderId)) throw badRequest('INVALID_BINDER_ID', 'Invalid binder id');
+      const memberId = String(req.params.userId || '');
+      if (!UUID_RE.test(memberId)) throw badRequest('INVALID_USER_ID', 'Invalid user id');
+      const role = validateRole(req.body?.role, null);
+      if (!role) throw badRequest('INVALID_ROLE', "role must be 'edit' or 'view'");
+      const { rowCount } = await pool.query(
+        'UPDATE binder_members SET role = $4 WHERE owner_id = $1 AND binder_id = $2 AND user_id = $3',
+        [req.user.id, binderId, memberId, role]
+      );
+      if (rowCount === 0) throw notFound('MEMBER_NOT_FOUND');
+      res.json({ binderId, userId: memberId, role });
+    })
+  );
+
+  // Sahip: üyeyi kaldır
+  router.delete(
+    '/members/:binderId/:userId',
+    wrap(async (req, res) => {
+      const binderId = String(req.params.binderId || '');
+      if (!BINDER_ID_RE.test(binderId)) throw badRequest('INVALID_BINDER_ID', 'Invalid binder id');
+      const memberId = String(req.params.userId || '');
+      if (!UUID_RE.test(memberId)) throw badRequest('INVALID_USER_ID', 'Invalid user id');
+      const { rowCount } = await pool.query(
+        'DELETE FROM binder_members WHERE owner_id = $1 AND binder_id = $2 AND user_id = $3',
+        [req.user.id, binderId, memberId]
+      );
+      if (rowCount === 0) throw notFound('MEMBER_NOT_FOUND');
       res.status(204).end();
     })
   );

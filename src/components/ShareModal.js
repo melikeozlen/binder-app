@@ -18,6 +18,7 @@ const ShareModal = ({ open, binderName, onClose, onSend }) => {
   const t = (key, params) => fill(getTranslation(key, language), params);
 
   const [username, setUsername] = useState('');
+  const [role, setRole] = useState('edit'); // 'edit' | 'view'
   const [errorText, setErrorText] = useState(null);
   const [successText, setSuccessText] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -25,6 +26,7 @@ const ShareModal = ({ open, binderName, onClose, onSend }) => {
   useEffect(() => {
     if (!open) return undefined;
     setUsername('');
+    setRole('edit');
     setErrorText(null);
     setSuccessText(null);
     setBusy(false);
@@ -50,8 +52,10 @@ const ShareModal = ({ open, binderName, onClose, onSend }) => {
 
     setBusy(true);
     try {
-      await onSend?.(trimmed);
-      setSuccessText(t('share.sent', { username: trimmed }));
+      await onSend?.(trimmed, role);
+      setSuccessText(
+        t(role === 'view' ? 'share.sentView' : 'share.sentEdit', { username: trimmed })
+      );
     } catch (error) {
       setErrorText(t(shareErrorKey(error?.code)));
     } finally {
@@ -110,6 +114,32 @@ const ShareModal = ({ open, binderName, onClose, onSend }) => {
                 disabled={busy}
               />
             </label>
+
+            <fieldset className="share-role" disabled={busy}>
+              <legend>{t('share.roleLabel')}</legend>
+              <label className={`share-role-option${role === 'edit' ? ' share-role-option--active' : ''}`}>
+                <input
+                  type="radio"
+                  name="share-role"
+                  value="edit"
+                  checked={role === 'edit'}
+                  onChange={() => setRole('edit')}
+                />
+                <span className="share-role-title">✏️ {t('share.roleEdit')}</span>
+                <span className="share-role-desc">{t('share.roleEditDesc')}</span>
+              </label>
+              <label className={`share-role-option${role === 'view' ? ' share-role-option--active' : ''}`}>
+                <input
+                  type="radio"
+                  name="share-role"
+                  value="view"
+                  checked={role === 'view'}
+                  onChange={() => setRole('view')}
+                />
+                <span className="share-role-title">👁 {t('share.roleView')}</span>
+                <span className="share-role-desc">{t('share.roleViewDesc')}</span>
+              </label>
+            </fieldset>
 
             {errorText && <p className="auth-modal-error">{errorText}</p>}
 

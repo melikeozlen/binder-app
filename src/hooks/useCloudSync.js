@@ -3,6 +3,7 @@ import {
   createSyncQueue,
   deleteCloudBinder,
   isCloudBinder,
+  isViewOnlyBinder,
   pushBinder,
   reconcile,
   removeCloudMeta,
@@ -109,6 +110,8 @@ export function useCloudSync({
         const currentUser = userRef.current;
         const binder = bindersRef.current.find((b) => b.id === binderId);
         if (!currentUser || !binder) return null;
+        // Sadece görüntüleme yetkisi: sunucu 403 döner, hiç deneme
+        if (isViewOnlyBinder(binder)) return null;
         if (!adopt && !isCloudBinder(binderId, currentUser.id)) return null;
         if (binderId === selectedRef.current && flushRef.current) {
           await flushRef.current();
@@ -155,13 +158,20 @@ export function useCloudSync({
 
       if (added.length > 0 || updated.length > 0 || removed.length > 0) {
         const removedSet = new Set(removed);
-        const renamed = new Map(updated.map((u) => [u.id, u.name]));
+        const patches = new Map(updated.map(({ id, ...fields }) => [id, fields]));
         const next = current
           .filter((b) => !removedSet.has(b.id))
-          .map((b) => (renamed.has(b.id) ? { ...b, name: renamed.get(b.id) } : b));
+          .map((b) => (patches.has(b.id) ? { ...b, ...patches.get(b.id) } : b));
         for (const item of added) {
           if (!next.some((b) => b.id === item.id)) {
-            next.push({ id: item.id, name: item.name, createdAt: item.createdAt || Date.now() });
+            next.push({
+              id: item.id,
+              name: item.name,
+              createdAt: item.createdAt || Date.now(),
+              shared: Boolean(item.shared),
+              ownerUsername: item.shared ? item.ownerUsername || null : null,
+              role: item.shared ? item.role || 'edit' : null,
+            });
           }
         }
         setBinders(next);

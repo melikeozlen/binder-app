@@ -264,8 +264,38 @@ export async function pullBinder(remoteId, userId, localId = remoteId) {
     removeCloudMeta(localId);
   }
 
-  return { id: localId, name: doc.name, createdAt: doc.createdAt || Date.now() };
+  return {
+    id: localId,
+    name: doc.name,
+    createdAt: doc.createdAt || Date.now(),
+    // Kopya (localId !== remoteId) her zaman kullanıcının kendi binder'ı olur
+    ...(localId === remoteId ? sharingFields(doc) : sharingFields({})),
+  };
 }
+
+// Paylaşılan binder'daki yetkim: 'edit' | 'view' (kendi binder'ım → null)
+const memberRole = (remote) => (remote.shared ? (remote.role === 'view' ? 'view' : 'edit') : null);
+
+// Liste kaydındaki paylaşım alanları buluttakinden farklı mı?
+function sharingChanged(local, remote) {
+  const localShared = Boolean(local.shared);
+  const remoteShared = Boolean(remote.shared);
+  if (localShared !== remoteShared) return true;
+  if (!remoteShared) return false;
+  return (
+    (local.ownerUsername || null) !== (remote.ownerUsername || null) ||
+    (local.role || 'edit') !== memberRole(remote)
+  );
+}
+
+const sharingFields = (remote) => ({
+  shared: Boolean(remote.shared),
+  ownerUsername: remote.shared ? remote.ownerUsername || null : null,
+  role: memberRole(remote),
+});
+
+/** Bu binder'da yalnızca görüntüleme yetkim var mı? */
+export const isViewOnlyBinder = (binder) => Boolean(binder?.shared && binder.role === 'view');
 
 export async function deleteCloudBinder(binderId) {
   try {
@@ -289,32 +319,56 @@ export async function deleteCloudBinder(binderId) {
  * @param {boolean} p.checkLocalChanges  Girişte true: tüm yerel binder'lar için hash hesapla
  * @param {string} p.copySuffix          Çakışma kopyası adı eki
  * @returns {{added:Array, updated:Array, removed:string[], pulled:string[], pushed:string[], conflicts:Array}}
+ *   updated: [{ id, ...değişen liste alanları (name / shared / ownerUsername) }]
  */
 export async function reconcile({ userId, localBinders, checkLocalChanges = false, copySuffix = ' (cloud copy)' }) {
   const remoteList = (await api('/api/binders'))?.binders || [];
   const remoteById = new Map(remoteList.map((b) => [b.id, b]));
   const result = { added: [], updated: [], removed: [], pulled: [], pushed: [], conflicts: [] };
 
-  // Buluttaki binder'lar
+  // Buluttaki binder'lar (kendi + benimle paylaşılanlar)
   for (const remote of remoteList) {
     const local = localBinders.find((b) => b.id === remote.id);
 
     if (!local) {
       const info = await pullBinder(remote.id, userId);
-      result.added.push(info);
+      result.added.push({ ...info, ...sharingFields(remote) });
       result.pulled.push(remote.id);
       continue;
     }
 
+    // Paylaşım bilgisi (sahip / üye / yetki) liste kaydında güncel dursun
+    const listPatch = sharingChanged(local, remote) ? sharingFields(remote) : null;
+
     const meta = loadCloudMeta(remote.id);
     const metaValid = Boolean(meta && meta.userId === userId);
     const remoteChanged = !metaValid || meta.updatedAt !== remote.updatedAt;
+
+    // Sadece görüntüleme: asla push yok; bulut her zaman kazanır (yerel sapma varsa geri çekilir)
+    if (memberRole(remote) === 'view') {
+      let needPull = remoteChanged;
+      if (!needPull && checkLocalChanges) {
+        const snapshot = await buildLocalSnapshot(remote.id, local.name);
+        needPull = snapshot.hash !== meta.hash;
+      }
+      if (needPull) {
+        const info = await pullBinder(remote.id, userId);
+        result.pulled.push(remote.id);
+        const patch = { ...(listPatch || {}) };
+        if (info.name !== local.name) patch.name = info.name;
+        if (Object.keys(patch).length > 0) result.updated.push({ id: remote.id, ...patch });
+      } else if (listPatch) {
+        result.updated.push({ id: remote.id, ...listPatch });
+      }
+      continue;
+    }
 
     if (!remoteChanged) {
       if (checkLocalChanges) {
         const res = await pushBinder(remote.id, { ...local, userId });
         if (!res.skipped) result.pushed.push(remote.id);
       }
+      if (listPatch) result.updated.push({ id: remote.id, ...listPatch });
       continue;
     }
 
@@ -324,7 +378,9 @@ export async function reconcile({ userId, localBinders, checkLocalChanges = fals
     if (!localChanged) {
       const info = await pullBinder(remote.id, userId);
       result.pulled.push(remote.id);
-      if (info.name !== local.name) result.updated.push({ id: remote.id, name: info.name });
+      const patch = { ...(listPatch || {}) };
+      if (info.name !== local.name) patch.name = info.name;
+      if (Object.keys(patch).length > 0) result.updated.push({ id: remote.id, ...patch });
       continue;
     }
 
@@ -336,7 +392,8 @@ export async function reconcile({ userId, localBinders, checkLocalChanges = fals
     result.conflicts.push({ id: remote.id, copyId });
     await pushBinder(remote.id, { ...local, userId }, { force: true });
     result.pushed.push(remote.id);
-    // Kopyayı da buluta al
+    if (listPatch) result.updated.push({ id: remote.id, ...listPatch });
+    // Kopyayı da buluta al (kullanıcının kendi hesabına)
     await pushBinder(copyId, { name: copyName, createdAt: Date.now(), userId }, { force: true });
     result.pushed.push(copyId);
   }
@@ -347,6 +404,14 @@ export async function reconcile({ userId, localBinders, checkLocalChanges = fals
     if (remoteById.has(local.id)) continue;
     const meta = loadCloudMeta(local.id);
     const metaValid = Boolean(meta && meta.userId === userId);
+
+    // Benimle paylaşılan binder artık listede yok → sahip sildi / erişimi kaldırdı / ayrıldım.
+    // Bu binder bize ait değil; asla kendi hesabımıza push etme, yereli temizle.
+    if (local.shared && metaValid) {
+      await clearLocalBinderCompletely(local.id);
+      result.removed.push(local.id);
+      continue;
+    }
 
     if (metaValid) {
       // Daha önce bu hesaba kaydedilmiş ama bulutta yok → başka cihazda silinmiş.

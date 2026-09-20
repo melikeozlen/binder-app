@@ -32,6 +32,7 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
   const { user, login, register, logout } = useAuth();
   const { language } = useLanguage();
   const t = (key, params) => fill(getTranslation(key, language), params);
+  const roleLabel = (role) => (role === 'view' ? `👁 ${t('share.roleView')}` : `✏️ ${t('share.roleEdit')}`);
   const [shareMessage, setShareMessage] = useState(null); // { kind: 'ok'|'error', text }
 
   const runShareAction = async (action) => {
@@ -139,9 +140,12 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
           <p className="auth-shares-title">{t('share.title')}</p>
           <p className="auth-modal-hint">{t('share.hint')}</p>
 
-          {shares.incoming.length === 0 && shares.outgoing.length === 0 && (
-            <p className="auth-shares-empty">{t('share.empty')}</p>
-          )}
+          {shares.incoming.length === 0 &&
+            shares.outgoing.length === 0 &&
+            (shares.members?.length || 0) === 0 &&
+            (shares.sharedWithMe?.length || 0) === 0 && (
+              <p className="auth-shares-empty">{t('share.empty')}</p>
+            )}
 
           {shares.incoming.length > 0 && (
             <ul className="auth-share-list">
@@ -149,7 +153,9 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                 <li key={s.id} className="auth-share-item">
                   <div className="auth-share-text">
                     <strong>{s.binderName}</strong>
-                    <span>{t('share.from', { username: s.fromUsername })}</span>
+                    <span>
+                      {t('share.from', { username: s.fromUsername })} · {roleLabel(s.role)}
+                    </span>
                   </div>
                   <div className="auth-share-actions">
                     <button
@@ -185,7 +191,9 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                 <li key={s.id} className="auth-share-item">
                   <div className="auth-share-text">
                     <strong>{s.binderName}</strong>
-                    <span>{t('share.to', { username: s.toUsername })}</span>
+                    <span>
+                      {t('share.to', { username: s.toUsername })} · {roleLabel(s.role)}
+                    </span>
                   </div>
                   <div className="auth-share-actions">
                     <button
@@ -200,6 +208,89 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                 </li>
               ))}
             </ul>
+          )}
+
+          {/* Benim binder'larıma erişimi olan kullanıcılar (sahip: kaldır) */}
+          {shares.members?.length > 0 && (
+            <>
+              <p className="auth-shares-subtitle">{t('share.membersTitle')}</p>
+              <ul className="auth-share-list">
+                {shares.members.map((m) => {
+                  const busyKey = `${m.binderId}:${m.userId}`;
+                  return (
+                    <li key={busyKey} className="auth-share-item">
+                      <div className="auth-share-text">
+                        <strong>{m.binderName}</strong>
+                        <span>
+                          {t('share.memberOf', { username: m.username })} · {roleLabel(m.role)}
+                        </span>
+                      </div>
+                      <div className="auth-share-actions">
+                        <button
+                          type="button"
+                          className="auth-share-btn auth-share-btn--role"
+                          disabled={shares.busyId === busyKey}
+                          title={t('share.changeRole')}
+                          onClick={() =>
+                            runShareAction(() =>
+                              shares.setMemberRole(m.binderId, m.userId, m.role === 'view' ? 'edit' : 'view')
+                            )
+                          }
+                        >
+                          {m.role === 'view' ? `✏️ ${t('share.roleEdit')}` : `👁 ${t('share.roleView')}`}
+                        </button>
+                        <button
+                          type="button"
+                          className="auth-share-btn auth-share-btn--cancel"
+                          disabled={shares.busyId === busyKey}
+                          onClick={() => {
+                            if (!window.confirm(t('share.removeConfirm', { username: m.username }))) return;
+                            runShareAction(() => shares.removeMember(m.binderId, m.userId));
+                          }}
+                        >
+                          {t('share.remove')}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+
+          {/* Bana paylaşılan binder'lar (üye: ayrıl) */}
+          {shares.sharedWithMe?.length > 0 && (
+            <>
+              <p className="auth-shares-subtitle">{t('share.sharedWithMeTitle')}</p>
+              <ul className="auth-share-list">
+                {shares.sharedWithMe.map((m) => {
+                  const busyKey = `leave:${m.binderId}`;
+                  return (
+                    <li key={m.binderId} className="auth-share-item">
+                      <div className="auth-share-text">
+                        <strong>{m.binderName}</strong>
+                        <span>
+                          {t('share.ownedBy', { username: m.ownerUsername })} · {roleLabel(m.role)}
+                        </span>
+                      </div>
+                      <div className="auth-share-actions">
+                        <button
+                          type="button"
+                          className="auth-share-btn auth-share-btn--cancel"
+                          disabled={shares.busyId === busyKey}
+                          onClick={() => {
+                            if (!window.confirm(t('binder.leaveSharedConfirm'))) return;
+                            runShareAction(() => shares.leave(m.binderId));
+                          }}
+                        >
+                          {t('share.leave')}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
 
           {shareMessage && (

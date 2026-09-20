@@ -42,6 +42,7 @@ describe('binderAccountStorage', () => {
       { id: 'g1', name: 'Guest' },
       { id: 'a1', name: 'Dup' },
     ]);
+    localStorage.setItem('binder-g1-pages-list', JSON.stringify([1]));
     saveBindersList('user:alice', [{ id: 'a1', name: 'Alice' }]);
     saveSelectedBinderId(GUEST_ACCOUNT, 'g1');
 
@@ -50,5 +51,20 @@ describe('binderAccountStorage', () => {
     expect(loadBindersList(GUEST_ACCOUNT)).toEqual([]);
     expect(loadBindersList('user:alice').map((b) => b.id).sort()).toEqual(['a1', 'g1']);
     expect(loadSelectedBinderId('user:alice')).toBe('g1');
+  });
+
+  it('claim: hesabın binder\'ı varken misafirdeki boş binder taşınmaz', () => {
+    saveBindersList(GUEST_ACCOUNT, [{ id: 'empty', name: 'Binder 1' }]);
+    saveBindersList('user:alice', [{ id: 'a1', name: 'Alice' }]);
+
+    const merged = claimGuestBindersIntoAccount('user:alice');
+    expect(merged.map((b) => b.id)).toEqual(['a1']);
+    expect(loadBindersList(GUEST_ACCOUNT)).toEqual([]);
+  });
+
+  it('claim: hesap boşsa misafirdeki boş binder da taşınır', () => {
+    saveBindersList(GUEST_ACCOUNT, [{ id: 'empty', name: 'Binder 1' }]);
+    const merged = claimGuestBindersIntoAccount('user:new');
+    expect(merged.map((b) => b.id)).toEqual(['empty']);
   });
 });

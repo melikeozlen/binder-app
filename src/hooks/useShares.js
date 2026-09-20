@@ -5,21 +5,30 @@ const POLL_INTERVAL_MS = 60 * 1000;
 const FOCUS_THROTTLE_MS = 15 * 1000;
 
 /**
- * Binder paylaşımları (kopya gönderme).
- * - incoming: bana gelen bekleyen paylaşımlar (kabul / reddet)
- * - outgoing: benim gönderdiğim bekleyenler (iptal)
- * - send(binderId, toUsername) → yeni paylaşım
- * - accept(id) → kopya alıcının hesabına yazılır; onAccepted() ile eşitleme tetiklenir
+ * Binder paylaşımları. Binder'ın tek sahibi vardır; kabul eden kişi aynı binder'a üye olur.
+ * - incoming:     bana gelen bekleyen davetler (kabul / reddet)
+ * - outgoing:     benim gönderdiğim bekleyenler (iptal)
+ * - members:      benim binder'larıma erişimi olan kullanıcılar (kaldır)
+ * - sharedWithMe: bana paylaşılan binder'lar (ayrıl)
+ * - send(binderId, toUsername) → yeni davet
+ * - accept(id) → üye olur; onAccepted() ile eşitleme tetiklenir
+ * - removeMember(binderId, userId) → sahip üyeyi kaldırır
+ * - setMemberRole(binderId, userId, role) → sahip yetkiyi değiştirir ('edit' | 'view')
+ * - leave(binderId) → üye paylaşımdan ayrılır; onLeft(binderId) ile yerel temizlik
  */
-export function useShares({ user, onAccepted }) {
+export function useShares({ user, onAccepted, onLeft }) {
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [sharedWithMe, setSharedWithMe] = useState([]);
   const [busyId, setBusyId] = useState(null);
 
   const userRef = useRef(user);
   const onAcceptedRef = useRef(onAccepted);
+  const onLeftRef = useRef(onLeft);
   userRef.current = user;
   onAcceptedRef.current = onAccepted;
+  onLeftRef.current = onLeft;
   const lastRefreshRef = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -28,6 +37,8 @@ export function useShares({ user, onAccepted }) {
       const data = await api('/api/shares');
       setIncoming(Array.isArray(data?.incoming) ? data.incoming : []);
       setOutgoing(Array.isArray(data?.outgoing) ? data.outgoing : []);
+      setMembers(Array.isArray(data?.members) ? data.members : []);
+      setSharedWithMe(Array.isArray(data?.sharedWithMe) ? data.sharedWithMe : []);
       lastRefreshRef.current = Date.now();
     } catch (error) {
       console.warn('[shares] liste alınamadı:', error);
@@ -38,6 +49,8 @@ export function useShares({ user, onAccepted }) {
     if (!user) {
       setIncoming([]);
       setOutgoing([]);
+      setMembers([]);
+      setSharedWithMe([]);
       return undefined;
     }
     refresh();
@@ -69,10 +82,23 @@ export function useShares({ user, onAccepted }) {
     [refresh]
   );
 
+  // role: 'edit' (varsayılan) | 'view' (sadece görüntüleme)
   const send = useCallback(
-    (binderId, toUsername) =>
+    (binderId, toUsername, role = 'edit') =>
       withBusy(binderId, () =>
-        api('/api/shares', { method: 'POST', body: { binderId, toUsername } })
+        api('/api/shares', { method: 'POST', body: { binderId, toUsername, role } })
+      ),
+    [withBusy]
+  );
+
+  // Sahip: üyenin yetkisini değiştir
+  const setMemberRole = useCallback(
+    (binderId, userId, role) =>
+      withBusy(`${binderId}:${userId}`, () =>
+        api(`/api/shares/members/${encodeId(binderId)}/${encodeId(userId)}`, {
+          method: 'PATCH',
+          body: { role },
+        })
       ),
     [withBusy]
   );
@@ -98,8 +124,40 @@ export function useShares({ user, onAccepted }) {
     [withBusy]
   );
 
+  const removeMember = useCallback(
+    (binderId, userId) =>
+      withBusy(`${binderId}:${userId}`, () =>
+        api(`/api/shares/members/${encodeId(binderId)}/${encodeId(userId)}`, { method: 'DELETE' })
+      ),
+    [withBusy]
+  );
+
+  // Üye olarak ayrıl: sunucuda üyelik silinir, yerelde binder tamamen temizlenir
+  const leave = useCallback(
+    (binderId) =>
+      withBusy(`leave:${binderId}`, async () => {
+        await api(`/api/binders/${encodeId(binderId)}`, { method: 'DELETE' });
+        await onLeftRef.current?.(binderId);
+      }),
+    [withBusy]
+  );
+
   return useMemo(
-    () => ({ incoming, outgoing, busyId, refresh, send, accept, reject, cancel }),
-    [incoming, outgoing, busyId, refresh, send, accept, reject, cancel]
+    () => ({
+      incoming,
+      outgoing,
+      members,
+      sharedWithMe,
+      busyId,
+      refresh,
+      send,
+      accept,
+      reject,
+      cancel,
+      removeMember,
+      setMemberRole,
+      leave,
+    }),
+    [incoming, outgoing, members, sharedWithMe, busyId, refresh, send, accept, reject, cancel, removeMember, setMemberRole, leave]
   );
 }

@@ -104,23 +104,52 @@ function createBindersRouter(pool) {
   const imagesJson = express.json({ limit: config.limits.imagesBody });
   const smallJson = express.json({ limit: '64kb' });
 
-  const binderExists = async (client, userId, binderId) => {
-    const { rowCount } = await client.query(
-      'SELECT 1 FROM binders WHERE user_id = $1 AND id = $2',
+  /**
+   * Binder erişimini çöz: { ownerId, role } → role: 'owner' | 'edit' | 'view'; erişim yoksa null.
+   * Tüm binder/resim sorguları (owner_id, binder_id) ile yapılır.
+   */
+  const resolveAccess = async (client, userId, binderId) => {
+    const own = await client.query('SELECT 1 FROM binders WHERE user_id = $1 AND id = $2', [userId, binderId]);
+    if (own.rowCount > 0) return { ownerId: userId, role: 'owner' };
+    const member = await client.query(
+      'SELECT owner_id, role FROM binder_members WHERE user_id = $1 AND binder_id = $2',
       [userId, binderId]
     );
-    return rowCount > 0;
+    const m = member.rows[0];
+    return m ? { ownerId: m.owner_id, role: m.role === 'view' ? 'view' : 'edit' } : null;
   };
 
-  // Liste
+  const requireAccess = async (client, userId, binderId) => {
+    const access = await resolveAccess(client, userId, binderId);
+    if (!access) throw notFound('BINDER_NOT_FOUND');
+    return access;
+  };
+
+  // Yazma: sahip ya da 'edit' üyesi; 'view' üyesi 403
+  const assertWritable = (access) => {
+    if (access && access.role === 'view') {
+      throw new HttpError(403, 'READ_ONLY', 'You have view-only access to this binder');
+    }
+  };
+
+  const listSelect = (roleExpr) => `
+    SELECT b.id, b.name, b.created_at, b.updated_at, jsonb_array_length(b.pages) AS page_count,
+           b.user_id AS owner_id, u.username AS owner_username, ${roleExpr} AS role
+      FROM binders b
+      JOIN users u ON u.id = b.user_id`;
+
+  // Liste: kendi binder'larım + benimle paylaşılanlar
   router.get(
     '/',
     wrap(async (req, res) => {
       const { rows } = await pool.query(
-        `SELECT id, name, created_at, updated_at, jsonb_array_length(pages) AS page_count
-           FROM binders
-          WHERE user_id = $1
-          ORDER BY created_at ASC`,
+        `${listSelect(`'owner'`)}
+          WHERE b.user_id = $1
+         UNION ALL
+         ${listSelect('m.role')}
+          JOIN binder_members m ON m.owner_id = b.user_id AND m.binder_id = b.id
+          WHERE m.user_id = $1
+         ORDER BY created_at ASC`,
         [req.user.id]
       );
       res.json({
@@ -130,6 +159,10 @@ function createBindersRouter(pool) {
           createdAt: toMs(r.created_at),
           updatedAt: toIso(r.updated_at),
           pageCount: Number(r.page_count) || 0,
+          ownerId: r.owner_id,
+          ownerUsername: r.owner_username,
+          shared: r.owner_id !== req.user.id,
+          role: r.owner_id === req.user.id ? 'owner' : r.role === 'view' ? 'view' : 'edit',
         })),
       });
     })
@@ -140,10 +173,13 @@ function createBindersRouter(pool) {
     '/:id',
     wrap(async (req, res) => {
       const binderId = validateBinderId(req.params.id);
+      const { ownerId, role } = await requireAccess(pool, req.user.id, binderId);
       const { rows } = await pool.query(
-        `SELECT id, name, settings, gallery_urls, page_ids, pages, default_back_image, created_at, updated_at
-           FROM binders WHERE user_id = $1 AND id = $2`,
-        [req.user.id, binderId]
+        `SELECT b.id, b.name, b.settings, b.gallery_urls, b.page_ids, b.pages, b.default_back_image,
+                b.created_at, b.updated_at, u.username AS owner_username
+           FROM binders b JOIN users u ON u.id = b.user_id
+          WHERE b.user_id = $1 AND b.id = $2`,
+        [ownerId, binderId]
       );
       const r = rows[0];
       if (!r) throw notFound('BINDER_NOT_FOUND');
@@ -157,11 +193,16 @@ function createBindersRouter(pool) {
         defaultBackImage: r.default_back_image,
         createdAt: toMs(r.created_at),
         updatedAt: toIso(r.updated_at),
+        ownerId,
+        ownerUsername: r.owner_username,
+        shared: ownerId !== req.user.id,
+        role,
       });
     })
   );
 
-  // Upsert doküman; ardından referans verilmeyen resimleri temizle
+  // Upsert doküman; ardından referans verilmeyen resimleri temizle.
+  // Üye ise sahibinin binder'ına yazar; yoksa kendi hesabında oluşturur.
   router.put(
     '/:id',
     docJson,
@@ -171,6 +212,9 @@ function createBindersRouter(pool) {
       const refs = collectImageRefs(doc.pages);
 
       const updatedAt = await withTransaction(pool, async (client) => {
+        const access = await resolveAccess(client, req.user.id, binderId);
+        assertWritable(access);
+        const ownerId = access?.ownerId || req.user.id;
         const { rows } = await client.query(
           `INSERT INTO binders
              (user_id, id, name, settings, gallery_urls, page_ids, pages, default_back_image, created_at, updated_at)
@@ -188,7 +232,7 @@ function createBindersRouter(pool) {
              updated_at = now()
            RETURNING updated_at`,
           [
-            req.user.id,
+            ownerId,
             binderId,
             doc.name,
             JSON.stringify(doc.settings),
@@ -203,7 +247,7 @@ function createBindersRouter(pool) {
         await client.query(
           `DELETE FROM images
             WHERE user_id = $1 AND binder_id = $2 AND NOT (key = ANY($3::text[]))`,
-          [req.user.id, binderId, refs]
+          [ownerId, binderId, refs]
         );
 
         return toIso(rows[0].updated_at);
@@ -213,18 +257,29 @@ function createBindersRouter(pool) {
     })
   );
 
+  // Sahip: binder'ı siler (üyelikler cascade). Üye: yalnızca paylaşımdan ayrılır.
   router.delete(
     '/:id',
     wrap(async (req, res) => {
       const binderId = validateBinderId(req.params.id);
       await withTransaction(pool, async (client) => {
-        await client.query('DELETE FROM binders WHERE user_id = $1 AND id = $2', [req.user.id, binderId]);
-        // Bu binder için bekleyen paylaşımlar artık kabul edilemez
-        await client.query(
-          `UPDATE binder_shares SET status = 'cancelled', responded_at = now()
-            WHERE from_user_id = $1 AND binder_id = $2 AND status = 'pending'`,
+        const { rowCount } = await client.query(
+          'DELETE FROM binders WHERE user_id = $1 AND id = $2',
           [req.user.id, binderId]
         );
+        if (rowCount > 0) {
+          // Bu binder için bekleyen paylaşımlar artık kabul edilemez
+          await client.query(
+            `UPDATE binder_shares SET status = 'cancelled', responded_at = now()
+              WHERE from_user_id = $1 AND binder_id = $2 AND status = 'pending'`,
+            [req.user.id, binderId]
+          );
+        } else {
+          await client.query(
+            'DELETE FROM binder_members WHERE user_id = $1 AND binder_id = $2',
+            [req.user.id, binderId]
+          );
+        }
       });
       res.status(204).end();
     })
@@ -235,9 +290,12 @@ function createBindersRouter(pool) {
     '/:id/images',
     wrap(async (req, res) => {
       const binderId = validateBinderId(req.params.id);
+      const access = await resolveAccess(pool, req.user.id, binderId);
+      if (!access) return res.json({ images: [] });
+      const { ownerId } = access;
       const { rows } = await pool.query(
         'SELECT key, hash, size_bytes FROM images WHERE user_id = $1 AND binder_id = $2',
-        [req.user.id, binderId]
+        [ownerId, binderId]
       );
       res.json({ images: rows.map((r) => ({ key: r.key, hash: r.hash, size: r.size_bytes })) });
     })
@@ -256,10 +314,11 @@ function createBindersRouter(pool) {
       for (const key of keys) {
         if (!IMAGE_KEY_RE.test(String(key))) throw badRequest('INVALID_IMAGE_KEY', `Invalid image key: ${key}`);
       }
+      const { ownerId } = await requireAccess(pool, req.user.id, binderId);
       const { rows } = await pool.query(
         `SELECT key, data FROM images
           WHERE user_id = $1 AND binder_id = $2 AND key = ANY($3::text[])`,
-        [req.user.id, binderId, keys]
+        [ownerId, binderId, keys]
       );
       const images = {};
       for (const r of rows) images[r.key] = r.data;
@@ -279,24 +338,28 @@ function createBindersRouter(pool) {
       const incomingBytes = images.reduce((sum, i) => sum + i.sizeBytes, 0);
 
       await withTransaction(pool, async (client) => {
-        if (!(await binderExists(client, req.user.id, binderId))) {
+        const access = await resolveAccess(client, req.user.id, binderId);
+        assertWritable(access);
+        let ownerId = access?.ownerId;
+        if (!ownerId) {
+          ownerId = req.user.id;
           await client.query(
             `INSERT INTO binders (user_id, id, name) VALUES ($1, $2, $3)
              ON CONFLICT (user_id, id) DO NOTHING`,
-            [req.user.id, binderId, 'Binder']
+            [ownerId, binderId, 'Binder']
           );
         }
 
-        // Kota: mevcut toplam − değiştirilecekler + yeni gelenler
+        // Kota (sahibin kotası): mevcut toplam − değiştirilecekler + yeni gelenler
         const [{ rows: totalRows }, { rows: replacedRows }] = await Promise.all([
           client.query(
             'SELECT COALESCE(SUM(size_bytes), 0)::bigint AS total FROM images WHERE user_id = $1',
-            [req.user.id]
+            [ownerId]
           ),
           client.query(
             `SELECT COALESCE(SUM(size_bytes), 0)::bigint AS total FROM images
               WHERE user_id = $1 AND binder_id = $2 AND key = ANY($3::text[])`,
-            [req.user.id, binderId, incomingKeys]
+            [ownerId, binderId, incomingKeys]
           ),
         ]);
         const projected = Number(totalRows[0].total) - Number(replacedRows[0].total) + incomingBytes;
@@ -313,7 +376,7 @@ function createBindersRouter(pool) {
                data = EXCLUDED.data,
                size_bytes = EXCLUDED.size_bytes,
                updated_at = now()`,
-            [req.user.id, binderId, img.key, img.hash, img.data, img.sizeBytes]
+            [ownerId, binderId, img.key, img.hash, img.data, img.sizeBytes]
           );
         }
       });

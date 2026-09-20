@@ -1322,6 +1322,14 @@
   color: #1976d2;
 }
 
+/* Binder menüsü: bulut kontrolleri (rozet + kaydet/paylaş) */
+.binder-menu-cloud-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
 /* Binder menüsü: hesaba kaydet butonu / kayıtlı rozeti */
 .binder-menu-cloud-save-btn {
   flex-shrink: 0;
@@ -1358,6 +1366,15 @@
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+/* Benimle paylaşılan binder: sahibinin kullanıcı adı */
+.binder-menu-cloud-badge--shared {
+  background: #f1e8fb;
+  color: #6b32b4;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Kayıtlı binder'ın yanında her zaman görünen paylaş butonu */
@@ -1576,6 +1593,24 @@
     height: 34px;
     font-size: 0.85rem;
   }
+
+  /* Dokunmatik: bulut butonları parmakla rahat basılabilir olsun */
+  .binder-menu-cloud-save-btn,
+  .binder-menu-cloud-share-btn,
+  .binder-menu-cloud-badge {
+    min-height: 30px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* Dokunmatik cihazlarda (hover yok) eylemler her zaman görünür */
+@media (hover: none) {
+  .binder-menu-item-actions {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1610,13 +1645,14 @@
   }
   
   .binder-menu-item-text {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
   
+  /* Telefonda eylem butonları küçültülmez; dokunma hedefi korunur */
   .binder-menu-action-btn {
-    min-width: 18px;
-    height: 18px;
-    font-size: 0.65rem;
+    min-width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
     padding: 0.2rem 0.3rem;
   }
   
@@ -1626,15 +1662,46 @@
   }
   
   .binder-edit-input {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.4rem;
+    font-size: 16px; /* iOS otomatik zoom'u engeller */
+    padding: 0.4rem 0.5rem;
   }
   
   .binder-edit-action-btn {
-    min-width: 22px;
-    height: 22px;
-    font-size: 0.7rem;
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
     padding: 0.25rem 0.35rem;
+  }
+}
+
+/* Dar telefonlar: bulut kontrolleri ikinci satıra iner, ad + eylemler ilk satırda kalır */
+@media (max-width: 480px) {
+  .binder-menu-item-content {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+
+  .binder-menu-item-text {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .binder-menu-item-actions {
+    margin-left: auto;
+    order: 2;
+  }
+
+  .binder-menu-cloud-controls {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+
+  .binder-menu-cloud-save-btn,
+  .binder-menu-cloud-share-btn {
+    min-height: 34px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -1897,4 +1964,10 @@
     height: 1rem;
     font-size: 0.5rem;
   }
+}
+
+/* Sadece görüntüleme (paylaşılan binder, role=view): düzenleme ayarları pasif */
+.settings-bar--read-only .settings-bar-secondary {
+  opacity: 0.45;
+  pointer-events: none;
 }

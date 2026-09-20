@@ -232,3 +232,52 @@ body {
     max-height: min(36dvh, 190px);
   }
 }
+
+/* ---- Sadece görüntüleme (paylaşılan binder, role=view) ---- */
+.read-only-banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: #f1e8fb;
+  color: #6b32b4;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 1px solid #e0cffa;
+}
+
+.App.fullscreen-mode .read-only-banner {
+  display: none;
+}
+
+/* Düzenleme kontrolleri gizlenir; sayfa çevirme / gezinme açık kalır */
+.App.read-only .cell-image-controls,
+.App.read-only .cell-sleeve-picker,
+.App.read-only .cell-placeholder,
+.App.read-only .cell-url-input-container,
+.App.read-only .binder-page-delete-button,
+.App.read-only .fullscreen-add-page-btn,
+.App.read-only .page-order-swap-button,
+.App.read-only .page-order-swap-inputs {
+  display: none !important;
+}
+
+.App.read-only .cell-input {
+  pointer-events: none;
+  resize: none;
+}
+
+.App.read-only .cell,
+.App.read-only .page-cell {
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .read-only-banner {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.6rem;
+  }
+}

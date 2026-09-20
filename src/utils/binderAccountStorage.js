@@ -77,10 +77,24 @@ export function saveSelectedBinderId(account, binderId) {
   }
 }
 
+// Binder'ın yerelde en az bir sayfası var mı? (çıkış sonrası otomatik oluşan boş "Binder 1"i ayıklamak için)
+function hasLocalPages(binderId) {
+  try {
+    const raw = localStorage.getItem(`binder-${binderId}-pages-list`);
+    if (!raw) return false;
+    const list = JSON.parse(raw);
+    return Array.isArray(list) && list.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Misafir binder'larını bu hesaba taşı (görünür liste).
  * Buluta kayıt (Kaydet) ayrıdır; bu yalnızca yerel sahiplik / görünürlük.
  * Misafir listesi temizlenir → başka hesap bunları görmez.
+ * Hesabın zaten binder'ı varsa, misafirdeki boş (sayfasız) binder'lar taşınmaz;
+ * böylece her çıkış/giriş döngüsünde yeni bir boş "Binder 1" birikmez.
  */
 export function claimGuestBindersIntoAccount(account) {
   if (!account || account === GUEST_ACCOUNT) return loadBindersList(account);
@@ -92,7 +106,9 @@ export function claimGuestBindersIntoAccount(account) {
   const ids = new Set(mine.map((b) => b.id));
   const merged = [...mine];
   for (const b of guest) {
-    if (!ids.has(b.id)) merged.push(b);
+    if (ids.has(b.id)) continue;
+    if (mine.length > 0 && !hasLocalPages(b.id)) continue;
+    merged.push(b);
   }
   saveBindersList(account, merged);
 

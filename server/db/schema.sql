@@ -47,18 +47,36 @@ CREATE TABLE IF NOT EXISTS images (
 );
 CREATE INDEX IF NOT EXISTS images_user_id_idx ON images(user_id);
 
--- Binder paylaşımı (kopya gönderme). Alıcı kabul edince binder + resimler alıcının
--- hesabına yeni bir id ile kopyalanır. status: pending | accepted | rejected | cancelled
+-- Paylaşılan binder üyeleri: binder'ın tek sahibi vardır (binders.user_id), üyeler aynı
+-- binder'a erişir. role: edit (düzenleyebilir) | view (sadece görüntüleme).
+-- Sahip binder'ı silerse üyelikler de silinir.
+CREATE TABLE IF NOT EXISTS binder_members (
+  owner_id    UUID NOT NULL,
+  binder_id   TEXT NOT NULL,
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role        TEXT NOT NULL DEFAULT 'edit' CHECK (role IN ('edit', 'view')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (owner_id, binder_id, user_id),
+  FOREIGN KEY (owner_id, binder_id) REFERENCES binders(user_id, id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS binder_members_user_idx ON binder_members(user_id);
+-- Eski kurulumlar için (tablo role'süz oluşturulduysa)
+ALTER TABLE binder_members ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'edit';
+
+-- Paylaşım daveti. Alıcı kabul edince binder_members'a eklenir (kopya oluşmaz).
+-- status: pending | accepted | rejected | cancelled ; role: davetle verilen yetki
 CREATE TABLE IF NOT EXISTS binder_shares (
   id            UUID PRIMARY KEY,
   from_user_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   to_user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   binder_id     TEXT NOT NULL,
   binder_name   TEXT NOT NULL,
+  role          TEXT NOT NULL DEFAULT 'edit' CHECK (role IN ('edit', 'view')),
   status        TEXT NOT NULL DEFAULT 'pending',
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   responded_at  TIMESTAMPTZ
 );
+ALTER TABLE binder_shares ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'edit';
 CREATE INDEX IF NOT EXISTS binder_shares_to_pending_idx
   ON binder_shares(to_user_id) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS binder_shares_from_pending_idx
