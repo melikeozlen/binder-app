@@ -1840,12 +1840,16 @@
 
 .gallery-settings-panel-header {
   display: grid;
-  grid-template-columns: 30px 1fr 30px;
+  grid-template-columns: 30px 1fr auto;
   align-items: center;
   gap: 0.35rem;
   padding: 0.65rem 0.85rem;
   border-bottom: 1px solid #eee;
   flex-shrink: 0;
+}
+
+.gallery-settings-header-actions {
+  justify-self: end;
 }
 
 .gallery-settings-panel-header h3 {

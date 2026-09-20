@@ -43,21 +43,113 @@
 .gallery-item-in-binder-badge {
   position: absolute;
   top: 4px;
-  right: 4px;
+  left: 4px;
   z-index: 2;
-  width: 20px;
-  height: 20px;
-  display: flex;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(26, 95, 180, 0.9);
+  color: #fff;
+  font-size: 0.65rem;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: #2e7d32;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   pointer-events: none;
+}
+
+.gallery-item-download {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 3;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease;
+}
+
+.gallery-item:hover .gallery-item-download,
+.back-image-gallery-item:hover .gallery-item-download,
+.gallery-item-download:focus-visible,
+.gallery-item-download--busy {
+  opacity: 1;
+}
+
+.gallery-item-download:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.gallery-item-download:disabled {
+  cursor: default;
+}
+
+/* Dokunmatik: hover yok → her zaman hafif görünür */
+@media (hover: none) {
+  .gallery-item-download {
+    opacity: 0.85;
+  }
+}
+
+.gallery-item-media {
+  display: contents;
+}
+
+.gallery-header-actions,
+.gallery-settings-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.gallery-zip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 0.45rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.gallery-zip-btn:hover:not(:disabled) {
+  border-color: #1a5fb4;
+  color: #1a5fb4;
+  background: #eef4fb;
+}
+
+.gallery-zip-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.gallery-zip-btn-count {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.gallery-zip-btn--header {
+  height: 32px;
 }
 
 .gallery-folder-card {

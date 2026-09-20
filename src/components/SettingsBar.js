@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { HexColorPicker } from 'react-colorful';
 import './SettingsBar.css';
@@ -118,6 +118,22 @@ const SettingsBar = ({
   const [driveFolderInput, setDriveFolderInput] = useState('');
   const [driveGalleryLoading, setDriveGalleryLoading] = useState(false);
   const [showGallerySettingsModal, setShowGallerySettingsModal] = useState(false);
+  const [galleryDownloadControls, setGalleryDownloadControls] = useState(null);
+  const handleGalleryDownloadControls = useCallback((next) => {
+    setGalleryDownloadControls((prev) => {
+      if (!next) return prev ? null : prev;
+      if (
+        prev &&
+        prev.canZip === next.canZip &&
+        prev.count === next.count &&
+        prev.busy === next.busy
+      ) {
+        // downloadZip her seferinde yeni fonksiyon olabilir; prev'i koru
+        return prev;
+      }
+      return next;
+    });
+  }, []);
   const [isMobileLayout, setIsMobileLayout] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
   );
@@ -251,7 +267,33 @@ const SettingsBar = ({
     setShowBackImageDefaultGallery(false);
     setShowBackImageUrlInput(false);
     setBackImageUrlInput('');
+    setGalleryDownloadControls(null);
   };
+
+  const renderGalleryHeaderActions = (onCloseClick) => (
+    <div className="gallery-settings-header-actions">
+      {galleryDownloadControls?.canZip && (
+        <button
+          type="button"
+          className="gallery-zip-btn gallery-zip-btn--header"
+          onClick={() => galleryDownloadControls.downloadZip?.()}
+          disabled={galleryDownloadControls.busy}
+          title={t('settings.galleryZipDownload', { count: galleryDownloadControls.count })}
+          aria-label={t('settings.galleryZipDownload', { count: galleryDownloadControls.count })}
+        >
+          {galleryDownloadControls.busy ? '…' : '⬇'}
+          <span className="gallery-zip-btn-count">{galleryDownloadControls.count}</span>
+        </button>
+      )}
+      <button
+        type="button"
+        className="gallery-settings-panel-close"
+        onClick={onCloseClick}
+      >
+        ×
+      </button>
+    </div>
+  );
 
   const handleBackImageSelect = (e) => {
     const file = e.target.files && e.target.files[0];
@@ -1065,13 +1107,7 @@ const SettingsBar = ({
                     ←
                   </button>
                   <h3>{t('settings.selectFromGallery')}</h3>
-                  <button
-                    type="button"
-                    className="gallery-settings-panel-close"
-                    onClick={closeGallerySettingsModal}
-                  >
-                    ×
-                  </button>
+                  {renderGalleryHeaderActions(closeGallerySettingsModal)}
                 </div>
                 <GalleryWithFolders
                   embedded
@@ -1081,6 +1117,7 @@ const SettingsBar = ({
                   binderUsedImages={binderUsedImages}
                   stateContext={GALLERY_UI_CONTEXT.BACK_CUSTOM}
                   binderId={selectedBinderId}
+                  onDownloadControls={handleGalleryDownloadControls}
                 />
               </>
             ) : showBackImageDefaultGallery ? (
@@ -1095,13 +1132,7 @@ const SettingsBar = ({
                     ←
                   </button>
                   <h3>{t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</h3>
-                  <button
-                    type="button"
-                    className="gallery-settings-panel-close"
-                    onClick={closeGallerySettingsModal}
-                  >
-                    ×
-                  </button>
+                  {renderGalleryHeaderActions(closeGallerySettingsModal)}
                 </div>
                 <GalleryWithFolders
                   embedded
@@ -1110,6 +1141,7 @@ const SettingsBar = ({
                   onSelect={handleBackImageDefaultGallerySelect}
                   binderUsedImages={binderUsedImages}
                   stateContext={GALLERY_UI_CONTEXT.BACK_DEFAULT}
+                  onDownloadControls={handleGalleryDownloadControls}
                 />
               </>
             ) : showBackImageOptions ? (

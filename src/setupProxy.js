@@ -52,6 +52,7 @@ loadEnvFiles();
 
 const driveGalleryHandler = require('../api/drive-gallery');
 const driveImageHandler = require('../api/drive-image');
+const imageProxyHandler = require('../api/image-proxy');
 
 const API_PROXY_TARGET = process.env.API_PROXY_TARGET || 'http://localhost:4000';
 const BACKEND_PATHS = ['/api/auth', '/api/binders', '/api/shares', '/api/health'];
@@ -116,9 +117,23 @@ module.exports = function setupProxy(app) {
     }
   });
 
+  app.get('/api/image-proxy', async (req, res) => {
+    try {
+      await imageProxyHandler(req, res);
+    } catch (error) {
+      console.error('[api/image-proxy]', error);
+      if (!res.headersSent) {
+        res.status(502).json({
+          error: error.message || 'Image proxy error',
+          code: 'API_ERROR',
+        });
+      }
+    }
+  });
+
   const hasKey = Boolean(process.env.GOOGLE_DRIVE_API_KEY?.trim());
 
-  console.log('[dev] /api/drive-gallery ve /api/drive-image hazır');
+  console.log('[dev] /api/drive-gallery, /api/drive-image, /api/image-proxy hazır');
   if (!hasKey) {
     console.warn(
       '[dev] GOOGLE_DRIVE_API_KEY bulunamadı.\n' +
