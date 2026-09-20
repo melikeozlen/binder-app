@@ -89,7 +89,7 @@ src/
 
 Binder paylaşımı (kopya gönderme):
 
-- Binder menüsünde **kayıtlı** (☁️) bir binder'ın yanındaki **↗** → kullanıcı adı yazılır → karşı tarafa bekleyen paylaşım gider.
+- Binder menüsünde **kayıtlı** (☁️ Kayıtlı) bir binder'ın yanındaki **↗ Paylaş** → kullanıcı adı yazılır → karşı tarafa bekleyen paylaşım gider.
 - Alıcı hesap penceresinde (footer'daki 👤 butonu, kırmızı rozet = bekleyen sayısı) **Kabul** / **Reddet** eder.
   Kabulde binder + resimler alıcının hesabına **yeni bir binder olarak kopyalanır** ve eşitleme ile cihazına iner.
   Kopya bağımsızdır: iki taraf birbirinin binder'ını etkilemez (canlı ortak düzenleme yoktur).

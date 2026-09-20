@@ -571,9 +571,24 @@ const SettingsBar = ({
                 <span className="binder-menu-item-text">{binder.name}</span>
                 {cloudEnabled && onSaveBinderToCloud && (
                   cloudBinderIds?.has(binder.id) ? (
-                    <span className="binder-menu-cloud-badge" title={t('binder.cloudSaved')}>
-                      ☁️ {t('binder.cloudSavedShort')}
-                    </span>
+                    <>
+                      <span className="binder-menu-cloud-badge" title={t('binder.cloudSaved')}>
+                        ☁️ {t('binder.cloudSavedShort')}
+                      </span>
+                      {onShareBinder && (
+                        <button
+                          type="button"
+                          className="binder-menu-cloud-share-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onShareBinder(binder.id);
+                          }}
+                          title={t('share.shareBinder')}
+                        >
+                          ↗ {t('share.shareShort')}
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <button
                       type="button"
@@ -590,18 +605,6 @@ const SettingsBar = ({
                   )
                 )}
                 <div className="binder-menu-item-actions">
-                  {onShareBinder && cloudBinderIds?.has(binder.id) && (
-                    <button
-                      className="binder-menu-action-btn binder-menu-share-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onShareBinder(binder.id);
-                      }}
-                      title={t('share.shareBinder')}
-                    >
-                      ↗
-                    </button>
-                  )}
                   <button
                     className="binder-menu-action-btn binder-menu-edit-btn"
                     onClick={(e) => {

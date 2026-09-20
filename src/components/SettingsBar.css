@@ -1360,12 +1360,25 @@
   white-space: nowrap;
 }
 
-.binder-menu-share-btn {
+/* Kayıtlı binder'ın yanında her zaman görünen paylaş butonu */
+.binder-menu-cloud-share-btn {
+  flex-shrink: 0;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #c5daf5;
+  border-radius: 10px;
+  background: #fff;
   color: #1a5fb4;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
-.binder-menu-share-btn:hover {
-  background-color: #e8f1fb;
+.binder-menu-cloud-share-btn:hover {
+  background: #e8f1fb;
+  border-color: #1a5fb4;
 }
 
 .binder-menu-delete-btn {
