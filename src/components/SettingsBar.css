@@ -1322,6 +1322,44 @@
   color: #1976d2;
 }
 
+/* Binder menüsü: hesaba kaydet butonu / kayıtlı rozeti */
+.binder-menu-cloud-save-btn {
+  flex-shrink: 0;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #1a5fb4;
+  border-radius: 10px;
+  background: #fff;
+  color: #1a5fb4;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.binder-menu-cloud-save-btn:hover:not(:disabled) {
+  background: #1a5fb4;
+  color: #fff;
+}
+
+.binder-menu-cloud-save-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.binder-menu-cloud-badge {
+  flex-shrink: 0;
+  padding: 0.2rem 0.45rem;
+  border-radius: 10px;
+  background: #e8f1fb;
+  color: #1a5fb4;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .binder-menu-delete-btn {
   color: #999;
 }
@@ -1576,5 +1614,266 @@
     height: 22px;
     font-size: 0.7rem;
     padding: 0.25rem 0.35rem;
+  }
+}
+
+/* Google Drive galeri */
+.gallery-settings-btn {
+  position: relative;
+}
+
+.gallery-settings-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: #333;
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.gallery-settings-modal-content {
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gallery-settings-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-height: 0;
+}
+
+.gallery-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.gallery-settings-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #444;
+}
+
+.gallery-settings-select {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.gallery-settings-hint {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #777;
+  line-height: 1.35;
+}
+
+.gallery-settings-action-btn {
+  width: 100%;
+}
+
+.gallery-settings-section--back-image {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+}
+
+.gallery-settings-section--back-image .gallery-settings-label {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.gallery-settings-section--back-image .back-image-controls {
+  flex-shrink: 0;
+}
+
+.gallery-settings-back-indicator {
+  font-size: 0.55rem;
+  color: #2e7d32;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Galeri ayarları — mobil alt panel (binder ⋮ menüsü gibi) */
+.gallery-settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  background: rgba(0, 0, 0, 0.4);
+  padding:
+    env(safe-area-inset-top, 0)
+    env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0)
+    env(safe-area-inset-left, 0);
+}
+
+.gallery-settings-panel {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  max-height: min(82dvh, 560px);
+  align-self: stretch;
+  background: #fff;
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: galleryPanelSlideUp 0.22s ease;
+}
+
+@keyframes galleryPanelSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.gallery-settings-panel-header {
+  display: grid;
+  grid-template-columns: 30px 1fr 30px;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.gallery-settings-panel-header h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gallery-settings-panel-close {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #444;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  justify-self: end;
+}
+
+.gallery-settings-back-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #444;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  justify-self: start;
+  padding: 0;
+}
+
+.gallery-settings-header-spacer {
+  width: 30px;
+  height: 30px;
+  justify-self: start;
+}
+
+.gallery-settings-panel .gallery-settings-modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-height: 0;
+}
+
+.gallery-settings-panel .back-image-modal-options {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-height: 0;
+}
+
+.drive-gallery-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.drive-gallery-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.drive-gallery-input:focus {
+  outline: none;
+  border-color: #666;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+}
+
+.drive-gallery-input:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.drive-gallery-load-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.drive-gallery-input--full {
+  width: 100%;
+}
+
+.drive-gallery-load-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .gallery-settings-count {
+    min-width: 1rem;
+    height: 1rem;
+    font-size: 0.5rem;
   }
 }

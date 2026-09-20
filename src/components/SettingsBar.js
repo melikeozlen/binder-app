@@ -6,6 +6,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
 import { parseGalleryText } from '../utils/galleryParse';
+import { fetchDriveGallery, DriveGalleryError } from '../utils/driveGallery';
+import { parseDriveFolderId } from '../utils/driveGalleryParse';
+import { normalizeDriveImageUrl } from '../utils/driveImageUrl';
 import GalleryWithFolders from './GalleryWithFolders';
 import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
 import { isValidGridSize, normalizeGridSizeInput } from '../utils/gridLayout';
@@ -67,6 +70,10 @@ const SettingsBar = ({
   onCreateBinder,
   onDeleteBinder,
   onRenameBinder,
+  cloudEnabled = false,
+  cloudBinderIds,
+  savingBinderIds,
+  onSaveBinderToCloud,
   onExportBinder,
   onImportBinder,
   binderUsedImages = null
@@ -90,11 +97,11 @@ const SettingsBar = ({
   const heightDownIntervalRef = useRef(null);
   const widthRatioRef = useRef(widthRatio);
   const heightRatioRef = useRef(heightRatio);
-  const [showBackImageModal, setShowBackImageModal] = useState(false);
   const [showBackImageUrlInput, setShowBackImageUrlInput] = useState(false);
   const [backImageUrlInput, setBackImageUrlInput] = useState('');
   const [showBackImageGallery, setShowBackImageGallery] = useState(false);
   const [showBackImageDefaultGallery, setShowBackImageDefaultGallery] = useState(false);
+  const [showBackImageOptions, setShowBackImageOptions] = useState(false);
   const [defaultGalleryUrls, setDefaultGalleryUrls] = useState([]);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPickerType, setColorPickerType] = useState(null); // 'binder', 'ring', 'background', 'gridStitch'
@@ -103,6 +110,9 @@ const SettingsBar = ({
   const [editingBinderId, setEditingBinderId] = useState(null);
   const [editingBinderName, setEditingBinderName] = useState('');
   const [mobileSettingsExpanded, setMobileSettingsExpanded] = useState(false);
+  const [driveFolderInput, setDriveFolderInput] = useState('');
+  const [driveGalleryLoading, setDriveGalleryLoading] = useState(false);
+  const [showGallerySettingsModal, setShowGallerySettingsModal] = useState(false);
   const [isMobileLayout, setIsMobileLayout] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
   );
@@ -229,6 +239,15 @@ const SettingsBar = ({
     }
   };
 
+  const closeGallerySettingsModal = () => {
+    setShowGallerySettingsModal(false);
+    setShowBackImageOptions(false);
+    setShowBackImageGallery(false);
+    setShowBackImageDefaultGallery(false);
+    setShowBackImageUrlInput(false);
+    setBackImageUrlInput('');
+  };
+
   const handleBackImageSelect = (e) => {
     const file = e.target.files && e.target.files[0];
     if (file && file instanceof File && onDefaultBackImageChange) {
@@ -243,7 +262,7 @@ const SettingsBar = ({
     }
     // Modal'ı sadece dosya seçildiyse kapat
     if (file) {
-      setShowBackImageModal(false);
+      closeGallerySettingsModal();
     }
     // Input'un value'sunu temizle ki aynı dosya tekrar seçilebilsin
     e.target.value = '';
@@ -263,7 +282,7 @@ const SettingsBar = ({
           onDefaultBackImageChange(trimmedUrl);
         }
         setBackImageUrlInput('');
-        setShowBackImageModal(false);
+        closeGallerySettingsModal();
       } else {
         alert(t('settings.invalidUrl'));
       }
@@ -279,7 +298,7 @@ const SettingsBar = ({
       onDefaultBackImageChange(url);
     }
     setShowBackImageGallery(false);
-    setShowBackImageModal(false);
+    closeGallerySettingsModal();
   };
 
 
@@ -292,9 +311,24 @@ const SettingsBar = ({
       onDefaultBackImageChange(url);
     }
     setShowBackImageDefaultGallery(false);
-    setShowBackImageModal(false);
+    closeGallerySettingsModal();
   };
   
+  const applyGalleryItems = (items) => {
+    if (!onGalleryUrlsChange || !Array.isArray(items) || items.length === 0) return;
+
+    const normalizedItems = items.map((item) => {
+      if (!item || typeof item === 'string') return item;
+      const url = item.url ? normalizeDriveImageUrl(item.url) : item.url;
+      return url === item.url ? item : { ...item, url };
+    });
+
+    onGalleryUrlsChange(normalizedItems);
+    if (onImageInputModeChange) {
+      onImageInputModeChange('gallery');
+    }
+  };
+
   const handleTextFileSelect = (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'text/plain') {
@@ -302,26 +336,62 @@ const SettingsBar = ({
       reader.onload = (event) => {
         const text = event.target.result;
         const items = parseGalleryText(text);
-        if (onGalleryUrlsChange) {
-          onGalleryUrlsChange(items);
-          // localStorage'a kaydet
-          try {
-            localStorage.setItem('binder-gallery-urls', JSON.stringify(items));
-          } catch (e) {
-            console.error('Galeri URL\'leri kaydedilirken hata:', e);
-          }
-          // Galeri moduna geç
-          if (onImageInputModeChange) {
-            onImageInputModeChange('gallery');
-          }
-        }
+        applyGalleryItems(items);
       };
       reader.readAsText(file);
     } else {
       alert(t('settings.invalidTextFile'));
     }
-    // Input'un value'sunu temizle ki aynı dosya tekrar seçilebilsin
     e.target.value = '';
+  };
+
+  const getDriveGalleryErrorMessage = (error) => {
+    const code = error instanceof DriveGalleryError ? error.code : error?.code;
+    switch (code) {
+      case 'INVALID_FOLDER':
+        return t('settings.driveGalleryInvalidFolder');
+      case 'NO_IMAGES':
+        return t('settings.driveGalleryNoImages');
+      case 'FOLDER_NOT_FOUND':
+      case 'FOLDER_ACCESS_DENIED':
+        return t('settings.driveGalleryAccessDenied');
+      case 'MISSING_API_KEY':
+        return t('settings.driveGalleryMissingKey');
+      default:
+        return t('settings.driveGalleryFailed');
+    }
+  };
+
+  const handleDriveGalleryLoad = async () => {
+    const input = driveFolderInput.trim();
+    if (!input) {
+      alert(t('settings.driveGalleryInvalidFolder'));
+      return;
+    }
+    if (!parseDriveFolderId(input)) {
+      alert(t('settings.driveGalleryInvalidFolder'));
+      return;
+    }
+
+    setDriveGalleryLoading(true);
+    try {
+      const { items, count } = await fetchDriveGallery(input);
+      applyGalleryItems(items);
+      alert(t('settings.driveGallerySuccess', { count }));
+      setDriveFolderInput('');
+    } catch (error) {
+      console.error('Drive galeri yüklenirken hata:', error);
+      alert(getDriveGalleryErrorMessage(error));
+    } finally {
+      setDriveGalleryLoading(false);
+    }
+  };
+
+  const handleDriveGalleryKeyDown = (e) => {
+    if (e.key === 'Enter' && !driveGalleryLoading) {
+      e.preventDefault();
+      handleDriveGalleryLoad();
+    }
   };
   const handleBinderNameSave = () => {
     if (editingBinderId && editingBinderName.trim()) {
@@ -498,6 +568,26 @@ const SettingsBar = ({
             ) : (
               <div className="binder-menu-item-content">
                 <span className="binder-menu-item-text">{binder.name}</span>
+                {cloudEnabled && onSaveBinderToCloud && (
+                  cloudBinderIds?.has(binder.id) ? (
+                    <span className="binder-menu-cloud-badge" title={t('binder.cloudSaved')}>
+                      ☁️ {t('binder.cloudSavedShort')}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="binder-menu-cloud-save-btn"
+                      disabled={savingBinderIds?.has(binder.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSaveBinderToCloud(binder.id);
+                      }}
+                      title={t('binder.saveToCloud')}
+                    >
+                      {savingBinderIds?.has(binder.id) ? '⟳' : '☁'} {t('binder.saveToCloudShort')}
+                    </button>
+                  )
+                )}
                 <div className="binder-menu-item-actions">
                   <button
                     className="binder-menu-action-btn binder-menu-edit-btn"
@@ -838,114 +928,160 @@ const SettingsBar = ({
       </div>
       
       <div className="setting-item">
-        <span className="setting-label">{t('settings.imageInputMode')}</span>
-        <select
-          value={imageInputMode}
-          onChange={(e) => onImageInputModeChange && onImageInputModeChange(e.target.value)}
-          className="settings-control image-input-select"
-          title={t('settings.imageInputModeHelp')}
-        >
-          <option value="file">📷 {t('settings.uploadFile')}</option>
-          <option value="url">🔗 {t('settings.enterUrl')}</option>
-          {galleryUrls.length > 0 && <option value="gallery">🖼️ {t('settings.selectFromGallery')}</option>}
-          <option value="defaultGallery">⭐ {t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</option>
-        </select>
-        {galleryUrls.length > 0 && (
-          <span className="gallery-count" title={t('settings.galleryCount', { count: galleryUrls.length })}>
-            ({galleryUrls.length})
-          </span>
-        )}
-      </div>
-      
-      <div className="setting-item">
-        <input
-          ref={textFileInputRef}
-          type="file"
-          accept=".txt,text/plain"
-          onChange={handleTextFileSelect}
-          style={{ display: 'none' }}
-        />
         <button
-          className="settings-control icon-button"
-          onClick={() => textFileInputRef.current?.click()}
-          title={t('settings.loadTextFileHelp')}
+          type="button"
+          className="settings-control icon-button gallery-settings-btn"
+          onClick={() => setShowGallerySettingsModal(true)}
+          title={t('settings.gallerySettingsHelp')}
         >
-          📄 <span className="icon-button-label">{t('settings.loadTextFile')}</span>
+          🖼️
+          <span className="icon-button-label">{t('settings.gallerySettings')}</span>
+          {galleryUrls.length > 0 && (
+            <span className="gallery-settings-count">{galleryUrls.length}</span>
+          )}
+          {defaultBackImage && (
+            <span className="gallery-settings-back-indicator" title={t('settings.backImageHelp')}>✓</span>
+          )}
         </button>
       </div>
       
-      <div className="setting-item">
-        <div className="back-image-controls">
-          <input
-            ref={backImageInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleBackImageSelect}
-            onClick={(e) => {
-              // Input'a tıklandığında event'i durdurma, sadece onChange'de işle
-              e.stopPropagation();
-            }}
-            style={{ display: 'none' }}
-          />
-          <button
-            className="settings-control icon-button"
-            onClick={() => setShowBackImageModal(true)}
-            title={t('settings.backImageHelp')}
-          >
-            {defaultBackImage ? '✓' : '📷'}
-          </button>
-          {defaultBackImage && (
-            <button
-              className="settings-control icon-button remove-button"
-              onClick={() => onDefaultBackImageChange && onDefaultBackImageChange(null)}
-              title={t('settings.remove')}
-            >
-              ×
-            </button>
-          )}
-        </div>
+      <div className="setting-item settings-add-page-desktop">
+        <button
+          className="settings-control action-button"
+          onClick={() => onAddPage()}
+          disabled={!gridSize}
+        >
+          {t('settings.addPage')}
+        </button>
       </div>
 
-      {/* Default Back Image Modal */}
-      {showBackImageModal && createPortal(
-        <div 
-          className="back-image-modal-overlay"
-                    onClick={(e) => {
-                      if (e.target === e.currentTarget) {
-                        setShowBackImageModal(false);
-                        setShowBackImageGallery(false);
-                        setShowBackImageDefaultGallery(false);
-                        setShowBackImageUrlInput(false);
-                        setBackImageUrlInput('');
-                      }
-                    }}
+      <div className="setting-item">
+        <button
+          className="settings-control action-button danger-button"
+          onClick={() => onDeleteAllPages && onDeleteAllPages()}
+          disabled={pagesCount === 0}
+          title={t('settings.deletePages') || 'Sayfaları Sil'}
         >
-          <div className="back-image-modal-content" onClick={(e) => e.stopPropagation()}>
-            {!showBackImageGallery && !showBackImageDefaultGallery ? (
+          {t('settings.deletePages') || 'Sayfaları Sil'}
+        </button>
+      </div>
+      </div>
+
+      {/* Galeri ayarları modal */}
+      {showGallerySettingsModal && createPortal(
+        <div
+          className={isMobileLayout ? 'gallery-settings-overlay' : 'back-image-modal-overlay'}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeGallerySettingsModal();
+            }
+          }}
+        >
+          <div
+            className={isMobileLayout ? 'gallery-settings-panel' : 'back-image-modal-content gallery-settings-modal-content'}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {showBackImageGallery ? (
               <>
-                <div className="back-image-modal-header">
-                  <h3>{t('settings.backImageHelp')}</h3>
+                <div className="gallery-settings-panel-header">
                   <button
-                    className="back-image-modal-close"
+                    type="button"
+                    className="gallery-settings-back-btn"
+                    onClick={() => setShowBackImageGallery(false)}
+                    aria-label={t('settings.galleryBack')}
+                  >
+                    ←
+                  </button>
+                  <h3>{t('settings.selectFromGallery')}</h3>
+                  <button
+                    type="button"
+                    className="gallery-settings-panel-close"
+                    onClick={closeGallerySettingsModal}
+                  >
+                    ×
+                  </button>
+                </div>
+                <GalleryWithFolders
+                  embedded
+                  variant="back-image"
+                  items={galleryUrls}
+                  onSelect={handleBackImageGallerySelect}
+                  binderUsedImages={binderUsedImages}
+                  stateContext={GALLERY_UI_CONTEXT.BACK_CUSTOM}
+                  binderId={selectedBinderId}
+                />
+              </>
+            ) : showBackImageDefaultGallery ? (
+              <>
+                <div className="gallery-settings-panel-header">
+                  <button
+                    type="button"
+                    className="gallery-settings-back-btn"
+                    onClick={() => setShowBackImageDefaultGallery(false)}
+                    aria-label={t('settings.galleryBack')}
+                  >
+                    ←
+                  </button>
+                  <h3>{t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</h3>
+                  <button
+                    type="button"
+                    className="gallery-settings-panel-close"
+                    onClick={closeGallerySettingsModal}
+                  >
+                    ×
+                  </button>
+                </div>
+                <GalleryWithFolders
+                  embedded
+                  variant="back-image"
+                  items={defaultGalleryUrls}
+                  onSelect={handleBackImageDefaultGallerySelect}
+                  binderUsedImages={binderUsedImages}
+                  stateContext={GALLERY_UI_CONTEXT.BACK_DEFAULT}
+                />
+              </>
+            ) : showBackImageOptions ? (
+              <>
+                <div className="gallery-settings-panel-header">
+                  <button
+                    type="button"
+                    className="gallery-settings-back-btn"
                     onClick={() => {
-                      setShowBackImageModal(false);
+                      setShowBackImageOptions(false);
                       setShowBackImageUrlInput(false);
-                      setShowBackImageGallery(false);
-                      setShowBackImageDefaultGallery(false);
                       setBackImageUrlInput('');
                     }}
+                    aria-label={t('settings.galleryBack')}
+                  >
+                    ←
+                  </button>
+                  <h3>{t('settings.backImageHelp')}</h3>
+                  <button
+                    type="button"
+                    className="gallery-settings-panel-close"
+                    onClick={closeGallerySettingsModal}
                   >
                     ×
                   </button>
                 </div>
                 <div className="back-image-modal-options">
+                  <input
+                    ref={backImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBackImageSelect}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ display: 'none' }}
+                  />
                   <button
+                    type="button"
                     className="back-image-modal-option"
                     onClick={handleBackImageFileClick}
                   >
                     📷 {t('settings.uploadFile')}
                   </button>
                   <button
+                    type="button"
                     className="back-image-modal-option"
                     onClick={() => {
                       setShowBackImageUrlInput(true);
@@ -956,20 +1092,18 @@ const SettingsBar = ({
                   </button>
                   {galleryUrls.length > 0 && (
                     <button
+                      type="button"
                       className="back-image-modal-option"
-                      onClick={() => {
-                        setShowBackImageGallery(true);
-                      }}
+                      onClick={() => setShowBackImageGallery(true)}
                     >
                       🖼️ {t('settings.selectFromGallery')}
                     </button>
                   )}
                   {defaultGalleryUrls.length > 0 && (
                     <button
+                      type="button"
                       className="back-image-modal-option"
-                      onClick={() => {
-                        setShowBackImageDefaultGallery(true);
-                      }}
+                      onClick={() => setShowBackImageDefaultGallery(true)}
                     >
                       ⭐ {t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}
                     </button>
@@ -996,6 +1130,7 @@ const SettingsBar = ({
                     />
                     <div className="back-image-url-buttons">
                       <button
+                        type="button"
                         className="back-image-url-btn"
                         onClick={handleBackImageUrlSubmit}
                         title={t('settings.apply')}
@@ -1003,6 +1138,7 @@ const SettingsBar = ({
                         ✓
                       </button>
                       <button
+                        type="button"
                         className="back-image-url-btn"
                         onClick={() => {
                           setShowBackImageUrlInput(false);
@@ -1016,78 +1152,125 @@ const SettingsBar = ({
                   </div>
                 )}
               </>
-            ) : showBackImageGallery ? (
-              <>
-                <div className="back-image-modal-header">
-                  <h3>{t('settings.selectFromGallery')}</h3>
-                  <button
-                    className="back-image-modal-close"
-                    onClick={() => {
-                      setShowBackImageGallery(false);
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-                <GalleryWithFolders
-                  embedded
-                  variant="back-image"
-                  items={galleryUrls}
-                  onSelect={handleBackImageGallerySelect}
-                  binderUsedImages={binderUsedImages}
-                  stateContext={GALLERY_UI_CONTEXT.BACK_CUSTOM}
-                  binderId={selectedBinderId}
-                />
-              </>
             ) : (
               <>
-                <div className="back-image-modal-header">
-                  <h3>{t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</h3>
+                <div className="gallery-settings-panel-header">
+                  <span className="gallery-settings-header-spacer" aria-hidden="true" />
+                  <h3>{t('settings.gallerySettings')}</h3>
                   <button
-                    className="back-image-modal-close"
-                    onClick={() => {
-                      setShowBackImageDefaultGallery(false);
-                    }}
+                    type="button"
+                    className="gallery-settings-panel-close"
+                    onClick={closeGallerySettingsModal}
                   >
                     ×
                   </button>
                 </div>
-                <GalleryWithFolders
-                  embedded
-                  variant="back-image"
-                  items={defaultGalleryUrls}
-                  onSelect={handleBackImageDefaultGallerySelect}
-                  binderUsedImages={binderUsedImages}
-                  stateContext={GALLERY_UI_CONTEXT.BACK_DEFAULT}
-                />
+                <div className="gallery-settings-modal-body">
+                  <div className="gallery-settings-section">
+                    <label className="gallery-settings-label" htmlFor="gallery-image-input-mode">
+                      {t('settings.imageInputMode')}
+                    </label>
+                    <select
+                      id="gallery-image-input-mode"
+                      value={imageInputMode}
+                      onChange={(e) => onImageInputModeChange && onImageInputModeChange(e.target.value)}
+                      className="settings-control image-input-select gallery-settings-select"
+                      title={t('settings.imageInputModeHelp')}
+                    >
+                      <option value="file">📷 {t('settings.uploadFile')}</option>
+                      <option value="url">🔗 {t('settings.enterUrl')}</option>
+                      {galleryUrls.length > 0 && <option value="gallery">🖼️ {t('settings.selectFromGallery')}</option>}
+                      <option value="defaultGallery">⭐ {t('settings.selectFromDefaultGallery') || 'Select from Default Gallery'}</option>
+                    </select>
+                    {galleryUrls.length > 0 && (
+                      <p className="gallery-settings-hint">
+                        {t('settings.galleryCount', { count: galleryUrls.length })}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="gallery-settings-section">
+                    <span className="gallery-settings-label">{t('settings.loadTextFile')}</span>
+                    <input
+                      ref={textFileInputRef}
+                      type="file"
+                      accept=".txt,text/plain"
+                      onChange={handleTextFileSelect}
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      className="back-image-modal-option gallery-settings-action-btn"
+                      onClick={() => textFileInputRef.current?.click()}
+                      title={t('settings.loadTextFileHelp')}
+                    >
+                      📄 {t('settings.loadTextFile')}
+                    </button>
+                    <p className="gallery-settings-hint">{t('settings.loadTextFileHelp')}</p>
+                  </div>
+
+                  <div className="gallery-settings-section">
+                    <label className="gallery-settings-label" htmlFor="gallery-drive-folder-input">
+                      {t('settings.driveGalleryLabel')}
+                    </label>
+                    <input
+                      id="gallery-drive-folder-input"
+                      type="url"
+                      className="settings-control drive-gallery-input drive-gallery-input--full"
+                      value={driveFolderInput}
+                      onChange={(e) => setDriveFolderInput(e.target.value)}
+                      onKeyDown={handleDriveGalleryKeyDown}
+                      placeholder={t('settings.driveGalleryPlaceholder')}
+                      title={t('settings.driveGalleryHelp')}
+                      disabled={driveGalleryLoading}
+                      aria-label={t('settings.driveGalleryPlaceholder')}
+                    />
+                    <button
+                      type="button"
+                      className="back-image-modal-option gallery-settings-action-btn drive-gallery-load-btn"
+                      onClick={handleDriveGalleryLoad}
+                      disabled={driveGalleryLoading || !driveFolderInput.trim()}
+                      title={t('settings.driveGalleryHelp')}
+                    >
+                      {driveGalleryLoading ? '…' : `📁 ${t('settings.driveGalleryLoad')}`}
+                    </button>
+                    <p className="gallery-settings-hint">{t('settings.driveGalleryHelp')}</p>
+                  </div>
+
+                  <div className="gallery-settings-section gallery-settings-section--back-image">
+                    <span className="gallery-settings-label">{t('settings.backImage')}</span>
+                    <div className="back-image-controls">
+                      <button
+                        type="button"
+                        className="settings-control icon-button"
+                        onClick={() => {
+                          setShowBackImageUrlInput(false);
+                          setBackImageUrlInput('');
+                          setShowBackImageOptions(true);
+                        }}
+                        title={t('settings.backImageHelp')}
+                      >
+                        {defaultBackImage ? '✓' : '📷'}
+                      </button>
+                      {defaultBackImage && (
+                        <button
+                          type="button"
+                          className="settings-control icon-button remove-button"
+                          onClick={() => onDefaultBackImageChange && onDefaultBackImageChange(null)}
+                          title={t('settings.remove')}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </>
             )}
           </div>
         </div>,
         document.body
       )}
-      
-      <div className="setting-item settings-add-page-desktop">
-        <button
-          className="settings-control action-button"
-          onClick={() => onAddPage()}
-          disabled={!gridSize}
-        >
-          {t('settings.addPage')}
-        </button>
-      </div>
-
-      <div className="setting-item">
-        <button
-          className="settings-control action-button danger-button"
-          onClick={() => onDeleteAllPages && onDeleteAllPages()}
-          disabled={pagesCount === 0}
-          title={t('settings.deletePages') || 'Sayfaları Sil'}
-        >
-          {t('settings.deletePages') || 'Sayfaları Sil'}
-        </button>
-      </div>
-      </div>
 
       {/* Renk Seçici Modal - Mobil için */}
       {showColorPicker && createPortal(

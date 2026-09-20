@@ -4,6 +4,15 @@ import './Footer.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { clearAllIndexedDB } from '../utils/indexedDB.js';
+import { useAuth } from '../contexts/AuthContext';
+import AuthModal from './AuthModal';
+
+const SYNC_ICONS = {
+  idle: '',
+  syncing: '⟳',
+  synced: '✓',
+  error: '!',
+};
 
 const INFO_SECTIONS = [
   {
@@ -121,9 +130,16 @@ const getLocalStorageUsagePercent = () => {
   }
 };
 
-const Footer = () => {
+const Footer = ({ syncStatus = 'idle', onSyncNow }) => {
   const { language, setLanguage } = useLanguage();
   const t = (key) => getTranslation(key, language);
+  const { user, available: authAvailable, status: authStatus, loginRequest } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Başka bir yerden (örn. binder "Kaydet" butonu) giriş istendi → pencereyi aç
+  useEffect(() => {
+    if (loginRequest > 0) setShowAuthModal(true);
+  }, [loginRequest]);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [storageUsage, setStorageUsage] = useState(0);
@@ -248,6 +264,29 @@ const Footer = () => {
             <span className="footer-separator">•</span>
           </>
         )}
+        {authAvailable && authStatus === 'ready' && (
+          <>
+            <button
+              className={`footer-account-btn${user ? ' footer-account-btn--user' : ''}`}
+              onClick={() => setShowAuthModal(true)}
+              title={user ? `${user.username} · ${t(`auth.status.${syncStatus}`)}` : t('auth.login')}
+            >
+              {user ? (
+                <>
+                  ☁️ <span className="footer-account-email">{user.username}</span>
+                  {SYNC_ICONS[syncStatus] && (
+                    <span className={`footer-account-sync footer-account-sync--${syncStatus}`}>
+                      {SYNC_ICONS[syncStatus]}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>👤 {t('auth.login')}</>
+              )}
+            </button>
+            <span className="footer-separator">•</span>
+          </>
+        )}
         <button
           className="footer-clear-cache-btn"
           onClick={handleClearCache}
@@ -294,6 +333,13 @@ const Footer = () => {
           </>
         )}
       </div>
+
+      <AuthModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        syncStatus={syncStatus}
+        onSyncNow={onSyncNow}
+      />
 
       {/* Info Modal */}
       {showInfoModal && createPortal(

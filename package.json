@@ -8,6 +8,13 @@
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^13.5.0",
     "@vercel/analytics": "^1.6.1",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "pg": "^8.13.1",
     "react": "^19.2.3",
     "react-colorful": "^5.7.0",
     "react-dom": "^19.2.3",
@@ -15,8 +22,17 @@
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
+  "devDependencies": {
+    "http-proxy-middleware": "^2.0.9"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "react-scripts start",
+    "server": "node server/index.js",
+    "server:dev": "node --watch server/index.js",
+    "dev:vercel": "vercel dev --listen 3000",
     "build": "node scripts/set-build-time.js && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

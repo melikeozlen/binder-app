@@ -1,5 +1,5 @@
 // Service Worker for Binder App
-const CACHE_NAME = 'binder-app-v1';
+const CACHE_NAME = 'binder-app-v2';
 const urlsToCache = [
   '/',
   '/static/css/main.css',
@@ -18,14 +18,16 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event — /api isteklerini service worker'a alma (lokal + prod API)
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      })
+    caches.match(event.request).then((response) => response || fetch(event.request))
   );
 });
 

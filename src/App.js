@@ -5,6 +5,8 @@ import PageOrderBar from './components/PageOrderBar';
 import Binder from './components/Binder';
 import Footer from './components/Footer';
 import { useLanguage } from './contexts/LanguageContext';
+import { useAuth } from './contexts/AuthContext';
+import { useCloudSync } from './hooks/useCloudSync';
 import { getTranslation } from './utils/translations';
 import {
   saveImageToIndexedDB,
@@ -859,6 +861,14 @@ const saveAllPages = async (pages, binderId) => {
 
 function App() {
   const { language } = useLanguage();
+  const {
+    user: authUser,
+    logout: authLogout,
+    available: authAvailable,
+    requestLogin,
+  } = useAuth();
+  // Giriş yapılmadan "Kaydet" denilen binder → giriş sonrası otomatik kaydedilir
+  const [pendingCloudSaveId, setPendingCloudSaveId] = useState(null);
   const t = (key, params) => {
     let translation = getTranslation(key, language);
     if (params) {
@@ -998,8 +1008,10 @@ function App() {
     }
   });
   const [pages, setPages] = useState([]);
+  // Buluttan çekildikten sonra seçili binder'ı yeniden yüklemek için
+  const [binderReloadKey, setBinderReloadKey] = useState(0);
   
-  // Binder değiştiğinde ayarları ve sayfaları yükle
+  // Binder değiştiğinde (veya buluttan güncellendiğinde) ayarları ve sayfaları yükle
   useEffect(() => {
     const loadBinderData = async () => {
       if (selectedBinderId) {
@@ -1025,7 +1037,7 @@ function App() {
     };
     
     loadBinderData();
-  }, [selectedBinderId]);
+  }, [selectedBinderId, binderReloadKey]);
   // Sayfaları order alanına göre sırala (yoksa ID'ye göre - geriye dönük uyumluluk)
   const sortedPages = useMemo(() => {
     return [...pages].sort((a, b) => {
@@ -1252,6 +1264,11 @@ function App() {
       } catch (e) {
         console.error('IndexedDB temizleme sırasında hata:', e);
       }
+
+      // Buluttan da sil (giriş yapılmışsa)
+      cloudSync.deleteBinder(binderId).catch((e) => {
+        console.warn('Bulut binder silinemedi:', e);
+      });
       
       // Binder'ı listeden çıkar
       const updatedBinders = binders.filter(b => b.id !== binderId);
@@ -1313,6 +1330,60 @@ function App() {
     });
     await saveAllPages(pagesToSave, selectedBinderId);
   };
+
+  // Bulut eşitleme (yalnızca giriş yapılmışsa aktif; misafir modu etkilenmez)
+  const cloudSync = useCloudSync({
+    user: authUser,
+    binders,
+    setBinders,
+    saveBindersList,
+    selectedBinderId,
+    setSelectedBinderId,
+    flushCurrentBinderState,
+    onBinderPulled: () => setBinderReloadKey((k) => k + 1),
+    onUnauthorized: authLogout,
+    copySuffix: t('auth.cloudCopySuffix'),
+  });
+
+  // Binder menüsündeki "☁ Kaydet": giriş yoksa giriş penceresini aç, varsa hesaba yükle
+  const { saveBinder: saveBinderToCloud } = cloudSync;
+  const handleSaveBinderToCloud = (binderId) => {
+    if (!authUser) {
+      setPendingCloudSaveId(binderId);
+      requestLogin();
+      return;
+    }
+    saveBinderToCloud(binderId);
+  };
+
+  useEffect(() => {
+    if (!authUser || !pendingCloudSaveId) return;
+    const id = pendingCloudSaveId;
+    setPendingCloudSaveId(null);
+    // Giriş sonrası reconcile kuyruğa önce girer; bu kayıt onun ardından çalışır
+    saveBinderToCloud(id);
+  }, [authUser, pendingCloudSaveId, saveBinderToCloud]);
+
+  // Seçili binder'daki her değişiklik → debounce ile buluta push
+  const { notifyChange: notifyCloudChange } = cloudSync;
+  useEffect(() => {
+    notifyCloudChange();
+  }, [
+    notifyCloudChange,
+    pages,
+    binderColor,
+    ringColor,
+    containerColor,
+    gridStitchColor,
+    binderType,
+    widthRatio,
+    heightRatio,
+    gridSize,
+    pageType,
+    imageInputMode,
+    galleryUrls,
+    defaultBackImage,
+  ]);
 
   const handleExportBinder = async () => {
     if (!selectedBinderId) return;
@@ -2153,6 +2224,10 @@ function App() {
         onCreateBinder={handleCreateBinder}
         onDeleteBinder={handleDeleteBinder}
         onRenameBinder={handleRenameBinder}
+        cloudEnabled={authAvailable}
+        cloudBinderIds={cloudSync.cloudBinderIds}
+        savingBinderIds={cloudSync.savingBinderIds}
+        onSaveBinderToCloud={handleSaveBinderToCloud}
         onExportBinder={handleExportBinder}
         onImportBinder={handleImportBinder}
         binderUsedImages={binderUsedImages}
@@ -2204,7 +2279,7 @@ function App() {
         onToggleFullscreen={toggleFullscreen}
         onAddPage={handleAddPage}
       />
-      <Footer />
+      <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} />
       <Analytics />
     </div>
   );

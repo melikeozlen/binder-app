@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Formatlayıcı</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: auto; background-color: #f9f9f9; }
+        .container { display: flex; flex-direction: column; gap: 15px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: monospace; resize: vertical; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .buttons { display: flex; gap: 10px; }
+        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; color: white; transition: 0.2s; }
+        #formatBtn { background-color: #28a745; }
+        #formatBtn:hover { background-color: #218838; }
+        #copyBtn { background-color: #007bff; }
+        #copyBtn:hover { background-color: #0069d9; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Photocard JSON Formatlayıcı</h2>
+        
+        <div>
+            <label for="prefixInput"><strong>En Başa Gelecek Metin:</strong></label>
+            <input type="text" id="prefixInput" value="GREENGREEN" placeholder="Boş bırakırsanız JSON içerisindeki albüm adını çeker">
+        </div>
+
+        <div>
+            <label for="jsonInput"><strong>JSON Verisi:</strong></label>
+            <textarea id="jsonInput" rows="10" placeholder='[ { "id": "...", "name": "..." } ]'></textarea>
+        </div>
+
+        <div class="buttons">
+            <button id="formatBtn" onclick="formatJson()">Çevir</button>
+            <button id="copyBtn" onclick="copyOutput()">Kopyala</button>
+        </div>
+
+        <div>
+            <label for="output"><strong>Sonuç:</strong></label>
+            <textarea id="output" rows="15" readonly placeholder="Çıktı burada görünecek..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        function formatJson() {
+            const jsonText = document.getElementById('jsonInput').value.trim();
+            const prefixInput = document.getElementById('prefixInput').value.trim();
+            const outputArea = document.getElementById('output');
+            
+            if (!jsonText) {
+                alert("Lütfen JSON verisini yapıştırın.");
+                return;
+            }
+
+            try {
+                const data = JSON.parse(jsonText);
+                let resultLines = [];
+
+                data.forEach(item => {
+                    // Sabit bir prefix girilmediyse JSON'dan otomatik bul
+                    let rowPrefix = prefixInput;
+                    if (!rowPrefix) {
+                        if (item.album && item.album.title) {
+                            rowPrefix = item.album.title;
+                        } else if (item.other && item.other.title) {
+                            rowPrefix = item.other.title;
+                        } else {
+                            rowPrefix = "UNKNOWN";
+                        }
+                    }
+
+                    const name = item.name;
+                    const frontUrl = item.watermarked_image_url;
+                    const backUrl = item.watermarked_back_url;
+
+                    // Önce Front URL
+                    if (frontUrl) {
+                        resultLines.push(`${rowPrefix} | ${frontUrl} | ${name}`);
+                    }
+                    
+                    // Varsa ardından Back URL ve başına "BACK" eklenmiş Name
+                    if (backUrl) {
+                        resultLines.push(`${rowPrefix} | ${backUrl} | BACK ${name}`);
+                    }
+                });
+
+                outputArea.value = resultLines.join('\n');
+            } catch (e) {
+                alert("Geçersiz JSON formatı! Lütfen veriyi doğru kopyaladığınızdan emin olun.");
+                console.error(e);
+            }
+        }
+
+        function copyOutput() {
+            const outputArea = document.getElementById('output');
+            if (!outputArea.value) return;
+            
+            outputArea.select();
+            document.execCommand('copy');
+            
+            const btn = document.getElementById('copyBtn');
+            const originalText = btn.innerText;
+            btn.innerText = "Kopyalandı!";
+            setTimeout(() => {
+                btn.innerText = originalText;
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
