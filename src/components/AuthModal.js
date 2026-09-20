@@ -4,6 +4,7 @@ import './AuthModal.css';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { shareErrorKey } from '../utils/shareErrors';
 
 const KNOWN_ERROR_CODES = new Set([
   'INVALID_CREDENTIALS',
@@ -19,15 +20,28 @@ const USERNAME_RE = /^[A-Za-z0-9_.]{3,32}$/;
 
 const errorKey = (code) => `auth.error.${KNOWN_ERROR_CODES.has(code) ? code : 'GENERIC'}`;
 
+const fill = (text, params) =>
+  Object.entries(params || {}).reduce((acc, [k, v]) => acc.replace(`{${k}}`, v), text);
+
 /**
  * Hesap penceresi.
  * - Çıkış yapılmışsa: "Giriş Yap" / "Hesap Oluştur" sekmeleri (kullanıcı adı + şifre)
- * - Giriş yapılmışsa: kullanıcı adı, eşitleme durumu, "Şimdi eşitle", "Çıkış"
+ * - Giriş yapılmışsa: kullanıcı adı, eşitleme durumu, paylaşımlar, "Şimdi eşitle", "Çıkış"
  */
-const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow }) => {
+const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) => {
   const { user, login, register, logout } = useAuth();
   const { language } = useLanguage();
-  const t = (key) => getTranslation(key, language);
+  const t = (key, params) => fill(getTranslation(key, language), params);
+  const [shareMessage, setShareMessage] = useState(null); // { kind: 'ok'|'error', text }
+
+  const runShareAction = async (action) => {
+    setShareMessage(null);
+    try {
+      await action();
+    } catch (error) {
+      setShareMessage({ kind: 'error', text: t(shareErrorKey(error?.code)) });
+    }
+  };
 
   const [mode, setMode] = useState('login'); // login | register
   const [username, setUsername] = useState('');
@@ -39,14 +53,18 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow }) => {
   useEffect(() => {
     if (!open) return undefined;
     setErrorCode(null);
+    setShareMessage(null);
     setBusy(false);
     setPassword('');
     setPasswordConfirm('');
+    shares?.refresh?.();
     const onKeyDown = (e) => {
       if (e.key === 'Escape') onClose?.();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
+    // shares.refresh stabil; yalnızca açılışta çağrılmak istenir
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, onClose]);
 
   if (!open) return null;
@@ -115,6 +133,83 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow }) => {
         {t(`auth.status.${syncStatus}`)}
       </p>
       <p className="auth-modal-hint">{t('auth.cloudInfo')}</p>
+
+      {shares && (
+        <div className="auth-shares">
+          <p className="auth-shares-title">{t('share.title')}</p>
+          <p className="auth-modal-hint">{t('share.hint')}</p>
+
+          {shares.incoming.length === 0 && shares.outgoing.length === 0 && (
+            <p className="auth-shares-empty">{t('share.empty')}</p>
+          )}
+
+          {shares.incoming.length > 0 && (
+            <ul className="auth-share-list">
+              {shares.incoming.map((s) => (
+                <li key={s.id} className="auth-share-item">
+                  <div className="auth-share-text">
+                    <strong>{s.binderName}</strong>
+                    <span>{t('share.from', { username: s.fromUsername })}</span>
+                  </div>
+                  <div className="auth-share-actions">
+                    <button
+                      type="button"
+                      className="auth-share-btn auth-share-btn--accept"
+                      disabled={shares.busyId === s.id}
+                      onClick={() =>
+                        runShareAction(async () => {
+                          await shares.accept(s.id);
+                          setShareMessage({ kind: 'ok', text: t('share.accepted', { name: s.binderName }) });
+                        })
+                      }
+                    >
+                      {t('share.accept')}
+                    </button>
+                    <button
+                      type="button"
+                      className="auth-share-btn auth-share-btn--reject"
+                      disabled={shares.busyId === s.id}
+                      onClick={() => runShareAction(() => shares.reject(s.id))}
+                    >
+                      {t('share.reject')}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {shares.outgoing.length > 0 && (
+            <ul className="auth-share-list">
+              {shares.outgoing.map((s) => (
+                <li key={s.id} className="auth-share-item">
+                  <div className="auth-share-text">
+                    <strong>{s.binderName}</strong>
+                    <span>{t('share.to', { username: s.toUsername })}</span>
+                  </div>
+                  <div className="auth-share-actions">
+                    <button
+                      type="button"
+                      className="auth-share-btn auth-share-btn--cancel"
+                      disabled={shares.busyId === s.id}
+                      onClick={() => runShareAction(() => shares.cancel(s.id))}
+                    >
+                      {t('share.cancel')}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {shareMessage && (
+            <p className={shareMessage.kind === 'ok' ? 'auth-modal-ok' : 'auth-modal-error'}>
+              {shareMessage.text}
+            </p>
+          )}
+        </div>
+      )}
+
       {errorCode && <p className="auth-modal-error">{t(errorKey(errorCode))}</p>}
       <div className="auth-modal-actions">
         <button

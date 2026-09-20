@@ -75,15 +75,26 @@ server/
   auth.js           kullanıcı adı (3-32, harf/rakam/_/.) + bcrypt şifre, httpOnly oturum çerezi
   routes/auth.js    POST register|login|logout, GET me  (rate limit: 30 / 15 dk)
   routes/binders.js GET list, GET/PUT/DELETE :id, GET :id/images, POST :id/images/fetch, PUT :id/images
-  db/schema.sql     users, sessions, binders (JSONB doküman), images (data URL + hash + kota)
+  routes/shares.js  GET list, POST (gönder), POST :id/accept | :id/reject, DELETE :id (iptal)
+  db/schema.sql     users, sessions, binders (JSONB doküman), images (data URL + hash + kota), binder_shares
 
 src/
   contexts/AuthContext.js   user / login / register / logout
   utils/apiClient.js        fetch sarmalayıcı (credentials: include)
   utils/cloudSync.js        push / pull / reconcile (hash tabanlı fark, çakışmada kopya)
   hooks/useCloudSync.js     App ↔ sync köprüsü (debounce push, 60 sn poll, odaklanmada pull)
-  components/AuthModal.js   Giriş / Kayıt / Hesap penceresi (Footer'daki 👤 butonu)
+  hooks/useShares.js        gelen/giden paylaşımlar (60 sn poll), gönder / kabul / reddet / iptal
+  components/AuthModal.js   Giriş / Kayıt / Hesap + Paylaşımlar penceresi (Footer'daki 👤 butonu)
 ```
+
+Binder paylaşımı (kopya gönderme):
+
+- Binder menüsünde **kayıtlı** (☁️) bir binder'ın yanındaki **↗** → kullanıcı adı yazılır → karşı tarafa bekleyen paylaşım gider.
+- Alıcı hesap penceresinde (footer'daki 👤 butonu, kırmızı rozet = bekleyen sayısı) **Kabul** / **Reddet** eder.
+  Kabulde binder + resimler alıcının hesabına **yeni bir binder olarak kopyalanır** ve eşitleme ile cihazına iner.
+  Kopya bağımsızdır: iki taraf birbirinin binder'ını etkilemez (canlı ortak düzenleme yoktur).
+- Gönderen, alıcı yanıtlamadan **İptal** edebilir. Gönderen binder'ı silerse bekleyen paylaşım otomatik iptal olur.
+- Aynı binder aynı kişiye ikinci kez bekleyen paylaşım olarak gönderilemez; alıcının kotası yetmezse kabul 413 döner ve paylaşım beklemede kalır.
 
 Eşitleme davranışı:
 

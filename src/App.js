@@ -7,6 +7,8 @@ import Footer from './components/Footer';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import { useCloudSync } from './hooks/useCloudSync';
+import { useShares } from './hooks/useShares';
+import { shareErrorKey } from './utils/shareErrors';
 import { getTranslation } from './utils/translations';
 import {
   saveImageToIndexedDB,
@@ -1345,6 +1347,27 @@ function App() {
     copySuffix: t('auth.cloudCopySuffix'),
   });
 
+  // Binder paylaşımları; kabul edilen kopya reconcile ile bu cihaza iner
+  const { syncNow: cloudSyncNow } = cloudSync;
+  const shares = useShares({
+    user: authUser,
+    onAccepted: () => cloudSyncNow(),
+  });
+
+  // Binder menüsündeki "↗ Paylaş": kullanıcı adı iste, bekleyen paylaşım oluştur
+  const handleShareBinder = async (binderId) => {
+    const input = window.prompt(t('share.promptUsername'));
+    if (input === null) return;
+    const toUsername = input.trim();
+    if (!toUsername) return;
+    try {
+      await shares.send(binderId, toUsername);
+      window.alert(t('share.sent', { username: toUsername }));
+    } catch (error) {
+      window.alert(t(shareErrorKey(error?.code)));
+    }
+  };
+
   // Binder menüsündeki "☁ Kaydet": giriş yoksa giriş penceresini aç, varsa hesaba yükle
   const { saveBinder: saveBinderToCloud } = cloudSync;
   const handleSaveBinderToCloud = (binderId) => {
@@ -2228,6 +2251,7 @@ function App() {
         cloudBinderIds={cloudSync.cloudBinderIds}
         savingBinderIds={cloudSync.savingBinderIds}
         onSaveBinderToCloud={handleSaveBinderToCloud}
+        onShareBinder={authUser ? handleShareBinder : undefined}
         onExportBinder={handleExportBinder}
         onImportBinder={handleImportBinder}
         binderUsedImages={binderUsedImages}
@@ -2279,7 +2303,7 @@ function App() {
         onToggleFullscreen={toggleFullscreen}
         onAddPage={handleAddPage}
       />
-      <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} />
+      <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} shares={authUser ? shares : null} />
       <Analytics />
     </div>
   );

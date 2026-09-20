@@ -127,6 +127,134 @@
   font-size: 0.8rem;
 }
 
+.auth-modal-ok {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 0.8rem;
+}
+
+/* Paylaşımlar */
+.auth-shares {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+}
+
+.auth-shares-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.auth-shares-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.auth-share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.auth-share-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  background: #f7f9fc;
+}
+
+.auth-share-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: #333;
+}
+
+.auth-share-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-share-text span {
+  font-size: 0.72rem;
+  color: #777;
+}
+
+.auth-share-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.3rem;
+}
+
+.auth-share-btn {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.auth-share-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.auth-share-btn--accept {
+  background: #1a5fb4;
+  color: #fff;
+}
+
+.auth-share-btn--accept:hover:not(:disabled) {
+  background: #174f96;
+}
+
+.auth-share-btn--reject,
+.auth-share-btn--cancel {
+  background: #fff;
+  border-color: #ddd;
+  color: #666;
+}
+
+.auth-share-btn--reject:hover:not(:disabled),
+.auth-share-btn--cancel:hover:not(:disabled) {
+  border-color: #e0b4b0;
+  color: #b3261e;
+}
+
+.footer-account-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #d32f2f;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .auth-btn {
   padding: 0.6rem 1rem;
   border: 1px solid transparent;

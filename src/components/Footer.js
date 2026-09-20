@@ -130,7 +130,8 @@ const getLocalStorageUsagePercent = () => {
   }
 };
 
-const Footer = ({ syncStatus = 'idle', onSyncNow }) => {
+const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
+  const incomingCount = shares?.incoming?.length || 0;
   const { language, setLanguage } = useLanguage();
   const t = (key) => getTranslation(key, language);
   const { user, available: authAvailable, status: authStatus, loginRequest } = useAuth();
@@ -279,6 +280,11 @@ const Footer = ({ syncStatus = 'idle', onSyncNow }) => {
                       {SYNC_ICONS[syncStatus]}
                     </span>
                   )}
+                  {incomingCount > 0 && (
+                    <span className="footer-account-badge" title={t('share.incomingBadge')}>
+                      {incomingCount}
+                    </span>
+                  )}
                 </>
               ) : (
                 <>👤 {t('auth.login')}</>
@@ -339,6 +345,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow }) => {
         onClose={() => setShowAuthModal(false)}
         syncStatus={syncStatus}
         onSyncNow={onSyncNow}
+        shares={shares}
       />
 
       {/* Info Modal */}

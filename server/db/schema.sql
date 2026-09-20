@@ -46,3 +46,23 @@ CREATE TABLE IF NOT EXISTS images (
   FOREIGN KEY (user_id, binder_id) REFERENCES binders(user_id, id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS images_user_id_idx ON images(user_id);
+
+-- Binder paylaşımı (kopya gönderme). Alıcı kabul edince binder + resimler alıcının
+-- hesabına yeni bir id ile kopyalanır. status: pending | accepted | rejected | cancelled
+CREATE TABLE IF NOT EXISTS binder_shares (
+  id            UUID PRIMARY KEY,
+  from_user_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  to_user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  binder_id     TEXT NOT NULL,
+  binder_name   TEXT NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'pending',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  responded_at  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS binder_shares_to_pending_idx
+  ON binder_shares(to_user_id) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS binder_shares_from_pending_idx
+  ON binder_shares(from_user_id) WHERE status = 'pending';
+-- Aynı binder aynı kişiye ikinci kez bekleyen paylaşım olarak gönderilemez
+CREATE UNIQUE INDEX IF NOT EXISTS binder_shares_pending_unique_idx
+  ON binder_shares(from_user_id, to_user_id, binder_id) WHERE status = 'pending';

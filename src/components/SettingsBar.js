@@ -74,6 +74,7 @@ const SettingsBar = ({
   cloudBinderIds,
   savingBinderIds,
   onSaveBinderToCloud,
+  onShareBinder,
   onExportBinder,
   onImportBinder,
   binderUsedImages = null
@@ -589,6 +590,18 @@ const SettingsBar = ({
                   )
                 )}
                 <div className="binder-menu-item-actions">
+                  {onShareBinder && cloudBinderIds?.has(binder.id) && (
+                    <button
+                      className="binder-menu-action-btn binder-menu-share-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShareBinder(binder.id);
+                      }}
+                      title={t('share.shareBinder')}
+                    >
+                      ↗
+                    </button>
+                  )}
                   <button
                     className="binder-menu-action-btn binder-menu-edit-btn"
                     onClick={(e) => {

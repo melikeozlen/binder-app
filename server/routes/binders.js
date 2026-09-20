@@ -217,7 +217,15 @@ function createBindersRouter(pool) {
     '/:id',
     wrap(async (req, res) => {
       const binderId = validateBinderId(req.params.id);
-      await pool.query('DELETE FROM binders WHERE user_id = $1 AND id = $2', [req.user.id, binderId]);
+      await withTransaction(pool, async (client) => {
+        await client.query('DELETE FROM binders WHERE user_id = $1 AND id = $2', [req.user.id, binderId]);
+        // Bu binder için bekleyen paylaşımlar artık kabul edilemez
+        await client.query(
+          `UPDATE binder_shares SET status = 'cancelled', responded_at = now()
+            WHERE from_user_id = $1 AND binder_id = $2 AND status = 'pending'`,
+          [req.user.id, binderId]
+        );
+      });
       res.status(204).end();
     })
   );

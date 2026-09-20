@@ -8,6 +8,7 @@ const { attachUser } = require('./auth');
 const { errorHandler } = require('./errors');
 const { createAuthRouter } = require('./routes/auth');
 const { createBindersRouter } = require('./routes/binders');
+const { createSharesRouter } = require('./routes/shares');
 const { createDriveRouter } = require('./routes/drive');
 
 function createApp(pool) {
@@ -42,6 +43,7 @@ function createApp(pool) {
 
   app.use('/api/auth', createAuthRouter(pool));
   app.use('/api/binders', createBindersRouter(pool));
+  app.use('/api/shares', createSharesRouter(pool));
   app.use('/api', createDriveRouter());
 
   app.all('/api/*', (req, res) => {
