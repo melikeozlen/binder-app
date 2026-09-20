@@ -1415,8 +1415,11 @@ function App() {
   const selectedRefForUnload = useRef(selectedBinderId);
   selectedRefForUnload.current = selectedBinderId;
   const loadedRefForUnload = loadedBinderIdRef;
-  const { dirty: cloudDirty } = cloudSync;
+  const { dirty: cloudDirty, pushNow: cloudPushNowForUnload } = cloudSync;
+  const pushNowRef = useRef(cloudPushNowForUnload);
+  pushNowRef.current = cloudPushNowForUnload;
   useEffect(() => {
+    let stayTimer = null;
     const onBeforeUnload = (e) => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -1427,6 +1430,13 @@ function App() {
         }
       }
       if (cloudDirty) {
+        // Kullanıcı "İptal" deyip sayfada kalırsa bu zamanlayıcı çalışır → debounce'u
+        // beklemeden hemen buluta kaydet. Sayfa gerçekten kapanırsa hiç çalışmaz.
+        clearTimeout(stayTimer);
+        stayTimer = setTimeout(() => {
+          stayTimer = null;
+          pushNowRef.current?.();
+        }, 600);
         e.preventDefault();
         e.returnValue = '';
         return '';
@@ -1434,7 +1444,10 @@ function App() {
       return undefined;
     };
     window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      clearTimeout(stayTimer);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
   }, [cloudDirty, loadedRefForUnload]);
 
   // Binder paylaşımları; kabul edilen (üye olunan) binder reconcile ile bu cihaza iner
