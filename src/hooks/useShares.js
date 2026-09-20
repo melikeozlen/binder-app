@@ -15,8 +15,9 @@ const FOCUS_THROTTLE_MS = 15 * 1000;
  * - removeMember(binderId, userId) → sahip üyeyi kaldırır
  * - setMemberRole(binderId, userId, role) → sahip yetkiyi değiştirir ('edit' | 'view')
  * - leave(binderId) → üye paylaşımdan ayrılır; onLeft(binderId) ile yerel temizlik
+ * - onIncoming(shares[]) → bu oturumda ilk kez görülen gelen davetler (bildirim için)
  */
-export function useShares({ user, onAccepted, onLeft }) {
+export function useShares({ user, onAccepted, onLeft, onIncoming }) {
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
   const [members, setMembers] = useState([]);
@@ -26,16 +27,24 @@ export function useShares({ user, onAccepted, onLeft }) {
   const userRef = useRef(user);
   const onAcceptedRef = useRef(onAccepted);
   const onLeftRef = useRef(onLeft);
+  const onIncomingRef = useRef(onIncoming);
   userRef.current = user;
   onAcceptedRef.current = onAccepted;
   onLeftRef.current = onLeft;
+  onIncomingRef.current = onIncoming;
   const lastRefreshRef = useRef(0);
+  // Bu oturumda bildirilen gelen davet id'leri (aynı davet için tekrar bildirim yok)
+  const seenIncomingRef = useRef(new Set());
 
   const refresh = useCallback(async () => {
     if (!userRef.current) return;
     try {
       const data = await api('/api/shares');
-      setIncoming(Array.isArray(data?.incoming) ? data.incoming : []);
+      const nextIncoming = Array.isArray(data?.incoming) ? data.incoming : [];
+      const fresh = nextIncoming.filter((s) => !seenIncomingRef.current.has(s.id));
+      for (const s of nextIncoming) seenIncomingRef.current.add(s.id);
+      if (fresh.length > 0) onIncomingRef.current?.(fresh);
+      setIncoming(nextIncoming);
       setOutgoing(Array.isArray(data?.outgoing) ? data.outgoing : []);
       setMembers(Array.isArray(data?.members) ? data.members : []);
       setSharedWithMe(Array.isArray(data?.sharedWithMe) ? data.sharedWithMe : []);
@@ -51,6 +60,7 @@ export function useShares({ user, onAccepted, onLeft }) {
       setOutgoing([]);
       setMembers([]);
       setSharedWithMe([]);
+      seenIncomingRef.current = new Set();
       return undefined;
     }
     refresh();

@@ -53,9 +53,11 @@ const ShareModal = ({ open, binderName, onClose, onSend }) => {
     setBusy(true);
     try {
       await onSend?.(trimmed, role);
+      // Bildirim App tarafında gösterilir; pencere kapanır
       setSuccessText(
         t(role === 'view' ? 'share.sentView' : 'share.sentEdit', { username: trimmed })
       );
+      onClose?.();
     } catch (error) {
       setErrorText(t(shareErrorKey(error?.code)));
     } finally {

@@ -7,6 +7,7 @@ import Binder from './components/Binder';
 import Footer from './components/Footer';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
+import { useToast } from './contexts/ToastContext';
 import { useCloudSync } from './hooks/useCloudSync';
 import { useShares } from './hooks/useShares';
 import ShareModal from './components/ShareModal';
@@ -830,6 +831,7 @@ const saveAllPages = async (pages, binderId) => {
 
 function App() {
   const { language } = useLanguage();
+  const { notify } = useToast();
   const {
     user: authUser,
     status: authStatus,
@@ -931,6 +933,9 @@ function App() {
     }
     return bindersList;
   });
+  // Callback'lerde güncel listeye erişim (bildirim metinleri için ad araması)
+  const bindersRef = useRef(binders);
+  bindersRef.current = binders;
   
   const [selectedBinderId, setSelectedBinderId] = useState(() => {
     const saved = loadSelectedBinderId(GUEST_ACCOUNT);
@@ -1283,6 +1288,7 @@ function App() {
     persistBinders(updatedBinders);
     setSelectedBinderId(newBinderId);
     trackBinderCreated('new');
+    notify({ kind: 'success', text: t('notify.binderCreated', { name: newBinder.name }) });
   };
   
   // Binder'ı yalnızca bu cihazdan kaldır (localStorage + IndexedDB + liste); buluta dokunmaz
@@ -1320,12 +1326,17 @@ function App() {
 
   // Onay SettingsBar'da alınır (benimle paylaşılan binder için "ayrıl" metni gösterir)
   const handleDeleteBinder = async (binderId) => {
+    const binder = binders.find((b) => b.id === binderId);
     // Bulut: sahipse siler, üyeyse paylaşımdan ayrılır (giriş yapılmışsa)
     cloudSync.deleteBinder(binderId).catch((e) => {
       console.warn('Bulut binder silinemedi:', e);
     });
 
     await removeBinderLocally(binderId);
+    notify({
+      kind: 'info',
+      text: t(binder?.shared ? 'notify.leftShare' : 'notify.binderDeleted', { name: binder?.name || '' }),
+    });
   };
   
   const handleRenameBinder = (binderId, newName) => {
@@ -1385,7 +1396,13 @@ function App() {
     selectedBinderId,
     setSelectedBinderId,
     flushCurrentBinderState,
-    onBinderPulled: () => setBinderReloadKey((k) => k + 1),
+    onBinderPulled: (binderId, { initial } = {}) => {
+      setBinderReloadKey((k) => k + 1);
+      const binder = bindersRef.current.find((b) => b.id === binderId);
+      if (!initial && binder?.shared) {
+        notify({ kind: 'info', text: t('notify.binderUpdatedFromCloud', { name: binder.name }) });
+      }
+    },
     onUnauthorized: authLogout,
     copySuffix: t('auth.cloudCopySuffix'),
     ready: bindersAccount === storageAccount,
@@ -1426,6 +1443,16 @@ function App() {
     user: authUser,
     onAccepted: () => cloudSyncNow(),
     onLeft: (binderId) => removeBinderLocally(binderId),
+    // Yeni gelen davetler (poll / odaklanma ile fark edilir)
+    onIncoming: (list) => {
+      for (const s of list.slice(0, 3)) {
+        notify({
+          kind: 'info',
+          duration: 8000,
+          text: t('notify.incomingShare', { username: s.fromUsername, name: s.binderName }),
+        });
+      }
+    },
   });
   const [shareBinderId, setShareBinderId] = useState(null);
   const shareBinderName = binders.find((b) => b.id === shareBinderId)?.name || '';
@@ -1437,13 +1464,28 @@ function App() {
 
   // Binder menüsündeki "☁ Kaydet": giriş yoksa giriş penceresini aç, varsa hesaba yükle
   const { saveBinder: saveBinderToCloud } = cloudSync;
+  const saveBinderToCloudWithNotice = useCallback(
+    async (binderId) => {
+      const name = bindersRef.current.find((b) => b.id === binderId)?.name || '';
+      const result = await saveBinderToCloud(binderId);
+      if (result) {
+        notify({ kind: 'success', text: t('notify.savedToCloud', { name }) });
+      } else {
+        notify({ kind: 'error', text: t('notify.saveFailed') });
+      }
+      return result;
+    },
+    // t dil değişince yenilenir; notify stabil
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [saveBinderToCloud, notify, language]
+  );
   const handleSaveBinderToCloud = (binderId) => {
     if (!authUser) {
       setPendingCloudSaveId(binderId);
       requestLogin();
       return;
     }
-    saveBinderToCloud(binderId);
+    saveBinderToCloudWithNotice(binderId);
   };
 
   useEffect(() => {
@@ -1451,8 +1493,34 @@ function App() {
     const id = pendingCloudSaveId;
     setPendingCloudSaveId(null);
     // Giriş sonrası reconcile kuyruğa önce girer; bu kayıt onun ardından çalışır
-    saveBinderToCloud(id);
-  }, [authUser, pendingCloudSaveId, saveBinderToCloud]);
+    saveBinderToCloudWithNotice(id);
+  }, [authUser, pendingCloudSaveId, saveBinderToCloudWithNotice]);
+
+  // "Kaydet" (üst çubuk): hemen push + sonuç bildirimi
+  const { pushNow: cloudPushNow } = cloudSync;
+  const handleCloudSaveNow = async () => {
+    const result = await cloudPushNow();
+    if (result) notify({ kind: 'success', text: t('notify.saved') });
+    else notify({ kind: 'error', text: t('notify.saveFailed') });
+  };
+
+  // Eşitleme hatası → tek bildirim (aynı hata tekrar bildirilmez)
+  const { lastError: cloudLastError } = cloudSync;
+  const notifiedErrorRef = useRef(null);
+  useEffect(() => {
+    if (!cloudLastError || notifiedErrorRef.current === cloudLastError) return;
+    notifiedErrorRef.current = cloudLastError;
+    if (cloudLastError.status === 401) return; // çıkış akışı zaten çalışır
+    const key = cloudLastError.code === 'QUOTA_EXCEEDED' ? 'notify.quotaExceeded' : 'notify.syncError';
+    notify({ kind: 'error', text: t(key) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudLastError]);
+
+  // Footer gizli / tam ekran → bildirimler daha aşağıda dursun
+  useEffect(() => {
+    document.body.classList.toggle('app-footer-hidden', !footerVisible || isFullscreen);
+    return () => document.body.classList.remove('app-footer-hidden');
+  }, [footerVisible, isFullscreen]);
 
   // Seçili binder'daki her değişiklik → debounce ile buluta push
   const { notifyChange: notifyCloudChange } = cloudSync;
@@ -1482,9 +1550,10 @@ function App() {
     try {
       await flushCurrentBinderState();
       await exportBinderToFile(selectedBinderId, binder?.name || 'Binder');
+      notify({ kind: 'success', text: t('notify.binderExported', { name: binder?.name || 'Binder' }) });
     } catch (error) {
       console.error('Binder dışa aktarılırken hata:', error);
-      alert(t('binder.exportFailed'));
+      notify({ kind: 'error', text: t('binder.exportFailed') });
     }
   };
 
@@ -1508,9 +1577,10 @@ function App() {
       persistBinders(updatedBinders);
       setSelectedBinderId(newBinderId);
       trackBinderCreated('import');
+      notify({ kind: 'success', text: t('notify.binderImported', { name: newBinder.name }) });
     } catch (error) {
       console.error('Binder içe aktarılırken hata:', error);
-      alert(t('binder.importFailed'));
+      notify({ kind: 'error', text: t('binder.importFailed') });
     }
   };
 
@@ -2335,7 +2405,7 @@ function App() {
         })}
         readOnly={readOnly}
         cloudSaveState={cloudSaveState}
-        onCloudSaveNow={cloudSync.pushNow}
+        onCloudSaveNow={handleCloudSaveNow}
         binders={binders}
         selectedBinderId={selectedBinderId}
         onSelectBinder={handleSelectBinder}
@@ -2409,7 +2479,10 @@ function App() {
         open={Boolean(shareBinderId)}
         binderName={shareBinderName}
         onClose={() => setShareBinderId(null)}
-        onSend={(toUsername, role) => shares.send(shareBinderId, toUsername, role)}
+        onSend={async (toUsername, role) => {
+          await shares.send(shareBinderId, toUsername, role);
+          notify({ kind: 'success', text: t('notify.shareSent', { username: toUsername }) });
+        }}
       />
       <Analytics />
     </div>

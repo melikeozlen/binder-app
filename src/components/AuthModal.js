@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './AuthModal.css';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { shareErrorKey } from '../utils/shareErrors';
@@ -30,6 +31,7 @@ const fill = (text, params) =>
  */
 const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) => {
   const { user, login, register, logout } = useAuth();
+  const { notify } = useToast();
   const { language } = useLanguage();
   const t = (key, params) => fill(getTranslation(key, language), params);
   const roleLabel = (role) => (role === 'view' ? `👁 ${t('share.roleView')}` : `✏️ ${t('share.roleEdit')}`);
@@ -93,8 +95,10 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
     try {
       if (mode === 'login') {
         await login(trimmedUsername, password);
+        notify({ kind: 'success', text: t('notify.loggedIn', { username: trimmedUsername }) });
       } else {
         await register(trimmedUsername, password);
+        notify({ kind: 'success', text: t('notify.registered', { username: trimmedUsername }) });
       }
       onClose?.();
     } catch (error) {
@@ -109,6 +113,7 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
     setBusy(true);
     try {
       await logout();
+      notify({ kind: 'info', text: t('notify.loggedOut') });
       onClose?.();
     } catch (error) {
       setErrorCode(error?.code || 'GENERIC');
@@ -166,6 +171,7 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                         runShareAction(async () => {
                           await shares.accept(s.id);
                           setShareMessage({ kind: 'ok', text: t('share.accepted', { name: s.binderName }) });
+                          notify({ kind: 'success', text: t('notify.shareAccepted', { name: s.binderName }) });
                         })
                       }
                     >
@@ -175,7 +181,12 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                       type="button"
                       className="auth-share-btn auth-share-btn--reject"
                       disabled={shares.busyId === s.id}
-                      onClick={() => runShareAction(() => shares.reject(s.id))}
+                      onClick={() =>
+                        runShareAction(async () => {
+                          await shares.reject(s.id);
+                          notify({ kind: 'info', text: t('notify.shareRejected') });
+                        })
+                      }
                     >
                       {t('share.reject')}
                     </button>
@@ -200,7 +211,12 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                       type="button"
                       className="auth-share-btn auth-share-btn--cancel"
                       disabled={shares.busyId === s.id}
-                      onClick={() => runShareAction(() => shares.cancel(s.id))}
+                      onClick={() =>
+                        runShareAction(async () => {
+                          await shares.cancel(s.id);
+                          notify({ kind: 'info', text: t('notify.shareCancelled') });
+                        })
+                      }
                     >
                       {t('share.cancel')}
                     </button>
@@ -232,9 +248,17 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                           disabled={shares.busyId === busyKey}
                           title={t('share.changeRole')}
                           onClick={() =>
-                            runShareAction(() =>
-                              shares.setMemberRole(m.binderId, m.userId, m.role === 'view' ? 'edit' : 'view')
-                            )
+                            runShareAction(async () => {
+                              const nextRole = m.role === 'view' ? 'edit' : 'view';
+                              await shares.setMemberRole(m.binderId, m.userId, nextRole);
+                              notify({
+                                kind: 'success',
+                                text: t('notify.roleChanged', {
+                                  username: m.username,
+                                  role: nextRole === 'view' ? t('share.roleView') : t('share.roleEdit'),
+                                }),
+                              });
+                            })
                           }
                         >
                           {m.role === 'view' ? `✏️ ${t('share.roleEdit')}` : `👁 ${t('share.roleView')}`}
@@ -245,7 +269,10 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                           disabled={shares.busyId === busyKey}
                           onClick={() => {
                             if (!window.confirm(t('share.removeConfirm', { username: m.username }))) return;
-                            runShareAction(() => shares.removeMember(m.binderId, m.userId));
+                            runShareAction(async () => {
+                              await shares.removeMember(m.binderId, m.userId);
+                              notify({ kind: 'info', text: t('notify.memberRemoved', { username: m.username }) });
+                            });
                           }}
                         >
                           {t('share.remove')}
@@ -280,7 +307,10 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                           disabled={shares.busyId === busyKey}
                           onClick={() => {
                             if (!window.confirm(t('binder.leaveSharedConfirm'))) return;
-                            runShareAction(() => shares.leave(m.binderId));
+                            runShareAction(async () => {
+                              await shares.leave(m.binderId);
+                              notify({ kind: 'info', text: t('notify.leftShare', { name: m.binderName }) });
+                            });
                           }}
                         >
                           {t('share.leave')}

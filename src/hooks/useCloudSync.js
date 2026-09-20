@@ -224,7 +224,8 @@ export function useCloudSync({
 
       const selected = selectedRef.current;
       if (selected && pulled.includes(selected)) {
-        onPulledRef.current?.(selected);
+        // initial: giriş / "Şimdi eşitle" kaynaklı tam reconcile (arka plan poll değil)
+        onPulledRef.current?.(selected, { initial: Boolean(result.initial) });
       }
     },
     [setBinders, saveBindersList, setSelectedBinderId]
@@ -243,7 +244,7 @@ export function useCloudSync({
           copySuffix: copySuffixRef.current,
         });
         lastReconcileRef.current = Date.now();
-        applyReconcileResult(result);
+        applyReconcileResult({ ...result, initial: checkLocalChanges });
         return result;
       }),
     [run, applyReconcileResult]

@@ -87,6 +87,9 @@ src/
   hooks/useCloudSync.js     App ↔ sync köprüsü (debounce push, 60 sn poll, odaklanmada pull)
   hooks/useShares.js        bekleyen davetler + üyelikler (60 sn poll), gönder / kabul / reddet / iptal / kaldır / ayrıl
   components/AuthModal.js   Giriş / Kayıt / Hesap + Paylaşımlar penceresi (Footer'daki 👤 butonu)
+  contexts/ToastContext.js  Bildirimler (toast): useToast().notify({ kind, text }) — giriş/kayıt/çıkış,
+                            binder oluştur/sil/içe-dışa aktar, buluta kaydet, eşitleme hatası, kota,
+                            paylaşım gönder/gelen davet/kabul/reddet/iptal/yetki/kaldır/ayrıl
 ```
 
 Binder paylaşımı (tek sahip + üyeler, kopya yok):
