@@ -101,6 +101,8 @@ Eşitleme davranışı:
 - Bulut kaydı **opt-in**: yerel binder'lar otomatik yüklenmez. Binder menüsünde (⋮) her yerel binder'ın yanında
   **☁ Kaydet** butonu vardır; giriş yoksa giriş penceresi açılır ve giriş sonrası kayıt otomatik tamamlanır.
   Kaydedilen binder **☁️ Kayıtlı** rozeti alır ve o andan itibaren otomatik eşitlenir.
+- Yerel binder listesi hesaba özeldir (`binders-list:guest` / `binders-list:user:<username>`).
+  Girişte misafir binder'lar o hesaba taşınır; hesap değiştirince diğer hesabın listesi görünmez.
 - Kayıtlı seçili binder'daki her değişiklik 2.5 sn sonra push edilir; içerik hash'i aynıysa istek atılmaz.
 - Resimler hash ile karşılaştırılır; yalnızca yeni/değişenler yüklenir. Doküman kaydında referanssız resimler sunucuda silinir.
 - Girişte tam uzlaştırma: buluttaki binder'lar çekilir, kayıtlı yerel binder'lardaki değişiklikler gönderilir; kaydedilmemiş yerel binder'lara dokunulmaz.

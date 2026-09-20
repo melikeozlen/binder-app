@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import './App.css';
 import SettingsBar from './components/SettingsBar';
 import PageOrderBar from './components/PageOrderBar';
@@ -8,7 +8,7 @@ import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import { useCloudSync } from './hooks/useCloudSync';
 import { useShares } from './hooks/useShares';
-import { shareErrorKey } from './utils/shareErrors';
+import ShareModal from './components/ShareModal';
 import { getTranslation } from './utils/translations';
 import {
   saveImageToIndexedDB,
@@ -38,55 +38,21 @@ import {
   flushPendingAnalytics,
   trackBinderCreated,
 } from './utils/analytics';
+import {
+  GUEST_ACCOUNT,
+  accountKey as storageAccountKey,
+  claimGuestBindersIntoAccount,
+  loadBindersList as loadAccountBindersList,
+  saveBindersList as saveAccountBindersList,
+  loadSelectedBinderId as loadAccountSelectedBinderId,
+  saveSelectedBinderId as saveAccountSelectedBinderId,
+} from './utils/binderAccountStorage';
 
-// Binder yönetimi için localStorage helper fonksiyonları
-const BINDERS_LIST_KEY = 'binders-list';
-const SELECTED_BINDER_KEY = 'selected-binder-id';
-
-// Binder listesini yükle
-const loadBindersList = () => {
-  try {
-    const saved = localStorage.getItem(BINDERS_LIST_KEY);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch (e) {
-    console.error('Binder listesi yüklenirken hata:', e);
-  }
-  return [];
-};
-
-// Binder listesini kaydet
-const saveBindersList = (binders) => {
-  try {
-    localStorage.setItem(BINDERS_LIST_KEY, JSON.stringify(binders));
-  } catch (e) {
-    console.error('Binder listesi kaydedilirken hata:', e);
-  }
-};
-
-// Seçili binder ID'sini yükle
-const loadSelectedBinderId = () => {
-  try {
-    return localStorage.getItem(SELECTED_BINDER_KEY);
-  } catch (e) {
-    console.error('Seçili binder ID yüklenirken hata:', e);
-  }
-  return null;
-};
-
-// Seçili binder ID'sini kaydet
-const saveSelectedBinderId = (binderId) => {
-  try {
-    if (binderId) {
-      localStorage.setItem(SELECTED_BINDER_KEY, binderId);
-    } else {
-      localStorage.removeItem(SELECTED_BINDER_KEY);
-    }
-  } catch (e) {
-    console.error('Seçili binder ID kaydedilirken hata:', e);
-  }
-};
+// Binder yönetimi: liste hesaba özel (misafir / user:<username>)
+const loadBindersList = (account = GUEST_ACCOUNT) => loadAccountBindersList(account);
+const saveBindersList = (account, binders) => saveAccountBindersList(account, binders);
+const loadSelectedBinderId = (account = GUEST_ACCOUNT) => loadAccountSelectedBinderId(account);
+const saveSelectedBinderId = (account, binderId) => saveAccountSelectedBinderId(account, binderId);
 
 // Binder için key prefix oluştur
 const getBinderKeyPrefix = (binderId) => {
@@ -97,7 +63,7 @@ const getBinderKeyPrefix = (binderId) => {
 const migrateToMultiBinder = async () => {
   try {
     // Eğer zaten binder listesi varsa, migration yapma
-    const existingBinders = loadBindersList();
+    const existingBinders = loadBindersList(GUEST_ACCOUNT);
     if (existingBinders.length > 0) {
       return;
     }
@@ -117,8 +83,8 @@ const migrateToMultiBinder = async () => {
         name: defaultBinderName,
         createdAt: Date.now()
       };
-      saveBindersList([newBinder]);
-      saveSelectedBinderId(defaultBinderId);
+      saveBindersList(GUEST_ACCOUNT, [newBinder]);
+      saveSelectedBinderId(GUEST_ACCOUNT, defaultBinderId);
       
       // Eski sayfa listesini yeni key'e taşı
       if (oldPagesList) {
@@ -865,12 +831,20 @@ function App() {
   const { language } = useLanguage();
   const {
     user: authUser,
+    status: authStatus,
     logout: authLogout,
     available: authAvailable,
     requestLogin,
   } = useAuth();
   // Giriş yapılmadan "Kaydet" denilen binder → giriş sonrası otomatik kaydedilir
   const [pendingCloudSaveId, setPendingCloudSaveId] = useState(null);
+  // Liste yazımı: girişliyken user:<username>, değilse guest
+  const storageAccount =
+    authStatus === 'ready' && authUser ? storageAccountKey(authUser) : GUEST_ACCOUNT;
+  const persistBinders = useCallback(
+    (next) => saveBindersList(storageAccount, next),
+    [storageAccount]
+  );
   const t = (key, params) => {
     let translation = getTranslation(key, language);
     if (params) {
@@ -889,7 +863,7 @@ function App() {
       cleanupDefaultBackImage();
       
       // IndexedDB'ye migration yap (tüm binder'lar için)
-      const bindersList = loadBindersList();
+      const bindersList = loadBindersList(GUEST_ACCOUNT);
       let totalMigrated = 0;
       
       for (const binder of bindersList) {
@@ -938,9 +912,9 @@ function App() {
     flushPendingAnalytics();
   }, []);
   
-  // Binder yönetimi
+  // Binder yönetimi (ilk açılış: misafir listesi; giriş/çıkışta hesap değişir)
   const [binders, setBinders] = useState(() => {
-    const bindersList = loadBindersList();
+    const bindersList = loadBindersList(GUEST_ACCOUNT);
     if (bindersList.length === 0) {
       // Hiç binder yoksa, yeni bir tane oluştur
       const newBinderId = `binder-${Date.now()}`;
@@ -949,8 +923,8 @@ function App() {
         name: t('binder.defaultBinderName', { number: 1 }),
         createdAt: Date.now()
       };
-      saveBindersList([newBinder]);
-      saveSelectedBinderId(newBinderId);
+      saveBindersList(GUEST_ACCOUNT, [newBinder]);
+      saveSelectedBinderId(GUEST_ACCOUNT, newBinderId);
       markDefaultBinderCreated();
       return [newBinder];
     }
@@ -958,30 +932,69 @@ function App() {
   });
   
   const [selectedBinderId, setSelectedBinderId] = useState(() => {
-    const saved = loadSelectedBinderId();
+    const saved = loadSelectedBinderId(GUEST_ACCOUNT);
     if (saved) {
       // Seçili binder hala listede var mı kontrol et
-      const bindersList = loadBindersList();
+      const bindersList = loadBindersList(GUEST_ACCOUNT);
       if (bindersList.find(b => b.id === saved)) {
         return saved;
       }
     }
     // Seçili binder yoksa veya bulunamazsa, ilk binder'ı seç
-    const bindersList = loadBindersList();
+    const bindersList = loadBindersList(GUEST_ACCOUNT);
     if (bindersList.length > 0) {
       const firstBinderId = bindersList[0].id;
-      saveSelectedBinderId(firstBinderId);
+      saveSelectedBinderId(GUEST_ACCOUNT, firstBinderId);
       return firstBinderId;
     }
     return null;
   });
-  
-  // Seçili binder değiştiğinde kaydet
-  useEffect(() => {
-    if (selectedBinderId) {
-      saveSelectedBinderId(selectedBinderId);
+
+  const [binderReloadKey, setBinderReloadKey] = useState(0);
+
+  // Hesap değişince (giriş / çıkış / başka kullanıcı): o hesabın listesini yükle.
+  // useLayoutEffect: bulut reconcile'dan önce liste hazır olsun.
+  const prevStorageAccountRef = useRef(null);
+  useLayoutEffect(() => {
+    if (authStatus !== 'ready') return;
+
+    const prev = prevStorageAccountRef.current;
+    if (prev === storageAccount) return;
+    prevStorageAccountRef.current = storageAccount;
+
+    // İlk ready + misafir: useState zaten misafir listesini yükledi
+    if (prev === null && storageAccount === GUEST_ACCOUNT) return;
+
+    if (authUser) {
+      claimGuestBindersIntoAccount(storageAccount);
     }
-  }, [selectedBinderId]);
+
+    let list = loadBindersList(storageAccount);
+    if (list.length === 0) {
+      const newBinder = {
+        id: `binder-${Date.now()}`,
+        name: t('binder.defaultBinderName', { number: 1 }),
+        createdAt: Date.now(),
+      };
+      list = [newBinder];
+      saveBindersList(storageAccount, list);
+      markDefaultBinderCreated();
+    }
+    setBinders(list);
+
+    const savedSel = loadSelectedBinderId(storageAccount);
+    const nextSel = list.find((b) => b.id === savedSel)?.id || list[0].id;
+    setSelectedBinderId(nextSel);
+    saveSelectedBinderId(storageAccount, nextSel);
+    setBinderReloadKey((k) => k + 1);
+  }, [authStatus, authUser, storageAccount, t]);
+  
+  // Seçili binder değiştiğinde bu hesabın seçimini kaydet
+  useEffect(() => {
+    if (selectedBinderId && authStatus === 'ready') {
+      saveSelectedBinderId(storageAccount, selectedBinderId);
+    }
+  }, [selectedBinderId, storageAccount, authStatus]);
 
   // localStorage'dan ayarları yükle (seçili binder'a göre)
   const savedSettings = selectedBinderId ? loadSettings(selectedBinderId) : null;
@@ -1010,8 +1023,6 @@ function App() {
     }
   });
   const [pages, setPages] = useState([]);
-  // Buluttan çekildikten sonra seçili binder'ı yeniden yüklemek için
-  const [binderReloadKey, setBinderReloadKey] = useState(0);
   
   // Binder değiştiğinde (veya buluttan güncellendiğinde) ayarları ve sayfaları yükle
   useEffect(() => {
@@ -1242,7 +1253,7 @@ function App() {
     };
     const updatedBinders = [...binders, newBinder];
     setBinders(updatedBinders);
-    saveBindersList(updatedBinders);
+    persistBinders(updatedBinders);
     setSelectedBinderId(newBinderId);
     trackBinderCreated('new');
   };
@@ -1275,7 +1286,7 @@ function App() {
       // Binder'ı listeden çıkar
       const updatedBinders = binders.filter(b => b.id !== binderId);
       setBinders(updatedBinders);
-      saveBindersList(updatedBinders);
+      persistBinders(updatedBinders);
       
       // Eğer silinen binder seçiliyse, başka bir binder seç
       if (selectedBinderId === binderId) {
@@ -1294,7 +1305,7 @@ function App() {
       b.id === binderId ? { ...b, name: newName.trim() || t('binder.defaultBinderName', { number: 1 }) } : b
     );
     setBinders(updatedBinders);
-    saveBindersList(updatedBinders);
+    persistBinders(updatedBinders);
   };
   
   const handleSelectBinder = (binderId) => {
@@ -1338,7 +1349,7 @@ function App() {
     user: authUser,
     binders,
     setBinders,
-    saveBindersList,
+    saveBindersList: persistBinders,
     selectedBinderId,
     setSelectedBinderId,
     flushCurrentBinderState,
@@ -1353,19 +1364,12 @@ function App() {
     user: authUser,
     onAccepted: () => cloudSyncNow(),
   });
+  const [shareBinderId, setShareBinderId] = useState(null);
+  const shareBinderName = binders.find((b) => b.id === shareBinderId)?.name || '';
 
-  // Binder menüsündeki "↗ Paylaş": kullanıcı adı iste, bekleyen paylaşım oluştur
-  const handleShareBinder = async (binderId) => {
-    const input = window.prompt(t('share.promptUsername'));
-    if (input === null) return;
-    const toUsername = input.trim();
-    if (!toUsername) return;
-    try {
-      await shares.send(binderId, toUsername);
-      window.alert(t('share.sent', { username: toUsername }));
-    } catch (error) {
-      window.alert(t(shareErrorKey(error?.code)));
-    }
+  // Binder menüsündeki "↗ Paylaş": kullanıcı adı popup'ı aç
+  const handleShareBinder = (binderId) => {
+    setShareBinderId(binderId);
   };
 
   // Binder menüsündeki "☁ Kaydet": giriş yoksa giriş penceresini aç, varsa hesaba yükle
@@ -1438,7 +1442,7 @@ function App() {
 
       const updatedBinders = [...binders, newBinder];
       setBinders(updatedBinders);
-      saveBindersList(updatedBinders);
+      persistBinders(updatedBinders);
       setSelectedBinderId(newBinderId);
       trackBinderCreated('import');
     } catch (error) {
@@ -2304,6 +2308,12 @@ function App() {
         onAddPage={handleAddPage}
       />
       <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} shares={authUser ? shares : null} />
+      <ShareModal
+        open={Boolean(shareBinderId)}
+        binderName={shareBinderName}
+        onClose={() => setShareBinderId(null)}
+        onSend={(toUsername) => shares.send(shareBinderId, toUsername)}
+      />
       <Analytics />
     </div>
   );
