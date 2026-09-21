@@ -261,7 +261,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
         {authAvailable && authStatus === 'ready' && (
           <>
             <button
-              className={`footer-account-btn${user ? ' footer-account-btn--user' : ''}`}
+              className={`footer-account-btn${user ? ' footer-account-btn--user' : ' footer-account-btn--login'}`}
               onClick={() => setShowAuthModal(true)}
               title={user ? `${user.username} · ${t(`auth.status.${syncStatus}`)}` : t('auth.login')}
             >

@@ -471,6 +471,19 @@
   color: #333;
 }
 
+.footer-account-btn--login {
+  border-color: #b3261e;
+  background-color: #b3261e;
+  color: #fff;
+  font-weight: 600;
+}
+
+.footer-account-btn--login:hover {
+  border-color: #8e1d17;
+  background-color: #8e1d17;
+  color: #fff;
+}
+
 .footer-account-btn--user {
   border-color: #c5daf5;
   color: #1a5fb4;
