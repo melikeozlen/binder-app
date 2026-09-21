@@ -10,6 +10,7 @@ import { useAuth } from './contexts/AuthContext';
 import { useToast } from './contexts/ToastContext';
 import { useCloudSync } from './hooks/useCloudSync';
 import { useShares } from './hooks/useShares';
+import { usePresence } from './hooks/usePresence';
 import ShareModal from './components/ShareModal';
 import { getTranslation } from './utils/translations';
 import {
@@ -840,6 +841,7 @@ function App() {
     available: authAvailable,
     requestLogin,
   } = useAuth();
+  usePresence({ enabled: authAvailable && authStatus === 'ready', userId: authUser?.id || null });
   // Giriş yapılmadan "Kaydet" denilen binder → giriş sonrası otomatik kaydedilir
   const [pendingCloudSaveId, setPendingCloudSaveId] = useState(null);
   // Liste yazımı: girişliyken user:<username>, değilse guest

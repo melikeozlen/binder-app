@@ -60,6 +60,7 @@ const AdminStatsModal = ({ open, onClose }) => {
 
   if (!open || error === 'hidden') return null;
 
+  const online = data?.online || { total: 0, users: 0, guests: 0 };
   const logins = data?.logins || { today: 0, week: 0 };
   const rows = Array.isArray(data?.recentLogins) ? data.recentLogins : [];
 
@@ -102,6 +103,15 @@ const AdminStatsModal = ({ open, onClose }) => {
 
         <div className="admin-stats-modal-body">
           {error && <p className="admin-stats-error">{t('stats.error')}</p>}
+
+          <div className="admin-stats-online">
+            <span className="admin-stats-online-dot" aria-hidden="true" />
+            <span className="admin-stats-online-label">{t('stats.online')}</span>
+            <strong>{online.total}</strong>
+            <span className="admin-stats-online-split">
+              {t('stats.onlineSplit', { users: online.users, guests: online.guests })}
+            </span>
+          </div>
 
           <div className="admin-stats-grid">
             <div className="admin-stats-cell">

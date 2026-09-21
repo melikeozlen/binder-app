@@ -1,4 +1,4 @@
-// İstatistik: yalnızca giriş/kayıt kaydı. Anlık "online" dinleme yok.
+// İstatistik: giriş kaydı + bellek içi online sayacı (DB yazılmaz).
 const config = require('./config');
 const { isAdminUsername } = require('./auth');
 
@@ -8,6 +8,38 @@ const isAdmin = (user) => Boolean(user && isAdminUsername(user.username));
 
 const isValidClientId = (clientId) =>
   typeof clientId === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(clientId);
+
+function createPresenceStore({ ttlMs = config.stats.presenceTtlMs, now = Date.now } = {}) {
+  const clients = new Map();
+
+  const prune = () => {
+    const cutoff = now() - ttlMs;
+    for (const [id, entry] of clients) {
+      if (entry.lastSeen < cutoff) clients.delete(id);
+    }
+  };
+
+  return {
+    touch(clientId, userId = null, { silent = false } = {}) {
+      clients.set(clientId, { lastSeen: now(), userId: userId || null, silent: Boolean(silent) });
+      if (clients.size >= 200 && clients.size % 200 === 0) prune();
+    },
+    counts() {
+      prune();
+      const users = new Set();
+      let guests = 0;
+      for (const entry of clients.values()) {
+        if (entry.silent) continue;
+        if (entry.userId) users.add(entry.userId);
+        else guests += 1;
+      }
+      return { total: users.size + guests, users: users.size, guests };
+    },
+    size() {
+      return clients.size;
+    },
+  };
+}
 
 async function recordEvent(pool, { name, userId = null, clientId = null, props = {}, username = null }) {
   if (username && isAdminUsername(username)) return false;
@@ -28,7 +60,7 @@ async function purgeOldEvents(pool, days = config.stats.eventRetentionDays) {
   await pool.query("DELETE FROM events WHERE created_at < now() - ($1::int * interval '1 day')", [days]);
 }
 
-async function collectStats(pool) {
+async function collectStats(pool, presence) {
   const admins = [...config.adminUsernames];
   const [{ rows: countRows }, { rows: recentRows }] = await Promise.all([
     pool.query(
@@ -55,6 +87,7 @@ async function collectStats(pool) {
   ]);
 
   return {
+    online: presence?.counts?.() || { total: 0, users: 0, guests: 0 },
     logins: {
       today: countRows[0]?.today || 0,
       week: countRows[0]?.week || 0,
@@ -70,6 +103,7 @@ async function collectStats(pool) {
 module.exports = {
   isAdmin,
   isValidClientId,
+  createPresenceStore,
   recordEvent,
   purgeOldEvents,
   collectStats,
