@@ -239,20 +239,12 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
     }
   };
 
+  const buildTime = process.env.REACT_APP_BUILD_TIME;
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="app-footer">
       <div className="footer-content">
-        <span className="footer-text">{t('footer.copyright')}</span>
-        <span className="footer-separator">•</span>
-        <a 
-          href="https://x.com/kepcang" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="footer-user"
-        >
-          {t('footer.user')}
-        </a>
-        <span className="footer-separator">•</span>
         {!isInstalled && deferredPrompt && (
           <>
             <button
@@ -294,11 +286,11 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
           </>
         )}
         <button
-          className="footer-clear-cache-btn"
-          onClick={handleClearCache}
-          title={t('footer.clearCache')}
+          className="footer-info-btn"
+          onClick={openInfoModal}
+          title={t('info.title')}
         >
-          🗑️ {t('footer.clearCache')}
+          ℹ️ {t('info.button')}
         </button>
         <span className="footer-separator">•</span>
         <select
@@ -312,14 +304,6 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
           <option value="kr">KR</option>
         </select>
         <span className="footer-separator">•</span>
-        <button
-          className="footer-info-btn"
-          onClick={openInfoModal}
-          title={t('info.title')}
-        >
-          ℹ️ {t('info.button')}
-        </button>
-        <span className="footer-separator">•</span>
         <div className="footer-storage-info">
           <div className="footer-storage-bar-container">
             <div 
@@ -332,12 +316,6 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
             {storageUsage.toFixed(1)}%
           </span>
         </div>
-        {process.env.REACT_APP_BUILD_TIME && (
-          <>
-            <span className="footer-separator">•</span>
-            <span className="footer-version">{process.env.REACT_APP_BUILD_TIME}</span>
-          </>
-        )}
       </div>
 
       <AuthModal
@@ -370,6 +348,19 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
               </button>
             </div>
             <div className="info-modal-body">
+              <div className="info-brand">
+                <a
+                  href="https://x.com/kepcang"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="info-brand-user"
+                >
+                  {t('footer.user')}
+                </a>
+                <span className="info-brand-rights">
+                  © {currentYear} · {t('info.rights')}
+                </span>
+              </div>
               <p className="info-intro">{t('info.introDesc')}</p>
               <div className="info-collapse-list">
                 {INFO_SECTIONS.map((section) => (
@@ -384,6 +375,21 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
               </div>
             </div>
             <div className="info-modal-footer">
+              <div className="info-modal-footer-left">
+                <button
+                  type="button"
+                  className="info-reset-btn"
+                  onClick={handleClearCache}
+                  title={t('footer.clearCacheHelp')}
+                >
+                  🗑️ {t('footer.clearCache')}
+                </button>
+                {buildTime && (
+                  <span className="footer-version" title={t('info.version')}>
+                    {buildTime}
+                  </span>
+                )}
+              </div>
               <button
                 className="info-modal-close-btn"
                 onClick={() => setShowInfoModal(false)}

@@ -118,6 +118,7 @@ const SettingsBar = ({
   const [driveFolderInput, setDriveFolderInput] = useState('');
   const [driveGalleryLoading, setDriveGalleryLoading] = useState(false);
   const [showGallerySettingsModal, setShowGallerySettingsModal] = useState(false);
+  const [showAppearanceModal, setShowAppearanceModal] = useState(false);
   const [galleryDownloadControls, setGalleryDownloadControls] = useState(null);
   const handleGalleryDownloadControls = useCallback((next) => {
     setGalleryDownloadControls((prev) => {
@@ -491,28 +492,39 @@ const SettingsBar = ({
     setShowColorPicker(false);
   };
 
-  const renderColorControl = (type, value, onDesktopChange, labelKey) => (
-    <div className="setting-item">
-      <div className="color-input-wrapper" data-tooltip={t(labelKey)}>
+  // Görünüm modalı içindeki renk satırı: etiket + renk kutusu
+  const renderColorRow = (type, value, onDesktopChange, labelKey) => {
+    const label = t(labelKey).replace(/:\s*$/, '');
+    const inputId = `appearance-color-${type}`;
+    return (
+      <div className="appearance-row" key={type}>
+        <label className="appearance-row-label" htmlFor={inputId}>{label}</label>
         {isMobileLayout ? (
           <button
             type="button"
-            className="color-swatch-btn"
+            id={inputId}
+            className="color-swatch-btn appearance-swatch"
             style={{ backgroundColor: normalizeHex(value) }}
             onClick={() => openColorPicker(type, value)}
-            aria-label={t(labelKey)}
-          />
+            aria-label={label}
+          >
+            <span className="appearance-swatch-hex">{normalizeHex(value)}</span>
+          </button>
         ) : (
-          <input
-            type="color"
-            value={normalizeHex(value)}
-            onChange={(e) => onDesktopChange(e.target.value)}
-            className="settings-control color-input"
-          />
+          <div className="appearance-color-field">
+            <input
+              id={inputId}
+              type="color"
+              value={normalizeHex(value)}
+              onChange={(e) => onDesktopChange && onDesktopChange(e.target.value)}
+              className="settings-control color-input"
+            />
+            <span className="appearance-swatch-hex">{normalizeHex(value)}</span>
+          </div>
         )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderBinderMenu = (extraClassName = '') => (
     <div className={`binder-menu${extraClassName ? ` ${extraClassName}` : ''}`}>
@@ -549,6 +561,17 @@ const SettingsBar = ({
             ⬆ {t('binder.importBinder')}
           </button>
         </div>
+        <button
+          className="binder-menu-item binder-menu-item--danger"
+          onClick={() => {
+            onDeleteAllPages && onDeleteAllPages();
+            setShowBinderMenu(false);
+          }}
+          disabled={pagesCount === 0 || readOnly}
+          title={readOnly ? t('binder.viewOnlyShort') : t('settings.deletePagesHelp')}
+        >
+          🗑 {t('settings.deletePages')}
+        </button>
       </div>
 
       <input
@@ -820,23 +843,23 @@ const SettingsBar = ({
       </div>
 
       <div className="settings-bar-secondary">
+      {/* Görünüm: zarf tipi + renkler tek modalda */}
       <div className="setting-item">
-        <select
-          value={binderType}
-          onChange={(e) => onBinderTypeChange && onBinderTypeChange(e.target.value)}
-          className="settings-control compact-select"
-          title={t('settings.tipHelp')}
+        <button
+          type="button"
+          className="settings-control icon-button appearance-btn"
+          onClick={() => setShowAppearanceModal(true)}
+          title={t('settings.appearanceHelp')}
         >
-          <option value="leather">{t('binderType.leather')}</option>
-          <option value="transparent">{t('binderType.transparent')}</option>
-          <option value="denim">{t('binderType.denim')}</option>
-        </select>
+          🎨
+          <span className="icon-button-label">{t('settings.appearance')}</span>
+          <span className="appearance-btn-swatches" aria-hidden="true">
+            <i style={{ backgroundColor: normalizeHex(binderColor) }} />
+            <i style={{ backgroundColor: normalizeHex(ringColor) }} />
+            <i style={{ backgroundColor: normalizeHex(containerColor) }} />
+          </span>
+        </button>
       </div>
-      
-      {renderColorControl('binder', binderColor, onColorChange, 'settings.binder')}
-      {renderColorControl('ring', ringColor, onRingColorChange, 'settings.ring')}
-      {renderColorControl('background', containerColor, onContainerColorChange, 'settings.background')}
-      {renderColorControl('gridStitch', gridStitchColor, onGridStitchColorChange, 'settings.gridStitch')}
       
       <div className="setting-item">
         <span className="setting-label" title={t('settings.widthHelp')}>{t('settings.width')}</span>
@@ -1069,17 +1092,61 @@ const SettingsBar = ({
         </button>
       </div>
 
-      <div className="setting-item">
-        <button
-          className="settings-control action-button danger-button"
-          onClick={() => onDeleteAllPages && onDeleteAllPages()}
-          disabled={pagesCount === 0 || readOnly}
-          title={t('settings.deletePages') || 'Sayfaları Sil'}
+      </div>
+
+      {/* Görünüm modalı: zarf tipi + renkler */}
+      {showAppearanceModal && createPortal(
+        <div
+          className={isMobileLayout ? 'gallery-settings-overlay' : 'back-image-modal-overlay'}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAppearanceModal(false);
+            }
+          }}
         >
-          {t('settings.deletePages') || 'Sayfaları Sil'}
-        </button>
-      </div>
-      </div>
+          <div
+            className={isMobileLayout ? 'gallery-settings-panel' : 'back-image-modal-content gallery-settings-modal-content'}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="gallery-settings-panel-header">
+              <span className="gallery-settings-header-spacer" aria-hidden="true" />
+              <h3>{t('settings.appearance')}</h3>
+              <button
+                type="button"
+                className="gallery-settings-panel-close"
+                onClick={() => setShowAppearanceModal(false)}
+                aria-label={t('binder.cancel')}
+              >
+                ×
+              </button>
+            </div>
+            <div className="gallery-settings-modal-body appearance-body">
+              <div className="appearance-row">
+                <label className="appearance-row-label" htmlFor="appearance-binder-type">
+                  {t('settings.binderType')}
+                </label>
+                <select
+                  id="appearance-binder-type"
+                  value={binderType}
+                  onChange={(e) => onBinderTypeChange && onBinderTypeChange(e.target.value)}
+                  className="settings-control compact-select appearance-type-select"
+                  title={t('settings.tipHelp')}
+                >
+                  <option value="leather">{t('binderType.leather')}</option>
+                  <option value="transparent">{t('binderType.transparent')}</option>
+                  <option value="denim">{t('binderType.denim')}</option>
+                </select>
+              </div>
+              <div className="appearance-divider" role="separator" />
+              {renderColorRow('binder', binderColor, onColorChange, 'settings.binder')}
+              {renderColorRow('ring', ringColor, onRingColorChange, 'settings.ring')}
+              {renderColorRow('background', containerColor, onContainerColorChange, 'settings.background')}
+              {renderColorRow('gridStitch', gridStitchColor, onGridStitchColorChange, 'settings.gridStitch')}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Galeri ayarları modal */}
       {showGallerySettingsModal && createPortal(
