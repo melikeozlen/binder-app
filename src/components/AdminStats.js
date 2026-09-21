@@ -5,8 +5,6 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import './AdminStats.css';
 
-const POLL_MS = 30 * 1000;
-
 const EVENT_KEYS = {
   login: 'stats.event.login',
   register: 'stats.event.register',
@@ -76,13 +74,11 @@ const AdminStatsModal = ({ open, onClose }) => {
   useEffect(() => {
     if (!open) return undefined;
     load();
-    const id = setInterval(load, POLL_MS);
     const onKey = (e) => {
       if (e.key === 'Escape') onClose?.();
     };
     document.addEventListener('keydown', onKey);
     return () => {
-      clearInterval(id);
       document.removeEventListener('keydown', onKey);
     };
   }, [open, load, onClose]);

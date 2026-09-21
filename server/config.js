@@ -46,7 +46,7 @@ module.exports = {
   adminUsernames,
   stats: {
     // Bu süre içinde heartbeat gönderen istemci "online" sayılır
-    presenceTtlMs: 2 * 60 * 1000,
+    presenceTtlMs: 6 * 60 * 1000,
     // sessions.last_seen_at en fazla bu sıklıkta yazılır
     lastSeenWriteIntervalSec: 60,
     // Olay kayıtları bu süreden sonra silinir

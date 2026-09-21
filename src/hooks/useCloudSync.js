@@ -9,19 +9,15 @@ import {
   removeCloudMeta,
 } from '../utils/cloudSync';
 
-const PUSH_DEBOUNCE_MS = 2500;
-const POLL_INTERVAL_MS = 60 * 1000;
-const FOCUS_THROTTLE_MS = 15 * 1000;
+const FOCUS_THROTTLE_MS = 5 * 60 * 1000;
 
 /**
  * App state'i ile bulut eşitlemesi arasındaki köprü.
  * - Bulut kaydı opt-in: saveBinder(id) ile hesaba kaydedilen binder'lar (cloudBinderIds)
- *   otomatik eşitlenir; diğerleri yerel kalır.
- * - notifyChange(): seçili binder değişti → (kayıtlıysa) debounce ile push
- * - markDirty(): kullanıcı düzenlemesi → dirty=true; push tamamlanınca false ("Kaydet" butonu / beforeunload)
- * - pushNow(): debounce'u beklemeden seçili binder'ı hemen push et
- * - Giriş: tam reconcile; sonrasında 60 sn'de bir ve sekme odaklanınca hafif reconcile
- * - Rename: ilgili binder (kayıtlıysa) anında push
+ * - Otomatik push yok: değişiklikler dirty kalır; kullanıcı "Kaydet" veya "Şimdi eşitle" deyince yazılır
+ * - markDirty(): kullanıcı düzenlemesi → dirty=true
+ * - pushNow(): seçili binder'ı hemen push et
+ * - Giriş: bir kez tam reconcile; sekme uzun süre sonra öne gelince hafif reconcile
  * - deleteBinder(): buluttan da sil
  */
 export function useCloudSync({
@@ -72,9 +68,7 @@ export function useCloudSync({
   onUnauthorizedRef.current = onUnauthorized;
   copySuffixRef.current = copySuffix;
 
-  const pushTimerRef = useRef(null);
   const lastReconcileRef = useRef(0);
-  const prevNamesRef = useRef(null);
 
   // localStorage'daki cloud-meta'lardan kayıtlı binder kümesini yeniden hesapla
   const refreshCloudIds = useCallback(() => {
@@ -162,7 +156,6 @@ export function useCloudSync({
   const pushNow = useCallback(() => {
     const binderId = selectedRef.current;
     if (!userRef.current || !binderId) return Promise.resolve(null);
-    clearTimeout(pushTimerRef.current);
     return pushOne(binderId);
   }, [pushOne]);
 
@@ -183,13 +176,6 @@ export function useCloudSync({
     },
     [pushOne]
   );
-
-  const notifyChange = useCallback(() => {
-    if (!userRef.current || !selectedRef.current) return;
-    const binderId = selectedRef.current;
-    clearTimeout(pushTimerRef.current);
-    pushTimerRef.current = setTimeout(() => pushOne(binderId), PUSH_DEBOUNCE_MS);
-  }, [pushOne]);
 
   const notifyConflicts = useCallback((conflicts) => {
     for (const conflict of conflicts || []) onConflictRef.current?.(conflict);
@@ -274,50 +260,28 @@ export function useCloudSync({
     setDirty(false);
   }, [selectedBinderId]);
 
-  // Giriş/çıkış → tam reconcile, periyodik ve odaklanmada hafif reconcile
+  // Giriş → bir kez tam reconcile. Periyodik yok. Uzun süre sonra sekmeye dönünce hafif.
   useEffect(() => {
     if (!user) {
       setStatus('idle');
       setLastError(null);
       setDirty(false);
-      clearTimeout(pushTimerRef.current);
       return undefined;
     }
-    // Hesabın yerel listesi henüz yüklenmedi → bekle (yerel değişiklikler ezilmesin)
     if (!ready) return undefined;
 
     runReconcile(true);
 
-    const interval = setInterval(() => runReconcile(false), POLL_INTERVAL_MS);
     const onFocus = () => {
       if (document.visibilityState !== 'visible') return;
       if (Date.now() - lastReconcileRef.current < FOCUS_THROTTLE_MS) return;
       runReconcile(false);
     };
     document.addEventListener('visibilitychange', onFocus);
-    window.addEventListener('focus', onFocus);
-
     return () => {
-      clearInterval(interval);
       document.removeEventListener('visibilitychange', onFocus);
-      window.removeEventListener('focus', onFocus);
     };
   }, [user, ready, runReconcile]);
-
-  // Rename → ilgili binder'ı anında push
-  useEffect(() => {
-    const next = new Map(binders.map((b) => [b.id, b.name]));
-    const prev = prevNamesRef.current;
-    if (prev && userRef.current) {
-      for (const [id, name] of next) {
-        if (prev.has(id) && prev.get(id) !== name) pushOne(id);
-      }
-    }
-    prevNamesRef.current = next;
-  }, [binders, pushOne]);
-
-  // Unmount → bekleyen debounce'u iptal et
-  useEffect(() => () => clearTimeout(pushTimerRef.current), []);
 
   const deleteBinder = useCallback(
     async (binderId) => {
@@ -339,13 +303,12 @@ export function useCloudSync({
       cloudBinderIds,
       savingBinderIds,
       dirty,
-      notifyChange,
       markDirty,
       pushNow,
       deleteBinder,
       saveBinder,
       syncNow,
     }),
-    [status, lastError, cloudBinderIds, savingBinderIds, dirty, notifyChange, markDirty, pushNow, deleteBinder, saveBinder, syncNow]
+    [status, lastError, cloudBinderIds, savingBinderIds, dirty, markDirty, pushNow, deleteBinder, saveBinder, syncNow]
   );
 }

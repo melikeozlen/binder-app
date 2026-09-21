@@ -3,14 +3,13 @@ import { api } from '../utils/apiClient';
 import { getClientId } from '../utils/clientId';
 import { setAnalyticsBackendEnabled } from '../utils/analytics';
 
-const HEARTBEAT_MS = 60 * 1000;
-// Sekme tekrar görünür olunca en fazla bu sıklıkta ek heartbeat
-const FOCUS_THROTTLE_MS = 20 * 1000;
+const HEARTBEAT_MS = 5 * 60 * 1000;
+const FOCUS_THROTTLE_MS = 2 * 60 * 1000;
 
 /**
  * Online sayacı için heartbeat (misafir dahil).
  * - Sayfa açılışında `visit: true` ile bir kez (ziyaret sayısı)
- * - Sekme görünürken 60 sn'de bir; gizliyken gönderilmez
+ * - Sekme görünürken 5 dk'de bir; gizliyken gönderilmez
  * - Kullanıcı giriş/çıkış yapınca hemen bir kez (presence hesabı güncellensin)
  * Backend yoksa (404 / ağ hatası) kendini kapatır.
  */

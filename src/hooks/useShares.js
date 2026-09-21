@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, encodeId } from '../utils/apiClient';
 
-const POLL_INTERVAL_MS = 60 * 1000;
-const FOCUS_THROTTLE_MS = 15 * 1000;
+const FOCUS_THROTTLE_MS = 5 * 60 * 1000;
 
 /**
  * Binder paylaşımları. Binder'ın tek sahibi vardır; kabul eden kişi aynı binder'a üye olur.
@@ -64,18 +63,14 @@ export function useShares({ user, onAccepted, onLeft, onIncoming }) {
       return undefined;
     }
     refresh();
-    const interval = setInterval(refresh, POLL_INTERVAL_MS);
     const onFocus = () => {
       if (document.visibilityState !== 'visible') return;
       if (Date.now() - lastRefreshRef.current < FOCUS_THROTTLE_MS) return;
       refresh();
     };
     document.addEventListener('visibilitychange', onFocus);
-    window.addEventListener('focus', onFocus);
     return () => {
-      clearInterval(interval);
       document.removeEventListener('visibilitychange', onFocus);
-      window.removeEventListener('focus', onFocus);
     };
   }, [user, refresh]);
 

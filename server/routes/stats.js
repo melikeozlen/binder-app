@@ -27,14 +27,12 @@ function createStatsRouter(pool, presence) {
       handler: (req, res) => res.status(429).json({ error: message, code: 'RATE_LIMITED' }),
     });
 
-  // Heartbeat ~60 sn'de bir; 15 dk'da 15 beklenir → çoklu sekme için pay bırak
-  const presenceLimiter = limiter(120, 'Too many presence requests');
+  // Heartbeat seyrek; 15 dk'da birkaç istek yeter
   const eventsLimiter = limiter(300, 'Too many events');
-  const adminLimiter = limiter(60, 'Too many stats requests');
 
   router.post(
     '/presence',
-    presenceLimiter,
+    limiter(40, 'Too many presence requests'),
     json,
     wrap(async (req, res) => {
       const clientId = req.body?.clientId;
@@ -108,7 +106,6 @@ function createStatsRouter(pool, presence) {
 
   router.get(
     '/admin/stats',
-    adminLimiter,
     requireAuth,
     wrap(async (req, res) => {
       if (!stats.isAdmin(req.user)) throw new HttpError(403, 'FORBIDDEN', 'Admin only');

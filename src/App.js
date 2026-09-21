@@ -1426,11 +1426,8 @@ function App() {
   const selectedRefForUnload = useRef(selectedBinderId);
   selectedRefForUnload.current = selectedBinderId;
   const loadedRefForUnload = loadedBinderIdRef;
-  const { dirty: cloudDirty, pushNow: cloudPushNowForUnload } = cloudSync;
-  const pushNowRef = useRef(cloudPushNowForUnload);
-  pushNowRef.current = cloudPushNowForUnload;
+  const { dirty: cloudDirty } = cloudSync;
   useEffect(() => {
-    let stayTimer = null;
     const onBeforeUnload = (e) => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -1441,13 +1438,6 @@ function App() {
         }
       }
       if (cloudDirty) {
-        // Kullanıcı "İptal" deyip sayfada kalırsa bu zamanlayıcı çalışır → debounce'u
-        // beklemeden hemen buluta kaydet. Sayfa gerçekten kapanırsa hiç çalışmaz.
-        clearTimeout(stayTimer);
-        stayTimer = setTimeout(() => {
-          stayTimer = null;
-          pushNowRef.current?.();
-        }, 600);
         e.preventDefault();
         e.returnValue = '';
         return '';
@@ -1456,7 +1446,6 @@ function App() {
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
-      clearTimeout(stayTimer);
       window.removeEventListener('beforeunload', onBeforeUnload);
     };
   }, [cloudDirty, loadedRefForUnload]);
@@ -1467,7 +1456,7 @@ function App() {
     user: authUser,
     onAccepted: () => cloudSyncNow(),
     onLeft: (binderId) => removeBinderLocally(binderId),
-    // Yeni gelen davetler (poll / odaklanma ile fark edilir)
+    // Yeni gelen davetler (sekme öne gelince veya hesap penceresi açılınca)
     onIncoming: (list) => {
       for (const s of list.slice(0, 3)) {
         notify({
@@ -1546,27 +1535,6 @@ function App() {
     document.body.classList.toggle('app-footer-hidden', !footerVisible || isFullscreen);
     return () => document.body.classList.remove('app-footer-hidden');
   }, [footerVisible, isFullscreen]);
-
-  // Seçili binder'daki her değişiklik → debounce ile buluta push
-  const { notifyChange: notifyCloudChange } = cloudSync;
-  useEffect(() => {
-    notifyCloudChange();
-  }, [
-    notifyCloudChange,
-    pages,
-    binderColor,
-    ringColor,
-    containerColor,
-    gridStitchColor,
-    binderType,
-    widthRatio,
-    heightRatio,
-    gridSize,
-    pageType,
-    imageInputMode,
-    galleryUrls,
-    defaultBackImage,
-  ]);
 
   const handleExportBinder = async () => {
     if (!selectedBinderId) return;
@@ -2437,7 +2405,7 @@ function App() {
         onSelectBinder={handleSelectBinder}
         onCreateBinder={handleCreateBinder}
         onDeleteBinder={handleDeleteBinder}
-        onRenameBinder={handleRenameBinder}
+        onRenameBinder={edit(handleRenameBinder)}
         cloudEnabled={authAvailable}
         cloudBinderIds={cloudSync.cloudBinderIds}
         savingBinderIds={cloudSync.savingBinderIds}
