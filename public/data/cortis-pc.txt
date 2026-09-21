@@ -838,12 +838,6 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpju5ony0014kn0b43k2aitx-front-1779630684615.webp |  - Juhhon - GREENGREEN Album youtube gift pob (pre-order benefit) weverse global shop (wvg) release event
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpju5ony0014kn0b43k2aitx-back-1779630688898.webp | BACK  - Juhhon - GREENGREEN Album youtube gift pob (pre-order benefit) weverse global shop (wvg) release event
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpjcpsxa001ki604m435gtvd-front-1779601389314.webp |  - Juhoon - GREENGREEN Album whosfan lucky draw (LD) round 2
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyv5t60013l204krulkegc-front-1779454893907.webp |  - Martin & Keonho & Juhoon - GREENGREEN Album weverse album version horizontal B version photo print portrait version
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyv5t60013l204krulkegc-back-1779454901115.webp | BACK  - Martin & Keonho & Juhoon - GREENGREEN Album weverse album version horizontal B version photo print portrait version
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyekod0015ht0a7hiv3k48-front-1779455035736.webp |  - Juhoon - GREENGREEN Album portrait version photo print B version horizontal weverse album version
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyekod0015ht0a7hiv3k48-back-1779455044241.webp | BACK  - Juhoon - GREENGREEN Album portrait version photo print B version horizontal weverse album version
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfybd5z000bja0bg3ssou3x-front-1779455072419.webp |  - Juhoon - GREENGREEN Album weverse album version portrait version B version horizontal photo print
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfybd5z000bja0bg3ssou3x-back-1779455080705.webp | BACK  - Juhoon - GREENGREEN Album weverse album version portrait version B version horizontal photo print
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpa3cgjh0062le04pcaauhvj-front-1779041454767.webp |  - Juhoon - GREENGREEN Album broadcast
 GREENGREEN | https://i.pinimg.com/736x/e7/85/b6/e785b6e36e25d8ddcd141cc45434f5e8.jpg |  - Grup Group OT5 - GREENGREEN Album broadcast
 
@@ -952,8 +946,6 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpjth1jt000vku0agprf1web-back-1779629540592.webp | BACK  - Martin - GREENGREEN Album weverse global shop (wvg) pob (pre-order benefit) release event
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpi4iqlw00fml5045g471fu1-front-1779527155280.webp |  - Martin - GREENGREEN Album lucky draw (LD) weverse japan shop (wvj)
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpi4iqlw00fml5045g471fu1-back-1779527160500.webp | BACK  - Martin - GREENGREEN Album lucky draw (LD) weverse japan shop (wvj)
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyr8lu000il704ogc7kumj-front-1779454964120.webp |  - Martin - GREENGREEN Album weverse album version portrait version B version horizontal photo print
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyr8lu000il704ogc7kumj-back-1779454972041.webp | BACK  - Martin - GREENGREEN Album weverse album version portrait version B version horizontal photo print
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfnkrqf003xl40bhik5idxs-front-1779377768719.webp |  - Martin - GREENGREEN Album pob (pre-order benefit) weverse global shop (wvg)
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfnkrqf003xl40bhik5idxs-back-1779377775265.webp | BACK  - Martin - GREENGREEN Album pob (pre-order benefit) weverse global shop (wvg)
 
@@ -1053,8 +1045,6 @@ GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/w
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpinv95f003ul104idrjn44d-back-1779559662586.webp | BACK  - James - GREENGREEN Album album  B version portrait version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmphuvtzy0050jl04wd3wabml-front-1779510974193.webp |  - James - GREENGREEN Album lucky draw (LD) trading card ums japan (universal music store)
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmphuvtzy0050jl04wd3wabml-back-1779510982194.webp | BACK  - James - GREENGREEN Album lucky draw (LD) trading card ums japan (universal music store)
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyplrs000djr04lsem31g1-front-1779454988137.webp |  - James - GREENGREEN Album horizontal B version weverse album version photo print portrait version
-GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyplrs000djr04lsem31g1-back-1779454996835.webp | BACK  - James - GREENGREEN Album horizontal B version weverse album version photo print portrait version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyo22d0004la04up4q87jn-front-1779455007159.webp |  - James - GREENGREEN Album weverse album version portrait version photo print B version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpfyo22d0004la04up4q87jn-back-1779455014572.webp | BACK  - James - GREENGREEN Album weverse album version portrait version photo print B version
 GREENGREEN | https://hywfhpjrxseqlrzqyghg.supabase.co/storage/v1/object/public/watermarked/cmpcwu5bx000bko0csu8w06sp-front-1779571142310.webp |  - James - GREENGREEN Album release event limited edition
@@ -1923,6 +1913,17 @@ GREENGREEN   |   https://i.hizliresim.com/1lxbu0w.png | Seonghyeon yzy vce 0.2
 GREENGREEN   |   https://i.hizliresim.com/fg4b72u.png | Keonho yzy vce 0.2
 
 
+GreenGreen | https://i.pinimg.com/736x/fe/2e/02/fe2e02e5fec37b5d374511d2ad5639a2.jpg | Keonho CORTIS 2nd EP 'GREENGREEN' Yizhiyu VoiceCall Event 2.0 Ver. yzy
+GreenGreen | https://i.pinimg.com/736x/cf/1d/b0/cf1db0b4c9769ccf3e3ea4a03ce64c93.jpg | Seonghyeon CORTIS 2nd EP 'GREENGREEN' Yizhiyu VoiceCall Event 2.0 Ver. yzy
+GreenGreen | https://i.pinimg.com/736x/65/e2/19/65e219a6a77784581554854ae335768b.jpg | Juhoon CORTIS 2nd EP 'GREENGREEN' Yizhiyu VoiceCall Event 2.0 Ver. yzy
+GreenGreen | https://i.hizliresim.com/wouhfuc1.png | Martin CORTIS 2nd EP 'GREENGREEN' Yizhiyu VoiceCall Event 2.0 Ver. yzy
+GreenGreen | https://i.hizliresim.com/bsmtka8j.png | James CORTIS 2nd EP 'GREENGREEN' Yizhiyu VoiceCall Event 2.0 Ver. yzy
+
+
+
+
+
+
 
 
 
@@ -1936,11 +1937,11 @@ PYPD | https://i.pinimg.com/474x/4c/71/5d/4c715db53831725c48bc62aa130f7d3e.jpg |
 PYPD | https://i.pinimg.com/474x/53/44/e4/5344e49cbb3253d4e885d9ef171f61fc.jpg | Juhoon CORTIS 1st Concert 'PYPD' Incheon Coer Zone Ver. 
 PYPD | https://i.pinimg.com/474x/e8/c0/7a/e8c07aa3f667230b389e9fcc2c66629f.jpg | James CORTIS 1st Concert 'PYPD' Incheon Coer Zone Ver. 
 PYPD | https://i.pinimg.com/474x/85/24/51/8524516f4a0ffa000113c7f8f7ca1532.jpg | Martin CORTIS 1st Concert 'PYPD' Incheon Coer Zone Ver. 
-PYPD | https://i.pinimg.com/474x/be/15/d2/be15d295efeea896dc52695b12a5e16f.jpg | Keonho CORTIS 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
-PYPD | https://i.pinimg.com/474x/d6/de/82/d6de822e8f3e42d137533a445faa2cdb.jpg | Seonghyeon 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
-PYPD | https://i.pinimg.com/474x/07/3d/14/073d14ff4c0abe87dea9d276313c204c.jpg | Juhoon CORTIS 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
-PYPD | https://i.pinimg.com/474x/bd/8b/f8/bd8bf832bcbafaf1402413c3956c8e46.jpg | James CORTIS 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
-PYPD | https://i.pinimg.com/474x/8f/92/c5/8f92c5c8199e7ced3b3515f76153ea41.jpg | Martin CORTIS 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
+GREENGREEN | https://i.pinimg.com/474x/be/15/d2/be15d295efeea896dc52695b12a5e16f.jpg | Keonho CORTIS 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
+GREENGREEN | https://i.pinimg.com/474x/d6/de/82/d6de822e8f3e42d137533a445faa2cdb.jpg | Seonghyeon 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
+GREENGREEN | https://i.pinimg.com/474x/07/3d/14/073d14ff4c0abe87dea9d276313c204c.jpg | Juhoon CORTIS 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
+GREENGREEN | https://i.pinimg.com/474x/bd/8b/f8/bd8bf832bcbafaf1402413c3956c8e46.jpg | James CORTIS 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
+GREENGREEN | https://i.pinimg.com/474x/8f/92/c5/8f92c5c8199e7ced3b3515f76153ea41.jpg | Martin CORTIS 1st Concert 'PYPD' Incheon Alb Pick-Up Pob Ver. 
 
 
 GREENGREEN | https://i.pinimg.com/474x/cd/8d/16/cd8d1633f7a2661efef40134479a63a9.jpg | Seonghyeon CORTIS 2026 Birthday Party Off-White Ball Ver. 
