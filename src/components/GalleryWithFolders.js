@@ -16,6 +16,7 @@ import {
   validateSavedFolder,
 } from '../utils/galleryUiState';
 import { downloadGalleryImage, downloadGalleryZip } from '../utils/galleryDownload';
+import { trackEvent } from '../utils/analytics';
 import LazyGalleryImage from './LazyGalleryImage';
 import './GalleryFolders.css';
 
@@ -283,6 +284,7 @@ const GalleryWithFolders = ({
           text: t('settings.galleryZipSuccess', { count: result.ok }),
         });
       }
+      trackEvent('zip_download', { count: result.ok });
     } catch {
       notify({ kind: 'error', text: t('settings.galleryDownloadFailed') });
     } finally {
@@ -316,6 +318,7 @@ const GalleryWithFolders = ({
 
   const onDownloaded = useCallback(() => {
     notify({ kind: 'success', text: t('settings.galleryImageDownloaded') });
+    trackEvent('image_download');
   }, [notify, t]);
 
   const onDownloadFailed = useCallback(() => {

@@ -19,10 +19,16 @@ const toInt = (value, fallback) => {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 };
 
-const clientOrigins = (process.env.CLIENT_ORIGIN || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+const splitList = (value) =>
+  String(value || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const clientOrigins = splitList(process.env.CLIENT_ORIGIN);
+
+// İstatistik panelini görebilecek kullanıcı adları (virgülle ayrılmış, büyük/küçük harf duyarsız)
+const adminUsernames = new Set(splitList(process.env.ADMIN_USERNAMES).map((s) => s.toLowerCase()));
 
 module.exports = {
   projectRoot,
@@ -37,6 +43,15 @@ module.exports = {
   maxUserStorageBytes: toInt(process.env.MAX_USER_STORAGE_MB, 300) * 1024 * 1024,
   buildDir: path.join(projectRoot, 'build'),
   serveStatic: process.env.SERVE_STATIC !== 'false',
+  adminUsernames,
+  stats: {
+    // Bu süre içinde heartbeat gönderen istemci "online" sayılır
+    presenceTtlMs: 2 * 60 * 1000,
+    // sessions.last_seen_at en fazla bu sıklıkta yazılır
+    lastSeenWriteIntervalSec: 60,
+    // Olay kayıtları bu süreden sonra silinir
+    eventRetentionDays: toInt(process.env.EVENT_RETENTION_DAYS, 180),
+  },
   limits: {
     docBody: '15mb',
     imagesBody: '30mb',

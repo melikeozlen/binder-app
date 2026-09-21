@@ -10,8 +10,10 @@ const { createAuthRouter } = require('./routes/auth');
 const { createBindersRouter } = require('./routes/binders');
 const { createSharesRouter } = require('./routes/shares');
 const { createDriveRouter } = require('./routes/drive');
+const { createStatsRouter } = require('./routes/stats');
+const { createPresenceStore } = require('./stats');
 
-function createApp(pool) {
+function createApp(pool, { presence = createPresenceStore() } = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -23,7 +25,7 @@ function createApp(pool) {
       cors({
         origin: config.clientOrigins,
         credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       })
     );
   }
@@ -44,6 +46,7 @@ function createApp(pool) {
   app.use('/api/auth', createAuthRouter(pool));
   app.use('/api/binders', createBindersRouter(pool));
   app.use('/api/shares', createSharesRouter(pool));
+  app.use('/api', createStatsRouter(pool, presence));
   app.use('/api', createDriveRouter());
 
   app.all('/api/*', (req, res) => {

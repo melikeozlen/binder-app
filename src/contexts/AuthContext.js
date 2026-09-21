@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../utils/apiClient';
+import { getClientId } from '../utils/clientId';
 
 const AuthContext = createContext(null);
 
@@ -43,14 +44,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = useCallback(async (username, password) => {
-    const data = await api('/api/auth/login', { method: 'POST', body: { username, password } });
+    const data = await api('/api/auth/login', {
+      method: 'POST',
+      body: { username, password, clientId: getClientId() },
+    });
     setUser(data.user);
     setAvailable(true);
     return data.user;
   }, []);
 
   const register = useCallback(async (username, password) => {
-    const data = await api('/api/auth/register', { method: 'POST', body: { username, password } });
+    const data = await api('/api/auth/register', {
+      method: 'POST',
+      body: { username, password, clientId: getClientId() },
+    });
     setUser(data.user);
     setAvailable(true);
     return data.user;

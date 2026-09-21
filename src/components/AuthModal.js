@@ -6,6 +6,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { shareErrorKey } from '../utils/shareErrors';
+import AdminStats from './AdminStats';
 
 const KNOWN_ERROR_CODES = new Set([
   'INVALID_CREDENTIALS',
@@ -331,6 +332,8 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
         </div>
       )}
 
+      {user.isAdmin && <AdminStats t={t} language={language} />}
+
       {errorCode && <p className="auth-modal-error">{t(errorKey(errorCode))}</p>}
       <div className="auth-modal-actions">
         <button
@@ -434,7 +437,12 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      <div className="auth-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`auth-modal${user?.isAdmin ? ' auth-modal--admin' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="auth-modal-header">
           <h2>{t('auth.account')}</h2>
           <button type="button" className="auth-modal-close" onClick={onClose} title={t('auth.close')}>

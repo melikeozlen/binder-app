@@ -17,10 +17,12 @@ Uygulama servisi → **Variables** → ekle:
 |---|---|
 | `DATABASE_URL` | **Add Variable Reference** → `${{Postgres.DATABASE_URL}}` |
 | `GOOGLE_DRIVE_API_KEY` | (opsiyonel) Drive galeri için mevcut anahtarın |
+| `ADMIN_USERNAMES` | (opsiyonel) İstatistik panelini görecek kullanıcı adları, virgülle. Örn. `kepcang` |
 
 `PORT`'u Railway kendisi verir. `NODE_ENV` gerekmez (Railway ortamı otomatik algılanır).
 
 Opsiyonel: `MAX_USER_STORAGE_MB` (varsayılan 300), `SESSION_TTL_DAYS` (varsayılan 30).
+`ADMIN_USERNAMES` yoksa istatistik paneli kimseye açılmaz; giriş/binder akışı değişmez.
 
 ## 3. Build / Start
 
@@ -71,9 +73,11 @@ Tek domain (yalnızca Railway) daha basittir; önerilen budur.
 ```
 server/
   index.js          başlangıç, şema init, graceful shutdown
-  app.js            Express: /api/health, /api/auth, /api/binders, /api/drive-*, static build
+  app.js            Express: /api/health, /api/auth, /api/binders, /api/presence, /api/admin/stats, /api/drive-*, static build
   auth.js           kullanıcı adı (3-32, harf/rakam/_/.) + bcrypt şifre, httpOnly oturum çerezi
+  stats.js          presence (bellek), olay kaydı, admin özeti
   routes/auth.js    POST register|login|logout, GET me  (rate limit: 30 / 15 dk)
+  routes/stats.js   POST /presence (heartbeat), POST /events, GET /admin/stats (ADMIN_USERNAMES)
   routes/binders.js GET list (kendi + paylaşılan), GET/PUT/DELETE :id, GET :id/images, POST :id/images/fetch, PUT :id/images
                     (binder sahip ya da üye olunan hesapta çözülür; DELETE üye için "ayrıl" anlamına gelir)
   routes/shares.js  GET list (bekleyen + üyelikler), POST (davet), POST :id/accept | :id/reject, DELETE :id (iptal),

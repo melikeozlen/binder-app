@@ -10,6 +10,7 @@ import { useAuth } from './contexts/AuthContext';
 import { useToast } from './contexts/ToastContext';
 import { useCloudSync } from './hooks/useCloudSync';
 import { useShares } from './hooks/useShares';
+import { usePresence } from './hooks/usePresence';
 import ShareModal from './components/ShareModal';
 import { getTranslation } from './utils/translations';
 import {
@@ -39,6 +40,7 @@ import {
   markDefaultBinderCreated,
   flushPendingAnalytics,
   trackBinderCreated,
+  trackEvent,
 } from './utils/analytics';
 import {
   GUEST_ACCOUNT,
@@ -839,6 +841,8 @@ function App() {
     available: authAvailable,
     requestLogin,
   } = useAuth();
+  // Online sayacı / ziyaret istatistiği (misafir dahil; backend yoksa kendini kapatır)
+  usePresence({ enabled: authAvailable && authStatus === 'ready', userId: authUser?.id || null });
   // Giriş yapılmadan "Kaydet" denilen binder → giriş sonrası otomatik kaydedilir
   const [pendingCloudSaveId, setPendingCloudSaveId] = useState(null);
   // Liste yazımı: girişliyken user:<username>, değilse guest
@@ -1490,6 +1494,7 @@ function App() {
       const result = await saveBinderToCloud(binderId);
       if (result) {
         notify({ kind: 'success', text: t('notify.savedToCloud', { name }) });
+        trackEvent('binder_saved');
       } else {
         notify({ kind: 'error', text: t('notify.saveFailed') });
       }
@@ -1571,6 +1576,7 @@ function App() {
       await flushCurrentBinderState();
       await exportBinderToFile(selectedBinderId, binder?.name || 'Binder');
       notify({ kind: 'success', text: t('notify.binderExported', { name: binder?.name || 'Binder' }) });
+      trackEvent('binder_exported');
     } catch (error) {
       console.error('Binder dışa aktarılırken hata:', error);
       notify({ kind: 'error', text: t('binder.exportFailed') });
@@ -2502,6 +2508,7 @@ function App() {
         onSend={async (toUsername, role) => {
           await shares.send(shareBinderId, toUsername, role);
           notify({ kind: 'success', text: t('notify.shareSent', { username: toUsername }) });
+          trackEvent('share_sent', { role });
         }}
       />
       <Analytics />

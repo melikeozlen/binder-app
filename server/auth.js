@@ -17,10 +17,15 @@ const verifyPassword = (password, hash) => bcrypt.compare(password, hash);
 
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
+const isAdminUsername = (username) =>
+  Boolean(username) && config.adminUsernames.has(String(username).toLowerCase());
+
 const toPublicUser = (row) => ({
   id: row.id,
   username: row.username,
   createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+  // İstatistik panelini görebilir mi (ADMIN_USERNAMES). Yetki kontrolü yine sunucuda yapılır.
+  isAdmin: isAdminUsername(row.username),
 });
 
 function cookieOptions() {
@@ -37,7 +42,7 @@ async function createSession(pool, userId) {
   const token = crypto.randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + config.sessionTtlMs);
   await pool.query(
-    'INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+    'INSERT INTO sessions (token_hash, user_id, expires_at, last_seen_at) VALUES ($1, $2, $3, now())',
     [hashToken(token), userId, expiresAt]
   );
   return token;
@@ -99,6 +104,8 @@ module.exports = {
   isValidPassword,
   hashPassword,
   verifyPassword,
+  hashToken,
+  isAdminUsername,
   toPublicUser,
   createSession,
   destroySession,

@@ -55,7 +55,15 @@ const driveImageHandler = require('../api/drive-image');
 const imageProxyHandler = require('../api/image-proxy');
 
 const API_PROXY_TARGET = process.env.API_PROXY_TARGET || 'http://localhost:4000';
-const BACKEND_PATHS = ['/api/auth', '/api/binders', '/api/shares', '/api/health'];
+const BACKEND_PATHS = [
+  '/api/auth',
+  '/api/binders',
+  '/api/shares',
+  '/api/health',
+  '/api/presence',
+  '/api/events',
+  '/api/admin',
+];
 
 /**
  * CRA dev server'da:

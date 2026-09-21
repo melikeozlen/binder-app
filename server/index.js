@@ -1,6 +1,7 @@
 const config = require('./config');
 const { createPool, initSchema } = require('./db');
 const { purgeExpiredSessions } = require('./auth');
+const { purgeOldEvents } = require('./stats');
 const { createApp } = require('./app');
 
 async function main() {
@@ -10,6 +11,7 @@ async function main() {
 
   const purgeTimer = setInterval(() => {
     purgeExpiredSessions(pool).catch((e) => console.warn('[server] session purge failed:', e.message));
+    purgeOldEvents(pool).catch((e) => console.warn('[server] event purge failed:', e.message));
   }, 60 * 60 * 1000);
   purgeTimer.unref();
 

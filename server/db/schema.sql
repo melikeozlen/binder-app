@@ -17,6 +17,21 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
+-- Oturumun en son ne zaman aktif görüldüğü (presence heartbeat ile, ≥60 sn aralıkla güncellenir)
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
+
+-- Kullanım olayları (istatistik): visit, login, register, binder_created, ...
+-- user_id giriş yapılmamışsa NULL; client_id tarayıcı başına anonim kimlik.
+CREATE TABLE IF NOT EXISTS events (
+  id          BIGSERIAL PRIMARY KEY,
+  name        TEXT NOT NULL,
+  user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+  client_id   TEXT,
+  props       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS events_created_at_idx ON events(created_at);
+CREATE INDEX IF NOT EXISTS events_name_created_idx ON events(name, created_at);
 
 -- Binder dokümanı (istemcinin export şemasıyla aynı alanlar; resimler hariç)
 CREATE TABLE IF NOT EXISTS binders (
@@ -84,3 +99,19 @@ CREATE INDEX IF NOT EXISTS binder_shares_from_pending_idx
 -- Aynı binder aynı kişiye ikinci kez bekleyen paylaşım olarak gönderilemez
 CREATE UNIQUE INDEX IF NOT EXISTS binder_shares_pending_unique_idx
   ON binder_shares(from_user_id, to_user_id, binder_id) WHERE status = 'pending';
+
+-- Oturum son görülme (istatistik: bugün/hafta aktif kullanıcı). Nullable: eski satırlar bozulmaz.
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS sessions_last_seen_at_idx ON sessions(last_seen_at);
+
+-- Uygulama olayları (giriş, ziyaret, binder oluşturma…). user silinince satır kalır (user_id null).
+CREATE TABLE IF NOT EXISTS events (
+  id          BIGSERIAL PRIMARY KEY,
+  name        TEXT NOT NULL,
+  user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+  client_id   TEXT,
+  props       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS events_created_at_idx ON events(created_at);
+CREATE INDEX IF NOT EXISTS events_name_created_idx ON events(name, created_at DESC);

@@ -3,6 +3,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { HttpError, badRequest, wrap } = require('../errors');
 const auth = require('../auth');
+const { recordEvent, isValidClientId } = require('../stats');
 
 const PG_UNIQUE_VIOLATION = '23505';
 
@@ -31,9 +32,12 @@ function createAuthRouter(pool) {
     return { username, password };
   };
 
-  const signIn = async (res, userRow) => {
+  const signIn = async (req, res, userRow, eventName) => {
     const token = await auth.createSession(pool, userRow.id);
     auth.setSessionCookie(res, token);
+    // İstatistik: giriş/kayıt olayı (beklenmez; hata cevabı etkilemez)
+    const clientId = isValidClientId(req.body?.clientId) ? req.body.clientId : null;
+    recordEvent(pool, { name: eventName, userId: userRow.id, clientId });
     return { user: auth.toPublicUser(userRow) };
   };
 
@@ -61,7 +65,7 @@ function createAuthRouter(pool) {
         throw error;
       }
 
-      res.status(201).json(await signIn(res, row));
+      res.status(201).json(await signIn(req, res, row, 'register'));
     })
   );
 
@@ -87,7 +91,7 @@ function createAuthRouter(pool) {
       const ok = await auth.verifyPassword(password, row.password_hash);
       if (!ok) throw invalid();
 
-      res.json(await signIn(res, row));
+      res.json(await signIn(req, res, row, 'login'));
     })
   );
 
