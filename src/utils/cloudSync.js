@@ -7,8 +7,13 @@
 //  - Bulutta kayıtlı her binder için bir doküman (ayarlar + sayfalar) ve resimler tutulur.
 //  - Değişiklik tespiti hash tabanlıdır: yerel snapshot hash'i, son push/pull'da kaydedilen
 //    meta.hash ile aynıysa push atlanır. Bulut tarafı için updatedAt karşılaştırılır.
-//  - Çakışmada (hem yerel hem bulut değişmiş) veri kaybı olmaz: bulut sürümü ayrı bir
-//    binder kopyası olarak alınır, yerel sürüm push edilir.
+//  - Meta (hash + updatedAt) binder id'sine göre tutulur ve hesaptan bağımsızdır: aynı tarayıcıda
+//    hesap değiştirmek çakışma sayılmaz (meta o hesaba devralınır). meta.userId yalnızca
+//    "bu binder bu hesaba kayıtlı mı" (☁ rozeti / otomatik push) için kullanılır.
+//  - Çakışmada (hem yerel hem bulut değişmiş):
+//      · Ortak (paylaşılan) binder → bulut kazanır, kopya üretilmez (diğer üyenin işi ezilmez).
+//      · Kendi binder'ım → bulut sürümü yalnızca bu cihazda yerel bir kopya olarak saklanır
+//        (buluta yüklenmez), yerel sürüm asıl binder olarak push edilir.
 
 import { api, encodeId } from './apiClient';
 import { fnv1a, stableStringify } from './contentHash';
@@ -340,16 +345,29 @@ export async function reconcile({ userId, localBinders, checkLocalChanges = fals
     // Paylaşım bilgisi (sahip / üye / yetki) liste kaydında güncel dursun
     const listPatch = sharingChanged(local, remote) ? sharingFields(remote) : null;
 
-    const meta = loadCloudMeta(remote.id);
-    const metaValid = Boolean(meta && meta.userId === userId);
-    const remoteChanged = !metaValid || meta.updatedAt !== remote.updatedAt;
+    // Meta, bu tarayıcıdaki binder verisinin bulut dokümanıyla ilişkisini (hash / updatedAt) tutar;
+    // kimin eşitlediğinden bağımsızdır. Aynı tarayıcıda başka hesapla eşitlenmişse (paylaşılan
+    // binder + hesap değiştirme) meta'yı bu hesaba devral — aksi halde sahte çakışma üretilir.
+    let meta = loadCloudMeta(remote.id);
+    if (meta && meta.userId !== userId) {
+      meta = { ...meta, userId };
+      saveCloudMeta(remote.id, meta);
+    }
+    const remoteChanged = !meta || meta.updatedAt !== remote.updatedAt;
+
+    // Yerel veri son eşitlemeden sonra değişti mi? Meta yoksa (hiç eşitlenmemiş) yalnızca
+    // yerelde sayfa varsa "değişmiş" say; boş yerel her zaman buluttan doldurulur.
+    const hasLocalChanges = async () => {
+      if (!meta) return hasLocalPages(remote.id);
+      const snapshot = await buildLocalSnapshot(remote.id, local.name);
+      return snapshot.hash !== meta.hash;
+    };
 
     // Sadece görüntüleme: asla push yok; bulut her zaman kazanır (yerel sapma varsa geri çekilir)
     if (memberRole(remote) === 'view') {
       let needPull = remoteChanged;
       if (!needPull && checkLocalChanges) {
-        const snapshot = await buildLocalSnapshot(remote.id, local.name);
-        needPull = snapshot.hash !== meta.hash;
+        needPull = await hasLocalChanges();
       }
       if (needPull) {
         const info = await pullBinder(remote.id, userId);
@@ -372,8 +390,7 @@ export async function reconcile({ userId, localBinders, checkLocalChanges = fals
       continue;
     }
 
-    const snapshot = await buildLocalSnapshot(remote.id, local.name);
-    const localChanged = !metaValid || snapshot.hash !== meta.hash;
+    const localChanged = await hasLocalChanges();
 
     if (!localChanged) {
       const info = await pullBinder(remote.id, userId);
@@ -384,34 +401,47 @@ export async function reconcile({ userId, localBinders, checkLocalChanges = fals
       continue;
     }
 
-    // Çakışma: bulut sürümünü kopya olarak al, yereli push et
+    // Çakışma: hem bulut hem yerel değişmiş.
+    if (remote.shared) {
+      // Ortak binder: bulut kazanır (diğer üyenin yayınlanmış çalışması ezilmez; kaybedilen
+      // yalnızca henüz push edilmemiş küçük yerel fark). Kopya üretilmez.
+      const info = await pullBinder(remote.id, userId);
+      result.pulled.push(remote.id);
+      result.conflicts.push({ id: remote.id, kind: 'cloudWins', name: info.name });
+      const patch = { ...(listPatch || {}) };
+      if (info.name !== local.name) patch.name = info.name;
+      if (Object.keys(patch).length > 0) result.updated.push({ id: remote.id, ...patch });
+      continue;
+    }
+
+    // Kendi binder'ım (başka cihazdan değişmiş): veri kaybı olmasın — bulut sürümünü yalnızca
+    // bu cihazda yerel bir kopya olarak sakla (buluta yüklenmez; istenirse "Kaydet" ile yüklenir),
+    // yerel sürümü asıl binder olarak push et.
     const copyId = `binder-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const copy = await pullBinder(remote.id, userId, copyId);
     const copyName = `${copy.name}${copySuffix}`;
     result.added.push({ id: copyId, name: copyName, createdAt: Date.now() });
-    result.conflicts.push({ id: remote.id, copyId });
+    result.conflicts.push({ id: remote.id, kind: 'copy', name: local.name, copyId, copyName });
     await pushBinder(remote.id, { ...local, userId }, { force: true });
     result.pushed.push(remote.id);
     if (listPatch) result.updated.push({ id: remote.id, ...listPatch });
-    // Kopyayı da buluta al (kullanıcının kendi hesabına)
-    await pushBinder(copyId, { name: copyName, createdAt: Date.now(), userId }, { force: true });
-    result.pushed.push(copyId);
   }
 
   // Yerelde olup bulutta olmayanlar
   const cloudHasData = remoteList.length > 0;
   for (const local of localBinders) {
     if (remoteById.has(local.id)) continue;
-    const meta = loadCloudMeta(local.id);
-    const metaValid = Boolean(meta && meta.userId === userId);
-
     // Benimle paylaşılan binder artık listede yok → sahip sildi / erişimi kaldırdı / ayrıldım.
-    // Bu binder bize ait değil; asla kendi hesabımıza push etme, yereli temizle.
-    if (local.shared && metaValid) {
-      await clearLocalBinderCompletely(local.id);
+    // Liste kaydı zaten buluttan geldi; bize ait değil, asla kendi hesabımıza push etme.
+    // Aynı tarayıcıda sahip hesap hâlâ kullanıyor olabilir → yerel veriye dokunma, sadece listeden çıkar.
+    if (local.shared) {
       result.removed.push(local.id);
       continue;
     }
+
+    const meta = loadCloudMeta(local.id);
+    // Bu hesaba kaydedilmiş miydi? (meta.userId: en son bu tarayıcıda eşitleyen hesap)
+    const metaValid = Boolean(meta && meta.userId === userId);
 
     if (metaValid) {
       // Daha önce bu hesaba kaydedilmiş ama bulutta yok → başka cihazda silinmiş.

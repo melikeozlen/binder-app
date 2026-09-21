@@ -83,7 +83,7 @@ server/
 src/
   contexts/AuthContext.js   user / login / register / logout
   utils/apiClient.js        fetch sarmalayıcı (credentials: include)
-  utils/cloudSync.js        push / pull / reconcile (hash tabanlı fark, çakışmada kopya)
+  utils/cloudSync.js        push / pull / reconcile (hash tabanlı fark; çakışma: ortak → bulut kazanır, kendi → yerel kopya)
   hooks/useCloudSync.js     App ↔ sync köprüsü (debounce push, 60 sn poll, odaklanmada pull)
   hooks/useShares.js        bekleyen davetler + üyelikler (60 sn poll), gönder / kabul / reddet / iptal / kaldır / ayrıl
   components/AuthModal.js   Giriş / Kayıt / Hesap + Paylaşımlar penceresi (Footer'daki 👤 butonu)
@@ -109,8 +109,9 @@ Binder paylaşımı (tek sahip + üyeler, kopya yok):
 - Hesap penceresinde **Paylaştıklarım** (sahip → üyeyi **Kaldır**) ve **Benimle paylaşılan** (üye → **Ayrıl**) listeleri vardır.
   Üye, binder menüsündeki ⏏ ile de ayrılabilir; bu sahibin binder'ını etkilemez.
 - Aynı kişiye ikinci davet gönderilemez (bekleyen varsa 409 `SHARE_EXISTS`, zaten üyeyse 409 `ALREADY_MEMBER`).
-- İki taraf aynı anda düzenlemişse çakışma kuralı geçerlidir: bulut sürümü "… (bulut kopyası)" adıyla o kişinin
-  **kendi** hesabına ayrı binder olarak eklenir, yerel sürüm paylaşılan binder'a yazılır.
+- İki üye aynı anda düzenlemişse **bulut kazanır**: diğer üyenin yayınlanmış çalışması ezilmez, yalnızca henüz
+  push edilmemiş küçük yerel fark geri alınır ve uyarı bildirimi gösterilir. Ortak binder'larda kopya üretilmez.
+- Aynı tarayıcıda hesap değiştirmek çakışma sayılmaz: eşitleme meta'sı binder'a aittir, yeni hesaba devralınır.
 
 Eşitleme davranışı:
 
@@ -126,6 +127,7 @@ Eşitleme davranışı:
   state yazılmaz. Böylece buluttaki sürüm yereldeki henüz gönderilmemiş değişiklikleri ezmez.
 - Resimler hash ile karşılaştırılır; yalnızca yeni/değişenler yüklenir. Doküman kaydında referanssız resimler sunucuda silinir.
 - Girişte tam uzlaştırma: buluttaki binder'lar çekilir, kayıtlı yerel binder'lardaki değişiklikler gönderilir; kaydedilmemiş yerel binder'lara dokunulmaz.
-- Her iki tarafta da değişmişse veri kaybı yoktur: bulut sürümü "… (bulut kopyası)" adıyla ayrı binder olarak eklenir, yerel sürüm push edilir.
+- Kendi binder'ın iki cihazda da değişmişse veri kaybı yoktur: bulut sürümü "… (bulut kopyası)" adıyla **yalnızca o cihazda**
+  yerel binder olarak saklanır (buluta yüklenmez; istenirse ☁ Kaydet ile yüklenir), yerel sürüm asıl binder'a push edilir.
 - Başka cihazda silinen binder yerelden de kaldırılır (bulut tamamen boşsa silme yayılmaz; yeniden push edilir).
 - Çıkış yapılınca yerel veri silinmez; misafir modunda devam eder.

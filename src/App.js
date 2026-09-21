@@ -1396,11 +1396,18 @@ function App() {
     selectedBinderId,
     setSelectedBinderId,
     flushCurrentBinderState,
-    onBinderPulled: (binderId, { initial } = {}) => {
+    onBinderPulled: (binderId, { initial, conflict } = {}) => {
       setBinderReloadKey((k) => k + 1);
       const binder = bindersRef.current.find((b) => b.id === binderId);
-      if (!initial && binder?.shared) {
+      if (!initial && !conflict && binder?.shared) {
         notify({ kind: 'info', text: t('notify.binderUpdatedFromCloud', { name: binder.name }) });
+      }
+    },
+    onConflict: ({ kind, name, copyName }) => {
+      if (kind === 'cloudWins') {
+        notify({ kind: 'warning', text: t('notify.conflictCloudWins', { name }), duration: 8000 });
+      } else if (kind === 'copy') {
+        notify({ kind: 'warning', text: t('notify.conflictCopy', { name, copy: copyName }), duration: 8000 });
       }
     },
     onUnauthorized: authLogout,

@@ -33,6 +33,8 @@ export function useCloudSync({
   setSelectedBinderId,
   flushCurrentBinderState,
   onBinderPulled,
+  // Çakışma bildirimi: ({ id, kind: 'cloudWins' | 'copy', name, copyId?, copyName? })
+  onConflict,
   onUnauthorized,
   copySuffix,
   // Hesabın yerel binder listesi yüklendi mi? false iken giriş reconcile'ı bekletilir;
@@ -58,6 +60,7 @@ export function useCloudSync({
   const selectedRef = useRef(selectedBinderId);
   const flushRef = useRef(flushCurrentBinderState);
   const onPulledRef = useRef(onBinderPulled);
+  const onConflictRef = useRef(onConflict);
   const onUnauthorizedRef = useRef(onUnauthorized);
   const copySuffixRef = useRef(copySuffix);
   userRef.current = user;
@@ -65,6 +68,7 @@ export function useCloudSync({
   selectedRef.current = selectedBinderId;
   flushRef.current = flushCurrentBinderState;
   onPulledRef.current = onBinderPulled;
+  onConflictRef.current = onConflict;
   onUnauthorizedRef.current = onUnauthorized;
   copySuffixRef.current = copySuffix;
 
@@ -187,10 +191,14 @@ export function useCloudSync({
     pushTimerRef.current = setTimeout(() => pushOne(binderId), PUSH_DEBOUNCE_MS);
   }, [pushOne]);
 
+  const notifyConflicts = useCallback((conflicts) => {
+    for (const conflict of conflicts || []) onConflictRef.current?.(conflict);
+  }, []);
+
   const applyReconcileResult = useCallback(
     (result) => {
       if (!result) return;
-      const { added = [], updated = [], removed = [], pulled = [] } = result;
+      const { added = [], updated = [], removed = [], pulled = [], conflicts = [] } = result;
       const current = bindersRef.current;
 
       if (added.length > 0 || updated.length > 0 || removed.length > 0) {
@@ -218,6 +226,7 @@ export function useCloudSync({
         if (selected && removedSet.has(selected)) {
           const fallback = next[0]?.id || null;
           if (fallback) setSelectedBinderId(fallback);
+          notifyConflicts(conflicts);
           return;
         }
       }
@@ -225,10 +234,15 @@ export function useCloudSync({
       const selected = selectedRef.current;
       if (selected && pulled.includes(selected)) {
         // initial: giriş / "Şimdi eşitle" kaynaklı tam reconcile (arka plan poll değil)
-        onPulledRef.current?.(selected, { initial: Boolean(result.initial) });
+        // conflict: çakışma bildirimi zaten veriliyor → ayrıca "buluttan güncellendi" deme
+        onPulledRef.current?.(selected, {
+          initial: Boolean(result.initial),
+          conflict: conflicts.some((c) => c.id === selected),
+        });
       }
+      notifyConflicts(conflicts);
     },
-    [setBinders, saveBindersList, setSelectedBinderId]
+    [setBinders, saveBindersList, setSelectedBinderId, notifyConflicts]
   );
 
   const runReconcile = useCallback(
