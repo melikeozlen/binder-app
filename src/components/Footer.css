@@ -92,7 +92,8 @@
   background-color: #fff;
 }
 
-.footer-info-btn {
+.footer-info-btn,
+.footer-stats-btn {
   background-color: transparent;
   border: 1px solid #ccc;
   border-radius: 3px;
@@ -106,13 +107,15 @@
   gap: 0.2rem;
 }
 
-.footer-info-btn:hover {
+.footer-info-btn:hover,
+.footer-stats-btn:hover {
   border-color: #999;
   background-color: #f5f5f5;
   color: #333;
 }
 
-.footer-info-btn:focus {
+.footer-info-btn:focus,
+.footer-stats-btn:focus {
   outline: none;
   border-color: #666;
   background-color: #fff;
@@ -165,7 +168,8 @@
   }
   
   .footer-install-btn,
-  .footer-info-btn {
+  .footer-info-btn,
+  .footer-stats-btn {
     padding: 0.15rem 0.3rem;
     font-size: 0.65rem;
   }
@@ -189,7 +193,8 @@
   }
   
   .footer-install-btn,
-  .footer-info-btn {
+  .footer-info-btn,
+  .footer-stats-btn {
     padding: 0.1rem 0.25rem;
     font-size: 0.6rem;
   }
@@ -240,11 +245,11 @@
 
 .footer-version {
   font-size: 0.65rem;
-  color: #999;
-  opacity: 0.7;
+  color: #888;
   user-select: none;
-  font-weight: 300;
+  font-weight: 500;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Bilgi penceresi: marka + telif satırı */
@@ -719,10 +724,6 @@
   .info-reset-btn {
     padding: 0.4rem 0.6rem;
     font-size: 0.75rem;
-  }
-
-  .footer-version {
-    display: none; /* mobilde alt satırı sade tut */
   }
 
   .info-brand {

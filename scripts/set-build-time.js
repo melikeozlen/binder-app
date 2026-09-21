@@ -1,33 +1,38 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
-// Build zamanını formatla: GG.AA.YY SS:DD
-const now = new Date();
-const day = String(now.getDate()).padStart(2, '0');
-const month = String(now.getMonth() + 1).padStart(2, '0');
-const year = String(now.getFullYear()).slice(-2);
-const hours = String(now.getHours()).padStart(2, '0');
-const minutes = String(now.getMinutes()).padStart(2, '0');
+const root = path.join(__dirname, '..');
 
-const buildTime = `${day}.${month}.${year} ${hours}:${minutes}`;
-
-// .env dosyasını oku veya oluştur
-const envPath = path.join(__dirname, '..', '.env');
-let envContent = '';
-
-if (fs.existsSync(envPath)) {
-  envContent = fs.readFileSync(envPath, 'utf8');
+function git(command) {
+  try {
+    return execSync(command, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return '';
+  }
 }
 
-// REACT_APP_BUILD_TIME'ı güncelle veya ekle
-const buildTimeRegex = /^REACT_APP_BUILD_TIME=.*$/m;
-if (buildTimeRegex.test(envContent)) {
-  envContent = envContent.replace(buildTimeRegex, `REACT_APP_BUILD_TIME=${buildTime}`);
-} else {
-  envContent += `\nREACT_APP_BUILD_TIME=${buildTime}\n`;
+// Sürüm: her commit ile artar. Git yoksa kısa bir sayı.
+const commitCount = git('git rev-list --count HEAD');
+const sha = git('git rev-parse --short HEAD');
+const buildNumber = commitCount && /^\d+$/.test(commitCount) ? commitCount : String(Math.floor(Date.now() / 1000) % 100000);
+
+const envFiles = ['.env.development.local', '.env.production.local'];
+
+function upsert(content, key, value) {
+  const line = `${key}=${value}`;
+  const re = new RegExp(`^${key}=.*$`, 'm');
+  if (re.test(content)) return content.replace(re, line);
+  return `${content.replace(/\s*$/, '')}\n${line}\n`;
 }
 
-fs.writeFileSync(envPath, envContent.trim() + '\n', 'utf8');
+for (const name of envFiles) {
+  const envPath = path.join(root, name);
+  let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+  envContent = upsert(envContent, 'REACT_APP_BUILD_NUMBER', buildNumber);
+  if (sha) envContent = upsert(envContent, 'REACT_APP_BUILD_SHA', sha);
+  envContent = envContent.replace(/^REACT_APP_BUILD_TIME=.*\n?/m, '');
+  fs.writeFileSync(envPath, envContent.trim() + '\n', 'utf8');
+}
 
-console.log(`Build time set to: ${buildTime}`);
-
+console.log(`[build] v${buildNumber}${sha ? ` ${sha}` : ''}`);

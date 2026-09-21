@@ -37,7 +37,12 @@ function createAuthRouter(pool) {
     auth.setSessionCookie(res, token);
     // İstatistik: giriş/kayıt olayı (beklenmez; hata cevabı etkilemez)
     const clientId = isValidClientId(req.body?.clientId) ? req.body.clientId : null;
-    recordEvent(pool, { name: eventName, userId: userRow.id, clientId });
+    recordEvent(pool, {
+      name: eventName,
+      userId: userRow.id,
+      clientId,
+      username: userRow.username,
+    });
     return { user: auth.toPublicUser(userRow) };
   };
 

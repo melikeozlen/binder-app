@@ -40,7 +40,8 @@ function createStatsRouter(pool, presence) {
       const clientId = req.body?.clientId;
       if (!stats.isValidClientId(clientId)) throw badRequest('INVALID_CLIENT_ID', 'Invalid clientId');
 
-      presence.touch(clientId, req.user?.id || null);
+      const silent = stats.isAdmin(req.user);
+      presence.touch(clientId, req.user?.id || null, { silent });
 
       // Oturum aktifliği: en fazla 60 sn'de bir yaz (her istekte DB yazımı olmasın)
       if (req.user && req.sessionToken) {
@@ -56,8 +57,13 @@ function createStatsRouter(pool, presence) {
       }
 
       // Sayfa açılışı → ziyaret olayı (sekme başına bir kez, istemci karar verir)
-      if (req.body?.visit === true) {
-        stats.recordEvent(pool, { name: 'visit', userId: req.user?.id || null, clientId });
+      if (req.body?.visit === true && !silent) {
+        stats.recordEvent(pool, {
+          name: 'visit',
+          userId: req.user?.id || null,
+          clientId,
+          username: req.user?.username,
+        });
       }
 
       res.status(204).end();
@@ -84,7 +90,18 @@ function createStatsRouter(pool, presence) {
         }
       }
 
-      await stats.recordEvent(pool, { name, userId: req.user?.id || null, clientId, props });
+      if (stats.isAdmin(req.user)) {
+        res.status(204).end();
+        return;
+      }
+
+      await stats.recordEvent(pool, {
+        name,
+        userId: req.user?.id || null,
+        clientId,
+        props,
+        username: req.user?.username,
+      });
       res.status(204).end();
     })
   );

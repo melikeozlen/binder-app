@@ -6,6 +6,7 @@ import { getTranslation } from '../utils/translations';
 import { clearAllIndexedDB } from '../utils/indexedDB.js';
 import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './AuthModal';
+import AdminStatsModal from './AdminStats';
 
 const SYNC_ICONS = {
   idle: '',
@@ -136,6 +137,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
   const t = (key) => getTranslation(key, language);
   const { user, available: authAvailable, status: authStatus, loginRequest } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   // Başka bir yerden (örn. binder "Kaydet" butonu) giriş istendi → pencereyi aç
   useEffect(() => {
@@ -239,7 +241,6 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
     }
   };
 
-  const buildTime = process.env.REACT_APP_BUILD_TIME;
   const currentYear = new Date().getFullYear();
 
   return (
@@ -283,6 +284,19 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
               )}
             </button>
             <span className="footer-separator">•</span>
+            {user?.isAdmin && (
+              <>
+                <button
+                  type="button"
+                  className="footer-stats-btn"
+                  onClick={() => setShowStatsModal(true)}
+                  title={t('stats.title')}
+                >
+                  📊 {t('stats.title')}
+                </button>
+                <span className="footer-separator">•</span>
+              </>
+            )}
           </>
         )}
         <button
@@ -316,6 +330,16 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
             {storageUsage.toFixed(1)}%
           </span>
         </div>
+        {(process.env.REACT_APP_BUILD_NUMBER || process.env.REACT_APP_BUILD_SHA) && (
+          <>
+            <span className="footer-separator">•</span>
+            <span className="footer-version" title={process.env.REACT_APP_BUILD_SHA || undefined}>
+              {process.env.REACT_APP_BUILD_NUMBER
+                ? `v${process.env.REACT_APP_BUILD_NUMBER}`
+                : process.env.REACT_APP_BUILD_SHA}
+            </span>
+          </>
+        )}
       </div>
 
       <AuthModal
@@ -325,6 +349,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
         onSyncNow={onSyncNow}
         shares={shares}
       />
+      <AdminStatsModal open={showStatsModal} onClose={() => setShowStatsModal(false)} />
 
       {/* Info Modal */}
       {showInfoModal && createPortal(
@@ -384,11 +409,6 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
                 >
                   🗑️ {t('footer.clearCache')}
                 </button>
-                {buildTime && (
-                  <span className="footer-version" title={t('info.version')}>
-                    {buildTime}
-                  </span>
-                )}
               </div>
               <button
                 className="info-modal-close-btn"

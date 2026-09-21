@@ -36,8 +36,8 @@ function createPresenceStore({ ttlMs = config.stats.presenceTtlMs, now = Date.no
   };
 
   return {
-    touch(clientId, userId = null) {
-      clients.set(clientId, { lastSeen: now(), userId: userId || null });
+    touch(clientId, userId = null, { silent = false } = {}) {
+      clients.set(clientId, { lastSeen: now(), userId: userId || null, silent: Boolean(silent) });
       // Harita büyümesin: her 200 dokunuşta bir eskileri at
       if (clients.size % 200 === 0) prune();
     },
@@ -46,6 +46,7 @@ function createPresenceStore({ ttlMs = config.stats.presenceTtlMs, now = Date.no
       const users = new Set();
       let guests = 0;
       for (const entry of clients.values()) {
+        if (entry.silent) continue;
         if (entry.userId) users.add(entry.userId);
         else guests += 1;
       }
@@ -57,8 +58,9 @@ function createPresenceStore({ ttlMs = config.stats.presenceTtlMs, now = Date.no
   };
 }
 
-// Olay kaydı. Hata istatistik akışını bozmasın; çağıran await etmek zorunda değil.
-async function recordEvent(pool, { name, userId = null, clientId = null, props = {} }) {
+// Olay kaydı. Admin hesaplar (ADMIN_USERNAMES, örn. kepcang) yazılmaz.
+async function recordEvent(pool, { name, userId = null, clientId = null, props = {}, username = null }) {
+  if (username && isAdminUsername(username)) return false;
   if (!EVENT_NAME_RE.test(name)) return false;
   try {
     await pool.query(
@@ -78,6 +80,11 @@ async function purgeOldEvents(pool, days = config.stats.eventRetentionDays) {
 
 // Yönetici özeti (tek sorgu turu; tüm sayılar birlikte döner)
 async function collectStats(pool, presence) {
+  const admins = [...config.adminUsernames];
+  const notAdminUser = `
+    (e.user_id IS NULL OR e.user_id NOT IN (
+      SELECT id FROM users WHERE lower(username) = ANY($1::text[])
+    ))`;
   const [
     { rows: userRows },
     { rows: loginRows },
@@ -92,41 +99,59 @@ async function collectStats(pool, presence) {
              count(*) FILTER (WHERE created_at >= date_trunc('day', now()))::int AS today,
              count(*) FILTER (WHERE created_at >= now() - interval '7 days')::int AS week
         FROM users`),
-    pool.query(`
+    pool.query(
+      `
       SELECT count(*) FILTER (WHERE name = 'login' AND created_at >= date_trunc('day', now()))::int AS login_today,
              count(*) FILTER (WHERE name = 'login' AND created_at >= now() - interval '7 days')::int AS login_week,
              count(*) FILTER (WHERE name = 'visit' AND created_at >= date_trunc('day', now()))::int AS visit_today,
              count(*) FILTER (WHERE name = 'visit' AND created_at >= now() - interval '7 days')::int AS visit_week,
              count(DISTINCT client_id) FILTER (WHERE name = 'visit' AND created_at >= date_trunc('day', now()))::int AS visitors_today,
              count(DISTINCT client_id) FILTER (WHERE name = 'visit' AND created_at >= now() - interval '7 days')::int AS visitors_week
-        FROM events
-       WHERE name IN ('login', 'visit') AND created_at >= now() - interval '7 days'`),
-    pool.query(`
-      SELECT count(DISTINCT user_id) FILTER (WHERE coalesce(last_seen_at, created_at) >= date_trunc('day', now()))::int AS today,
-             count(DISTINCT user_id) FILTER (WHERE coalesce(last_seen_at, created_at) >= now() - interval '7 days')::int AS week,
-             count(*) FILTER (WHERE expires_at > now())::int AS open_sessions
-        FROM sessions`),
+        FROM events e
+       WHERE name IN ('login', 'visit')
+         AND created_at >= now() - interval '7 days'
+         AND ${notAdminUser}`,
+      [admins]
+    ),
+    pool.query(
+      `
+      SELECT count(DISTINCT s.user_id) FILTER (WHERE coalesce(s.last_seen_at, s.created_at) >= date_trunc('day', now()))::int AS today,
+             count(DISTINCT s.user_id) FILTER (WHERE coalesce(s.last_seen_at, s.created_at) >= now() - interval '7 days')::int AS week,
+             count(*) FILTER (WHERE s.expires_at > now())::int AS open_sessions
+        FROM sessions s
+        JOIN users u ON u.id = s.user_id
+       WHERE lower(u.username) <> ALL($1::text[])`,
+      [admins]
+    ),
     pool.query(`
       SELECT (SELECT count(*)::int FROM binders) AS total,
              (SELECT count(*)::int FROM binder_members) AS memberships,
              (SELECT count(*)::int FROM binders WHERE updated_at >= now() - interval '7 days') AS updated_week`),
     pool.query('SELECT count(*)::int AS count, coalesce(sum(size_bytes), 0)::bigint AS bytes FROM images'),
-    pool.query(`
-      SELECT name,
-             count(*) FILTER (WHERE created_at >= date_trunc('day', now()))::int AS today,
-             count(*) FILTER (WHERE created_at >= now() - interval '7 days')::int AS week,
+    pool.query(
+      `
+      SELECT e.name,
+             count(*) FILTER (WHERE e.created_at >= date_trunc('day', now()))::int AS today,
+             count(*) FILTER (WHERE e.created_at >= now() - interval '7 days')::int AS week,
              count(*)::int AS total
-        FROM events
-       WHERE name NOT IN ('visit')
-       GROUP BY name
-       ORDER BY week DESC, total DESC`),
-    pool.query(`
+        FROM events e
+       WHERE e.name NOT IN ('visit')
+         AND ${notAdminUser}
+       GROUP BY e.name
+       ORDER BY week DESC, total DESC`,
+      [admins]
+    ),
+    pool.query(
+      `
       SELECT u.username, e.created_at
         FROM events e
         JOIN users u ON u.id = e.user_id
        WHERE e.name IN ('login', 'register')
+         AND lower(u.username) <> ALL($1::text[])
        ORDER BY e.created_at DESC
-       LIMIT 10`),
+       LIMIT 10`,
+      [admins]
+    ),
   ]);
 
   const l = loginRows[0] || {};

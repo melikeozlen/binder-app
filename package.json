@@ -29,7 +29,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "node scripts/set-build-time.js && react-scripts start",
     "server": "node server/index.js",
     "server:dev": "node --watch server/index.js",
     "dev:vercel": "vercel dev --listen 3000",
