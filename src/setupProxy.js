@@ -60,8 +60,6 @@ const BACKEND_PATHS = [
   '/api/binders',
   '/api/shares',
   '/api/health',
-  '/api/presence',
-  '/api/events',
   '/api/admin',
 ];
 

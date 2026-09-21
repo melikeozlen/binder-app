@@ -17,10 +17,10 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
--- Oturumun en son ne zaman aktif görüldüğü (presence heartbeat ile, ≥60 sn aralıkla güncellenir)
+-- Oturum oluşturulurken last_seen_at yazılır (anlık presence yok)
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
 
--- Kullanım olayları (istatistik): visit, login, register, binder_created, ...
+-- Kullanım olayları (istatistik): login, register
 -- user_id giriş yapılmamışsa NULL; client_id tarayıcı başına anonim kimlik.
 CREATE TABLE IF NOT EXISTS events (
   id          BIGSERIAL PRIMARY KEY,
@@ -100,11 +100,11 @@ CREATE INDEX IF NOT EXISTS binder_shares_from_pending_idx
 CREATE UNIQUE INDEX IF NOT EXISTS binder_shares_pending_unique_idx
   ON binder_shares(from_user_id, to_user_id, binder_id) WHERE status = 'pending';
 
--- Oturum son görülme (istatistik: bugün/hafta aktif kullanıcı). Nullable: eski satırlar bozulmaz.
+-- Oturum oluşturulurken last_seen_at yazılır. Nullable: eski satırlar bozulmaz.
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS sessions_last_seen_at_idx ON sessions(last_seen_at);
 
--- Uygulama olayları (giriş, ziyaret, binder oluşturma…). user silinince satır kalır (user_id null).
+-- Uygulama olayları (login, register). user silinince satır kalır (user_id null).
 CREATE TABLE IF NOT EXISTS events (
   id          BIGSERIAL PRIMARY KEY,
   name        TEXT NOT NULL,

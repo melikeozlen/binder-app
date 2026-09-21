@@ -5,36 +5,17 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import './AdminStats.css';
 
-const EVENT_KEYS = {
-  login: 'stats.event.login',
-  register: 'stats.event.register',
-  binder_created: 'stats.event.binderCreated',
-  binder_saved: 'stats.event.binderSaved',
-  binder_exported: 'stats.event.binderExported',
-  binder_imported: 'stats.event.binderImported',
-  share_sent: 'stats.event.shareSent',
-  zip_download: 'stats.event.zipDownload',
-  image_download: 'stats.event.imageDownload',
-};
-
 const fill = (text, params) =>
   Object.entries(params || {}).reduce((acc, [k, v]) => acc.replace(`{${k}}`, v), text);
-
-const formatBytes = (bytes) => {
-  const n = Number(bytes) || 0;
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-};
 
 const formatTime = (value, language) => {
   if (!value) return '';
   try {
     const locale = language === 'kr' ? 'ko' : language === 'en' ? 'en' : 'tr';
     return new Date(value).toLocaleString(locale, {
-      month: 'short',
-      day: 'numeric',
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -43,10 +24,6 @@ const formatTime = (value, language) => {
   }
 };
 
-/**
- * Ayrı istatistik penceresi. Yalnızca admin (ADMIN_USERNAMES) açabilir;
- * 403/404 olursa içeriği gizler.
- */
 const AdminStatsModal = ({ open, onClose }) => {
   const { language } = useLanguage();
   const t = (key, params) => fill(getTranslation(key, language), params);
@@ -78,19 +55,13 @@ const AdminStatsModal = ({ open, onClose }) => {
       if (e.key === 'Escape') onClose?.();
     };
     document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-    };
+    return () => document.removeEventListener('keydown', onKey);
   }, [open, load, onClose]);
 
   if (!open || error === 'hidden') return null;
 
-  const online = data?.online || { total: 0, users: 0, guests: 0 };
-  const users = data?.users || { total: 0, today: 0 };
   const logins = data?.logins || { today: 0, week: 0 };
-  const visits = data?.visits || { visitorsToday: 0, visitorsWeek: 0 };
-  const binders = data?.binders || { total: 0 };
-  const images = data?.images || { count: 0, bytes: 0 };
+  const rows = Array.isArray(data?.recentLogins) ? data.recentLogins : [];
 
   return createPortal(
     <div
@@ -132,15 +103,6 @@ const AdminStatsModal = ({ open, onClose }) => {
         <div className="admin-stats-modal-body">
           {error && <p className="admin-stats-error">{t('stats.error')}</p>}
 
-          <div className="admin-stats-online">
-            <span className="admin-stats-online-dot" aria-hidden="true" />
-            <strong>{online.total}</strong>
-            <span>{t('stats.online')}</span>
-            <span className="admin-stats-online-split">
-              {t('stats.onlineSplit', { users: online.users, guests: online.guests })}
-            </span>
-          </div>
-
           <div className="admin-stats-grid">
             <div className="admin-stats-cell">
               <span className="admin-stats-num">{logins.today}</span>
@@ -150,57 +112,23 @@ const AdminStatsModal = ({ open, onClose }) => {
               <span className="admin-stats-num">{logins.week}</span>
               <span className="admin-stats-label">{t('stats.loginsWeek')}</span>
             </div>
-            <div className="admin-stats-cell">
-              <span className="admin-stats-num">{visits.visitorsToday}</span>
-              <span className="admin-stats-label">{t('stats.visitorsToday')}</span>
-            </div>
-            <div className="admin-stats-cell">
-              <span className="admin-stats-num">{visits.visitorsWeek}</span>
-              <span className="admin-stats-label">{t('stats.visitorsWeek')}</span>
-            </div>
-            <div className="admin-stats-cell">
-              <span className="admin-stats-num">{users.total}</span>
-              <span className="admin-stats-label">{t('stats.usersTotal')}</span>
-            </div>
-            <div className="admin-stats-cell">
-              <span className="admin-stats-num">{users.today}</span>
-              <span className="admin-stats-label">{t('stats.usersToday')}</span>
-            </div>
-            <div className="admin-stats-cell">
-              <span className="admin-stats-num">{binders.total}</span>
-              <span className="admin-stats-label">{t('stats.binders')}</span>
-            </div>
-            <div className="admin-stats-cell">
-              <span className="admin-stats-num">{images.count}</span>
-              <span className="admin-stats-label">{t('stats.images', { size: formatBytes(images.bytes) })}</span>
-            </div>
           </div>
 
-          {Array.isArray(data?.events) && data.events.length > 0 && (
-            <ul className="admin-stats-events">
-              {data.events.map((row) => (
-                <li key={row.name}>
-                  <span>{t(EVENT_KEYS[row.name] || 'stats.event.other', { name: row.name })}</span>
+          <p className="admin-stats-subtitle">{t('stats.recentLogins')}</p>
+          {rows.length === 0 ? (
+            <p className="admin-stats-empty">{t('stats.emptyLogins')}</p>
+          ) : (
+            <ul className="admin-stats-recent">
+              {rows.map((row, i) => (
+                <li key={`${row.username}-${row.at}-${i}`}>
                   <span>
-                    {row.today}/{row.week}
+                    @{row.username}
+                    {row.kind === 'register' ? ` · ${t('stats.event.register')}` : ''}
                   </span>
+                  <span>{formatTime(row.at, language)}</span>
                 </li>
               ))}
             </ul>
-          )}
-
-          {Array.isArray(data?.recentLogins) && data.recentLogins.length > 0 && (
-            <>
-              <p className="admin-stats-subtitle">{t('stats.recentLogins')}</p>
-              <ul className="admin-stats-recent">
-                {data.recentLogins.map((row, i) => (
-                  <li key={`${row.username}-${row.at}-${i}`}>
-                    <span>@{row.username}</span>
-                    <span>{formatTime(row.at, language)}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
           )}
         </div>
       </div>

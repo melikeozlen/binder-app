@@ -45,11 +45,6 @@ module.exports = {
   serveStatic: process.env.SERVE_STATIC !== 'false',
   adminUsernames,
   stats: {
-    // Bu süre içinde heartbeat gönderen istemci "online" sayılır
-    presenceTtlMs: 6 * 60 * 1000,
-    // sessions.last_seen_at en fazla bu sıklıkta yazılır
-    lastSeenWriteIntervalSec: 60,
-    // Olay kayıtları bu süreden sonra silinir
     eventRetentionDays: toInt(process.env.EVENT_RETENTION_DAYS, 180),
   },
   limits: {

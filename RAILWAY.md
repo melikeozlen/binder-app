@@ -73,11 +73,11 @@ Tek domain (yalnızca Railway) daha basittir; önerilen budur.
 ```
 server/
   index.js          başlangıç, şema init, graceful shutdown
-  app.js            Express: /api/health, /api/auth, /api/binders, /api/presence, /api/admin/stats, /api/drive-*, static build
+  app.js            Express: /api/health, /api/auth, /api/binders, /api/admin/stats, /api/drive-*, static build
   auth.js           kullanıcı adı (3-32, harf/rakam/_/.) + bcrypt şifre, httpOnly oturum çerezi
-  stats.js          presence (bellek), olay kaydı, admin özeti
+  stats.js          giriş kaydı (login/register), admin özeti
   routes/auth.js    POST register|login|logout, GET me  (rate limit: 30 / 15 dk)
-  routes/stats.js   POST /presence (heartbeat), POST /events, GET /admin/stats (ADMIN_USERNAMES)
+  routes/stats.js   GET /admin/stats (ADMIN_USERNAMES; yalnızca kim/ne zaman giriş)
   routes/binders.js GET list (kendi + paylaşılan), GET/PUT/DELETE :id, GET :id/images, POST :id/images/fetch, PUT :id/images
                     (binder sahip ya da üye olunan hesapta çözülür; DELETE üye için "ayrıl" anlamına gelir)
   routes/shares.js  GET list (bekleyen + üyelikler), POST (davet), POST :id/accept | :id/reject, DELETE :id (iptal),
