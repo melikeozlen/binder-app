@@ -660,57 +660,64 @@ const SettingsBar = ({
               </div>
             ) : (
               <div className="binder-menu-item-content">
-                <span className="binder-menu-item-text">{binder.name}</span>
-                {cloudEnabled && onSaveBinderToCloud && (
-                  <span className="binder-menu-cloud-controls">
-                    {binder.shared ? (
-                      // Benimle paylaşılan binder: sahibi + yetkiyi göster, paylaş butonu yok
-                      <span
-                        className="binder-menu-cloud-badge binder-menu-cloud-badge--shared"
-                        title={`${t('binder.sharedBinder')} · @${binder.ownerUsername || '?'} · ${
-                          binder.role === 'view' ? t('share.roleView') : t('share.roleEdit')
-                        }`}
-                      >
-                        {binder.role === 'view' ? '👁' : '👥'} @{binder.ownerUsername || '?'}
-                      </span>
-                    ) : cloudBinderIds?.has(binder.id) ? (
+                <div className="binder-menu-item-main">
+                  <span className="binder-menu-item-text">{binder.name}</span>
+                  {binder.shared && (
+                    <span
+                      className="binder-menu-item-meta"
+                      title={`${t('binder.sharedBinder')} · @${binder.ownerUsername || '?'} · ${
+                        binder.role === 'view' ? t('share.roleView') : t('share.roleEdit')
+                      }`}
+                    >
+                      {binder.role === 'view' ? '👁' : '👥'} @{binder.ownerUsername || '?'}
+                    </span>
+                  )}
+                </div>
+                <div className="binder-menu-item-actions">
+                  {cloudEnabled && onSaveBinderToCloud && !binder.shared && (
+                    cloudBinderIds?.has(binder.id) ? (
                       <>
-                        <span className="binder-menu-cloud-badge" title={t('binder.cloudSaved')}>
-                          ☁️ {t('binder.cloudSavedShort')}
+                        <span
+                          className="binder-menu-action-btn binder-menu-action-btn--static"
+                          title={t('binder.cloudSaved')}
+                          aria-label={t('binder.cloudSavedShort')}
+                        >
+                          ☁
                         </span>
                         {onShareBinder && (
                           <button
                             type="button"
-                            className="binder-menu-cloud-share-btn"
+                            className="binder-menu-action-btn binder-menu-share-btn"
                             onClick={(e) => {
                               e.stopPropagation();
                               onShareBinder(binder.id);
                             }}
                             title={t('share.shareBinder')}
+                            aria-label={t('share.shareShort')}
                           >
-                            ↗ {t('share.shareShort')}
+                            ↗
                           </button>
                         )}
                       </>
                     ) : (
                       <button
                         type="button"
-                        className="binder-menu-cloud-save-btn"
+                        className="binder-menu-action-btn binder-menu-cloud-btn"
                         disabled={savingBinderIds?.has(binder.id)}
                         onClick={(e) => {
                           e.stopPropagation();
                           onSaveBinderToCloud(binder.id);
                         }}
                         title={t('binder.saveToCloud')}
+                        aria-label={t('binder.saveToCloudShort')}
                       >
-                        {savingBinderIds?.has(binder.id) ? '⟳' : '☁'} {t('binder.saveToCloudShort')}
+                        {savingBinderIds?.has(binder.id) ? '⟳' : '☁︎'}
                       </button>
-                    )}
-                  </span>
-                )}
-                <div className="binder-menu-item-actions">
+                    )
+                  )}
                   {!(binder.shared && binder.role === 'view') && (
                     <button
+                      type="button"
                       className="binder-menu-action-btn binder-menu-edit-btn"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -724,6 +731,7 @@ const SettingsBar = ({
                   )}
                   {binders.length > 1 && (
                     <button
+                      type="button"
                       className="binder-menu-action-btn binder-menu-delete-btn"
                       onClick={(e) => {
                         e.stopPropagation();
