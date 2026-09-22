@@ -728,19 +728,17 @@ const SettingsBar = ({
                         <MenuIcon name="edit" />
                       </button>
                     )}
-                    {binders.length > 1 && (
-                      <button
-                        type="button"
-                        className="binder-menu-action-btn binder-menu-delete-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteOrLeaveBinder(binder);
-                        }}
-                        title={binder.shared ? t('binder.leaveShared') : t('binder.deleteBinder')}
-                      >
-                        <MenuIcon name={binder.shared ? 'leave' : 'trash'} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="binder-menu-action-btn binder-menu-delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteOrLeaveBinder(binder);
+                      }}
+                      title={binder.shared ? t('binder.leaveShared') : t('binder.deleteBinder')}
+                    >
+                      <MenuIcon name={binder.shared ? 'leave' : 'trash'} />
+                    </button>
                   </div>
                 </div>
               </div>
