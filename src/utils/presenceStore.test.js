@@ -42,6 +42,15 @@ describe('createPresenceStore', () => {
     expect(store.counts()).toEqual({ total: 0, users: 0, guests: 0 });
   });
 
+  test('leave ile hemen listeden düşer', () => {
+    let now = 1_000_000;
+    const store = createPresenceStore({ ttlMs: 120_000, now: () => now });
+    store.touch('guest-aaa1', null);
+    expect(store.counts().guests).toBe(1);
+    expect(store.leave('guest-aaa1')).toBe(true);
+    expect(store.counts()).toEqual({ total: 0, users: 0, guests: 0 });
+  });
+
   test('people listesinde kullanıcı adı ve son eylem görünür', () => {
     let now = 1_000_000;
     const store = createPresenceStore({ ttlMs: 120_000, now: () => now });

@@ -4,8 +4,9 @@ const { requireAuth } = require('../auth');
 const stats = require('../stats');
 
 /**
- *  POST /api/presence     bellek içi heartbeat (DB yok; ilk misafir visit kaydı)
- *  GET  /api/admin/stats  online kişiler + aktivite (ADMIN_USERNAMES)
+ *  POST /api/presence       bellek içi heartbeat (DB yok; ilk misafir visit kaydı)
+ *  POST /api/presence/leave sekme kapanınca listeden düş
+ *  GET  /api/admin/stats    online kişiler + aktivite (ADMIN_USERNAMES)
  */
 function createStatsRouter(pool, presence) {
   const router = express.Router();
@@ -29,6 +30,17 @@ function createStatsRouter(pool, presence) {
         stats.recordEvent(pool, { name: 'visit', clientId }).catch(() => {});
       }
 
+      res.status(204).end();
+    })
+  );
+
+  router.post(
+    '/presence/leave',
+    json,
+    wrap(async (req, res) => {
+      const clientId = req.body?.clientId;
+      if (!stats.isValidClientId(clientId)) throw badRequest('INVALID_CLIENT_ID', 'Invalid client id');
+      presence.leave(clientId);
       res.status(204).end();
     })
   );

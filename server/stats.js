@@ -52,6 +52,10 @@ function createPresenceStore({ ttlMs = config.stats.presenceTtlMs, now = Date.no
 
   return {
     touch,
+    leave(clientId) {
+      if (!clientId) return false;
+      return clients.delete(clientId);
+    },
     markAction(userId, action) {
       if (!userId || !action) return;
       const ts = now();
@@ -164,6 +168,7 @@ async function collectStats(pool, presence) {
         FROM events e
         LEFT JOIN users u ON u.id = e.user_id
        WHERE e.name = ANY($2::text[])
+         AND e.created_at >= now() - interval '12 hours'
          AND (u.username IS NULL OR lower(u.username) <> ALL($1::text[]))
        ORDER BY e.created_at DESC
        LIMIT 60`,
