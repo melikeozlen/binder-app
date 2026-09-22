@@ -14,9 +14,10 @@ const FOCUS_THROTTLE_MS = 5 * 60 * 1000;
 /**
  * App state'i ile bulut eşitlemesi arasındaki köprü.
  * - Bulut kaydı opt-in: saveBinder(id) ile hesaba kaydedilen binder'lar (cloudBinderIds)
- * - Otomatik push yok: değişiklikler dirty kalır; kullanıcı "Kaydet" veya "Şimdi eşitle" deyince yazılır
+ * - Otomatik push yok: değişiklikler dirty kalır; kullanıcı üst çubuktaki "Kaydet" ile yazar
  * - markDirty(): kullanıcı düzenlemesi → dirty=true
  * - pushNow(): seçili binder'ı hemen push et
+ * - saveBinder(): binder'ı hesaba kaydet (Save as)
  * - Giriş: bir kez tam reconcile; sekme uzun süre sonra öne gelince hafif reconcile
  * - deleteBinder(): buluttan da sil
  */
@@ -159,7 +160,7 @@ export function useCloudSync({
     return pushOne(binderId);
   }, [pushOne]);
 
-  // "Kaydet": yerel binder'ı hesaba yükle, sonrasında otomatik eşitlensin
+  // "Save as": yerel binder'ı hesaba yükle
   const saveBinder = useCallback(
     async (binderId) => {
       if (!userRef.current) return null;

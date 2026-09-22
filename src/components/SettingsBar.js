@@ -74,7 +74,6 @@ const SettingsBar = ({
   onDeleteBinder,
   onRenameBinder,
   cloudEnabled = false,
-  cloudBinderIds,
   savingBinderIds,
   onSaveBinderToCloud,
   onShareBinder,
@@ -678,53 +677,42 @@ const SettingsBar = ({
                     )}
                   </div>
                   <div className="binder-menu-item-actions">
-                    {cloudEnabled && onSaveBinderToCloud && !binder.shared && (
-                      cloudBinderIds?.has(binder.id) ? (
-                        <>
-                          <span
-                            className="binder-menu-action-btn binder-menu-action-btn--static"
-                            title={t('binder.cloudSaved')}
-                            aria-label={t('binder.cloudSavedShort')}
-                          >
-                            <MenuIcon name="cloud-check" />
-                          </span>
-                          {onShareBinder && (
-                            <button
-                              type="button"
-                              className="binder-menu-action-btn binder-menu-share-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onShareBinder(binder.id);
-                              }}
-                              title={t('share.shareBinder')}
-                              aria-label={t('share.shareShort')}
-                            >
-                              <MenuIcon name="share" />
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          className="binder-menu-action-btn binder-menu-cloud-btn"
-                          disabled={savingBinderIds?.has(binder.id)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSaveBinderToCloud(binder.id);
-                          }}
-                          title={t('binder.saveToCloud')}
-                          aria-label={t('binder.saveToCloudShort')}
-                        >
-                          <MenuIcon
-                            name={savingBinderIds?.has(binder.id) ? 'spinner' : 'save'}
-                            className={
-                              savingBinderIds?.has(binder.id)
-                                ? 'menu-icon menu-icon--spin'
-                                : 'menu-icon'
-                            }
-                          />
-                        </button>
-                      )
+                    {cloudEnabled && !binder.shared && (
+                      <button
+                        type="button"
+                        className="binder-menu-action-btn binder-menu-cloud-btn"
+                        disabled={savingBinderIds?.has(binder.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSaveBinderToCloud?.(binder.id);
+                        }}
+                        title={t('binder.saveAs')}
+                        aria-label={t('binder.saveAsShort')}
+                      >
+                        <MenuIcon
+                          name={savingBinderIds?.has(binder.id) ? 'spinner' : 'save-as'}
+                          className={
+                            savingBinderIds?.has(binder.id)
+                              ? 'menu-icon menu-icon--spin'
+                              : 'menu-icon'
+                          }
+                        />
+                      </button>
+                    )}
+                    {cloudEnabled && onShareBinder && !binder.shared && (
+                      <button
+                        type="button"
+                        className="binder-menu-action-btn binder-menu-share-btn"
+                        disabled={savingBinderIds?.has(binder.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onShareBinder(binder.id);
+                        }}
+                        title={t('share.shareBinder')}
+                        aria-label={t('share.shareShort')}
+                      >
+                        <MenuIcon name="share" />
+                      </button>
                     )}
                     {!(binder.shared && binder.role === 'view') && (
                       <button

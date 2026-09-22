@@ -1480,12 +1480,7 @@ function App() {
   const [shareBinderId, setShareBinderId] = useState(null);
   const shareBinderName = binders.find((b) => b.id === shareBinderId)?.name || '';
 
-  // Binder menüsündeki "↗ Paylaş": kullanıcı adı popup'ı aç
-  const handleShareBinder = (binderId) => {
-    setShareBinderId(binderId);
-  };
-
-  // Binder menüsündeki "☁ Kaydet": giriş yoksa giriş penceresini aç, varsa hesaba yükle
+  // Binder menüsündeki "Save as": giriş yoksa giriş penceresini aç, varsa hesaba yükle
   const { saveBinder: saveBinderToCloud } = cloudSync;
   const saveBinderToCloudWithNotice = useCallback(
     async (binderId) => {
@@ -1510,6 +1505,20 @@ function App() {
       return;
     }
     saveBinderToCloudWithNotice(binderId);
+  };
+
+  // Paylaş: hesabında yoksa önce kaydet, sonra davet penceresi
+  const handleShareBinder = async (binderId) => {
+    if (!authUser) {
+      setPendingCloudSaveId(binderId);
+      requestLogin();
+      return;
+    }
+    if (!cloudSync.cloudBinderIds.has(binderId)) {
+      const result = await saveBinderToCloudWithNotice(binderId);
+      if (!result) return;
+    }
+    setShareBinderId(binderId);
   };
 
   useEffect(() => {
@@ -2431,10 +2440,9 @@ function App() {
         onDeleteBinder={handleDeleteBinder}
         onRenameBinder={edit(handleRenameBinder)}
         cloudEnabled={authAvailable}
-        cloudBinderIds={cloudSync.cloudBinderIds}
         savingBinderIds={cloudSync.savingBinderIds}
         onSaveBinderToCloud={handleSaveBinderToCloud}
-        onShareBinder={authUser ? handleShareBinder : undefined}
+        onShareBinder={handleShareBinder}
         onExportBinder={handleExportBinder}
         onImportBinder={edit(handleImportBinder)}
         binderUsedImages={binderUsedImages}
