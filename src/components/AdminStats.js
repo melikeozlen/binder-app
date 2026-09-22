@@ -6,7 +6,7 @@ import { getTranslation } from '../utils/translations';
 import './AdminStats.css';
 
 const fill = (text, params) =>
-  Object.entries(params || {}).reduce((acc, [k, v]) => acc.replace(`{${k}}`, v), text);
+  Object.entries(params || {}).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), text);
 
 const formatTime = (value, language) => {
   if (!value) return '';
@@ -22,6 +22,22 @@ const formatTime = (value, language) => {
   } catch {
     return String(value);
   }
+};
+
+const formatRelative = (value, t) => {
+  if (!value) return '';
+  const diff = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(diff) || diff < 0) return '';
+  if (diff < 45_000) return t('stats.justNow');
+  if (diff < 3_600_000) return t('stats.minutesAgo', { n: Math.max(1, Math.floor(diff / 60_000)) });
+  if (diff < 86_400_000) return t('stats.hoursAgo', { n: Math.max(1, Math.floor(diff / 3_600_000)) });
+  return t('stats.daysAgo', { n: Math.max(1, Math.floor(diff / 86_400_000)) });
+};
+
+const actionLabel = (name, t) => {
+  const key = `stats.event.${name}`;
+  const translated = t(key);
+  return translated === key ? name : translated;
 };
 
 const AdminStatsModal = ({ open, onClose }) => {
@@ -60,9 +76,11 @@ const AdminStatsModal = ({ open, onClose }) => {
 
   if (!open || error === 'hidden') return null;
 
-  const online = data?.online || { total: 0, users: 0, guests: 0 };
+  const online = data?.online || { total: 0, users: 0, guests: 0, people: [] };
+  const people = Array.isArray(online.people) ? online.people : [];
   const logins = data?.logins || { today: 0, week: 0 };
-  const rows = Array.isArray(data?.recentLogins) ? data.recentLogins : [];
+  const activity = Array.isArray(data?.activity) ? data.activity : [];
+  const loginRows = Array.isArray(data?.recentLogins) ? data.recentLogins : [];
 
   return createPortal(
     <div
@@ -113,6 +131,36 @@ const AdminStatsModal = ({ open, onClose }) => {
             </span>
           </div>
 
+          <p className="admin-stats-subtitle">{t('stats.onlinePeople')}</p>
+          {people.length === 0 ? (
+            <p className="admin-stats-empty">{t('stats.emptyOnline')}</p>
+          ) : (
+            <ul className="admin-stats-people">
+              {people.map((p, i) => (
+                <li key={`${p.kind}-${p.username || p.clientId}-${i}`}>
+                  <div className="admin-stats-people-main">
+                    <span className="admin-stats-people-name">
+                      {p.kind === 'user'
+                        ? `@${p.username || '?'}`
+                        : t('stats.guestLabel', { id: p.clientId || '????' })}
+                    </span>
+                    <span className="admin-stats-people-action">
+                      {actionLabel(p.lastAction || 'online', t)}
+                    </span>
+                  </div>
+                  <div className="admin-stats-people-meta">
+                    <span title={formatTime(p.lastSeen, language)}>
+                      {t('stats.lastSeen')}: {formatRelative(p.lastSeen, t)}
+                    </span>
+                    <span title={formatTime(p.firstSeen, language)}>
+                      {t('stats.since')}: {formatRelative(p.firstSeen, t)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <div className="admin-stats-grid">
             <div className="admin-stats-cell">
               <span className="admin-stats-num">{logins.today}</span>
@@ -124,13 +172,33 @@ const AdminStatsModal = ({ open, onClose }) => {
             </div>
           </div>
 
+          <p className="admin-stats-subtitle">{t('stats.recentActivity')}</p>
+          {activity.length === 0 ? (
+            <p className="admin-stats-empty">{t('stats.emptyActivity')}</p>
+          ) : (
+            <ul className="admin-stats-recent">
+              {activity.map((row, i) => (
+                <li key={`${row.name}-${row.at}-${i}`}>
+                  <span>
+                    {row.username
+                      ? `@${row.username}`
+                      : t('stats.guestLabel', { id: row.guestId || '????' })}
+                    {' · '}
+                    {actionLabel(row.name, t)}
+                  </span>
+                  <span>{formatTime(row.at, language)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <p className="admin-stats-subtitle">{t('stats.recentLogins')}</p>
-          {rows.length === 0 ? (
+          {loginRows.length === 0 ? (
             <p className="admin-stats-empty">{t('stats.emptyLogins')}</p>
           ) : (
             <ul className="admin-stats-recent">
-              {rows.map((row, i) => (
-                <li key={`${row.username}-${row.at}-${i}`}>
+              {loginRows.map((row, i) => (
+                <li key={`login-${row.username}-${row.at}-${i}`}>
                   <span>
                     @{row.username}
                     {row.kind === 'register' ? ` · ${t('stats.event.register')}` : ''}

@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const { HttpError, badRequest, notFound, wrap } = require('../errors');
 const { requireAuth, normalizeUsername, isValidUsername } = require('../auth');
 const { withTransaction } = require('../db');
+const { recordEvent } = require('../stats');
 
 const PG_UNIQUE_VIOLATION = '23505';
 const BINDER_ID_RE = /^[A-Za-z0-9_.:-]{1,120}$/;
@@ -179,6 +180,14 @@ function createSharesRouter(pool) {
       res.status(201).json({
         share: mapShare({ ...row, from_username: req.user.username, to_username: target.username }),
       });
+
+      recordEvent(pool, {
+        name: 'share_sent',
+        userId: req.user.id,
+        username: req.user.username,
+        props: { binderId, to: target.username },
+      }).catch(() => {});
+      req.app.locals.presence?.markAction?.(req.user.id, 'share_sent');
     })
   );
 

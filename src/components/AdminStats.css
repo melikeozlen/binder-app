@@ -153,6 +153,51 @@
   color: #888;
 }
 
+.admin-stats-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.admin-stats-people li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: #f7f7f7;
+}
+
+.admin-stats-people-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.admin-stats-people-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #222;
+}
+
+.admin-stats-people-action {
+  font-size: 0.72rem;
+  color: #1a5fb4;
+  font-weight: 550;
+}
+
+.admin-stats-people-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  font-size: 0.7rem;
+  color: #777;
+}
+
 .admin-stats-recent {
   list-style: none;
   margin: 0;

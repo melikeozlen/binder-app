@@ -4,6 +4,7 @@ const { HttpError, badRequest, notFound, wrap } = require('../errors');
 const { requireAuth } = require('../auth');
 const { withTransaction } = require('../db');
 const { fnv1a } = require('../lib/hash');
+const { recordEvent } = require('../stats');
 
 const BINDER_ID_RE = /^[A-Za-z0-9_.:-]{1,120}$/;
 const IMAGE_KEY_RE = /^[A-Za-z0-9_.:-]{1,200}$/;
@@ -254,6 +255,15 @@ function createBindersRouter(pool) {
       });
 
       res.json({ id: binderId, updatedAt });
+
+      // İstatistik: buluta kaydet (admin atlanır; presence'da son eylem)
+      recordEvent(pool, {
+        name: 'binder_saved',
+        userId: req.user.id,
+        username: req.user.username,
+        props: { binderId },
+      }).catch(() => {});
+      req.app.locals.presence?.markAction?.(req.user.id, 'binder_saved');
     })
   );
 

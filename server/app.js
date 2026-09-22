@@ -44,6 +44,8 @@ function createApp(pool) {
     }
   });
 
+  app.locals.presence = presence;
+
   app.use('/api/auth', createAuthRouter(pool));
   app.use('/api/binders', createBindersRouter(pool));
   app.use('/api/shares', createSharesRouter(pool));

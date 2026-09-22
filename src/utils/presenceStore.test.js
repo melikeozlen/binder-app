@@ -18,9 +18,9 @@ describe('createPresenceStore', () => {
     let now = 1_000_000;
     const store = createPresenceStore({ ttlMs: 120_000, now: () => now });
     store.touch('guest-aaa1', null);
-    store.touch('user-aaaa', 'u1');
-    store.touch('user-bbbb', 'u2');
-    store.touch('user-cccc', 'u1');
+    store.touch('user-aaaa', 'u1', { username: 'ali' });
+    store.touch('user-bbbb', 'u2', { username: 'ayse' });
+    store.touch('user-cccc', 'u1', { username: 'ali' });
     expect(store.counts()).toEqual({ total: 3, users: 2, guests: 1 });
   });
 
@@ -28,8 +28,10 @@ describe('createPresenceStore', () => {
     let now = 1_000_000;
     const store = createPresenceStore({ ttlMs: 120_000, now: () => now });
     store.touch('guest-aaa1', null);
-    store.touch('admin-xxxx', 'adm1', { silent: true });
+    store.touch('admin-xxxx', 'adm1', { silent: true, username: 'kepcang' });
     expect(store.counts()).toEqual({ total: 1, users: 0, guests: 1 });
+    expect(store.people()).toHaveLength(1);
+    expect(store.people()[0].kind).toBe('guest');
   });
 
   test('TTL dolunca düşer', () => {
@@ -38,5 +40,20 @@ describe('createPresenceStore', () => {
     store.touch('guest-aaa1', null);
     now += 61_000;
     expect(store.counts()).toEqual({ total: 0, users: 0, guests: 0 });
+  });
+
+  test('people listesinde kullanıcı adı ve son eylem görünür', () => {
+    let now = 1_000_000;
+    const store = createPresenceStore({ ttlMs: 120_000, now: () => now });
+    const first = store.touch('user-aaaa', 'u1', { username: 'melike' });
+    expect(first.isNew).toBe(true);
+    store.markAction('u1', 'binder_saved');
+    const people = store.people();
+    expect(people).toHaveLength(1);
+    expect(people[0]).toMatchObject({
+      kind: 'user',
+      username: 'melike',
+      lastAction: 'binder_saved',
+    });
   });
 });

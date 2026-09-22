@@ -4,8 +4,8 @@ const { requireAuth } = require('../auth');
 const stats = require('../stats');
 
 /**
- *  POST /api/presence     bellek içi heartbeat (DB yok, limiter yok)
- *  GET  /api/admin/stats  online + giriş listesi (ADMIN_USERNAMES)
+ *  POST /api/presence     bellek içi heartbeat (DB yok; ilk misafir visit kaydı)
+ *  GET  /api/admin/stats  online kişiler + aktivite (ADMIN_USERNAMES)
  */
 function createStatsRouter(pool, presence) {
   const router = express.Router();
@@ -17,7 +17,18 @@ function createStatsRouter(pool, presence) {
     wrap(async (req, res) => {
       const clientId = req.body?.clientId;
       if (!stats.isValidClientId(clientId)) throw badRequest('INVALID_CLIENT_ID', 'Invalid client id');
-      presence.touch(clientId, req.user?.id || null, { silent: stats.isAdmin(req.user) });
+
+      const silent = stats.isAdmin(req.user);
+      const { isNew } = presence.touch(clientId, req.user?.id || null, {
+        silent,
+        username: req.user?.username || null,
+      });
+
+      // İlk görülme: misafir ziyareti (admin sessiz; hesaplı için login zaten var)
+      if (isNew && !silent && !req.user) {
+        stats.recordEvent(pool, { name: 'visit', clientId }).catch(() => {});
+      }
+
       res.status(204).end();
     })
   );
