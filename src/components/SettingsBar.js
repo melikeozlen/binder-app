@@ -627,7 +627,7 @@ const SettingsBar = ({
             }}
             role="button"
             tabIndex={0}
-            title={t('binder.selectBinder')}
+            title={binder.name}
           >
             {editingBinderId === binder.id ? (
               <div className="binder-edit-input-wrapper">
@@ -662,7 +662,9 @@ const SettingsBar = ({
               <div className="binder-menu-item-content">
                 <div className="binder-menu-item-card">
                   <div className="binder-menu-item-name">
-                    <span className="binder-menu-item-text">{binder.name}</span>
+                    <span className="binder-menu-item-text" title={binder.name}>
+                      {binder.name}
+                    </span>
                     {binder.shared && (
                       <span
                         className="binder-menu-item-meta"
