@@ -1142,7 +1142,10 @@
 }
 
 .binder-menu-item {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
   width: 100%;
   padding: 0.45rem 0.55rem;
   border: 1px solid #e0e0e0;
@@ -1153,6 +1156,28 @@
   font-size: 0.74rem;
   color: #555;
   transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+  box-sizing: border-box;
+}
+
+.binder-menu-item--primary,
+.binder-menu-item--secondary,
+.binder-menu-item--danger {
+  justify-content: center;
+}
+
+.menu-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.menu-icon--spin {
+  animation: menu-icon-spin 0.8s linear infinite;
+}
+
+@keyframes menu-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .binder-menu-item:disabled {

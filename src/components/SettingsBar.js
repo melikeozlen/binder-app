@@ -12,6 +12,7 @@ import { fetchDriveGallery, DriveGalleryError } from '../utils/driveGallery';
 import { parseDriveFolderId } from '../utils/driveGalleryParse';
 import { normalizeDriveImageUrl } from '../utils/driveImageUrl';
 import GalleryWithFolders from './GalleryWithFolders';
+import { MenuIcon } from './MenuIcons';
 import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
 import { isValidGridSize, normalizeGridSizeInput } from '../utils/gridLayout';
 
@@ -558,7 +559,7 @@ const SettingsBar = ({
             setShowBinderMenu(false);
           }}
         >
-          + {t('binder.newBinder')}
+          <MenuIcon name="plus" /> {t('binder.newBinder')}
         </button>
         <div className="binder-menu-action-row">
           <button
@@ -569,7 +570,7 @@ const SettingsBar = ({
             }}
             disabled={!selectedBinderId}
           >
-            ⬇ {t('binder.exportBinder')}
+            <MenuIcon name="download" /> {t('binder.exportBinder')}
           </button>
           <button
             className="binder-menu-item binder-menu-item--secondary"
@@ -579,7 +580,7 @@ const SettingsBar = ({
             disabled={readOnly}
             title={readOnly ? t('binder.viewOnlyShort') : undefined}
           >
-            ⬆ {t('binder.importBinder')}
+            <MenuIcon name="upload" /> {t('binder.importBinder')}
           </button>
         </div>
         <button
@@ -591,7 +592,7 @@ const SettingsBar = ({
           disabled={pagesCount === 0 || readOnly}
           title={readOnly ? t('binder.viewOnlyShort') : t('settings.deletePagesHelp')}
         >
-          🗑 {t('settings.deletePages')}
+          <MenuIcon name="trash" /> {t('settings.deletePages')}
         </button>
       </div>
 
@@ -685,7 +686,7 @@ const SettingsBar = ({
                             title={t('binder.cloudSaved')}
                             aria-label={t('binder.cloudSavedShort')}
                           >
-                            ☁
+                            <MenuIcon name="cloud-check" />
                           </span>
                           {onShareBinder && (
                             <button
@@ -698,7 +699,7 @@ const SettingsBar = ({
                               title={t('share.shareBinder')}
                               aria-label={t('share.shareShort')}
                             >
-                              ↗
+                              <MenuIcon name="share" />
                             </button>
                           )}
                         </>
@@ -714,7 +715,14 @@ const SettingsBar = ({
                           title={t('binder.saveToCloud')}
                           aria-label={t('binder.saveToCloudShort')}
                         >
-                          {savingBinderIds?.has(binder.id) ? '⟳' : '☁︎'}
+                          <MenuIcon
+                            name={savingBinderIds?.has(binder.id) ? 'spinner' : 'save'}
+                            className={
+                              savingBinderIds?.has(binder.id)
+                                ? 'menu-icon menu-icon--spin'
+                                : 'menu-icon'
+                            }
+                          />
                         </button>
                       )
                     )}
@@ -729,7 +737,7 @@ const SettingsBar = ({
                         }}
                         title={t('binder.renameBinder')}
                       >
-                        ✎
+                        <MenuIcon name="edit" />
                       </button>
                     )}
                     {binders.length > 1 && (
@@ -742,7 +750,7 @@ const SettingsBar = ({
                         }}
                         title={binder.shared ? t('binder.leaveShared') : t('binder.deleteBinder')}
                       >
-                        {binder.shared ? '⏏' : '🗑'}
+                        <MenuIcon name={binder.shared ? 'leave' : 'trash'} />
                       </button>
                     )}
                   </div>
