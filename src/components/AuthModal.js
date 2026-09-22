@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import './AuthModal.css';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { shareErrorKey } from '../utils/shareErrors';
@@ -32,6 +33,7 @@ const fill = (text, params) =>
 const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) => {
   const { user, login, register, logout } = useAuth();
   const { notify } = useToast();
+  const { confirm } = useConfirm();
   const { language } = useLanguage();
   const t = (key, params) => fill(getTranslation(key, language), params);
   const roleLabel = (role) => (role === 'view' ? `👁 ${t('share.roleView')}` : `✏️ ${t('share.roleEdit')}`);
@@ -267,8 +269,15 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                           type="button"
                           className="auth-share-btn auth-share-btn--cancel"
                           disabled={shares.busyId === busyKey}
-                          onClick={() => {
-                            if (!window.confirm(t('share.removeConfirm', { username: m.username }))) return;
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: t('dialog.title.removeMember'),
+                              message: t('share.removeConfirm', { username: m.username }),
+                              confirmLabel: t('dialog.remove'),
+                              cancelLabel: t('dialog.cancel'),
+                              danger: true,
+                            });
+                            if (!ok) return;
                             runShareAction(async () => {
                               await shares.removeMember(m.binderId, m.userId);
                               notify({ kind: 'info', text: t('notify.memberRemoved', { username: m.username }) });
@@ -305,8 +314,15 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
                           type="button"
                           className="auth-share-btn auth-share-btn--cancel"
                           disabled={shares.busyId === busyKey}
-                          onClick={() => {
-                            if (!window.confirm(t('binder.leaveSharedConfirm'))) return;
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: t('dialog.title.leaveBinder'),
+                              message: t('binder.leaveSharedConfirm'),
+                              confirmLabel: t('dialog.leave'),
+                              cancelLabel: t('dialog.cancel'),
+                              danger: true,
+                            });
+                            if (!ok) return;
                             runShareAction(async () => {
                               await shares.leave(m.binderId);
                               notify({ kind: 'info', text: t('notify.leftShare', { name: m.binderName }) });

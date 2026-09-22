@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { clearAllIndexedDB } from '../utils/indexedDB.js';
 import { useAuth } from '../contexts/AuthContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import AuthModal from './AuthModal';
 import AdminStatsModal from './AdminStats';
 
@@ -136,6 +137,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
   const { language, setLanguage } = useLanguage();
   const t = (key) => getTranslation(key, language);
   const { user, available: authAvailable, status: authStatus, loginRequest } = useAuth();
+  const { confirm } = useConfirm();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
 
@@ -213,31 +215,38 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
   };
 
   const handleClearCache = async () => {
-    if (window.confirm(t('footer.clearCacheConfirm'))) {
-      try {
-        // IndexedDB'yi temizle
-        await clearAllIndexedDB();
-        
-        // Service Worker cache'ini temizle
-        if ('caches' in window) {
-          caches.keys().then((names) => {
-            names.forEach((name) => {
-              caches.delete(name);
-            });
+    const ok = await confirm({
+      title: t('dialog.title.clearCache'),
+      message: t('footer.clearCacheConfirm'),
+      confirmLabel: t('dialog.continue'),
+      cancelLabel: t('dialog.cancel'),
+      danger: true,
+    });
+    if (!ok) return;
+
+    try {
+      // IndexedDB'yi temizle
+      await clearAllIndexedDB();
+
+      // Service Worker cache'ini temizle
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => {
+            caches.delete(name);
           });
-        }
-        
-        // localStorage'ı temizle
-        localStorage.clear();
-        
-        // Sayfayı yenile
-        window.location.reload();
-      } catch (error) {
-        console.error('Önbellek temizlenirken hata:', error);
-        // Hata olsa bile localStorage'ı temizle ve sayfayı yenile
-        localStorage.clear();
-        window.location.reload();
+        });
       }
+
+      // localStorage'ı temizle
+      localStorage.clear();
+
+      // Sayfayı yenile
+      window.location.reload();
+    } catch (error) {
+      console.error('Önbellek temizlenirken hata:', error);
+      // Hata olsa bile localStorage'ı temizle ve sayfayı yenile
+      localStorage.clear();
+      window.location.reload();
     }
   };
 

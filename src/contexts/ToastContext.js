@@ -82,6 +82,15 @@ export function ToastProvider({ children }) {
 
   const value = useMemo(() => ({ notify, dismiss }), [notify, dismiss]);
 
+  // Modül-seviyesi (hook dışı) kodlardan bildirim: window.dispatchEvent(new CustomEvent('binder-notify', { detail }))
+  useEffect(() => {
+    const onExternal = (event) => {
+      notify(event?.detail);
+    };
+    window.addEventListener('binder-notify', onExternal);
+    return () => window.removeEventListener('binder-notify', onExternal);
+  }, [notify]);
+
   return (
     <ToastContext.Provider value={value}>
       {children}

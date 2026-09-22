@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from
 import { createPortal } from 'react-dom';
 import './Page.css';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../contexts/ToastContext';
 import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
 import GalleryWithFolders from './GalleryWithFolders';
@@ -47,6 +48,7 @@ const Page = ({
   binderId = null
 }) => {
   const { language } = useLanguage();
+  const { notify } = useToast();
   const t = (key) => getTranslation(key, language);
   const [content, setContent] = useState(page.content || {});
   const [backContent, setBackContent] = useState(page.backContent || {});
@@ -768,7 +770,7 @@ const Page = ({
         setUrlInputCell(null);
         setUrlInputValue('');
       } else {
-        alert(t('settings.invalidUrl'));
+        notify({ kind: 'warning', text: t('settings.invalidUrl') });
       }
     }
   };
@@ -912,14 +914,14 @@ const Page = ({
       ).length;
 
       if (currentImageCount >= 20) {
-        alert(tWithParams('page.maxImagesPerPage', { max: 20 }));
+        notify({ kind: 'warning', text: tWithParams('page.maxImagesPerPage', { max: 20 }) });
         return;
       }
 
       // localStorage kullanım kontrolü
       const usagePercent = getLocalStorageUsagePercent();
       if (usagePercent >= 95) {
-        alert(t('page.storageFull'));
+        notify({ kind: 'warning', text: t('page.storageFull') });
         return;
       }
 
@@ -1556,14 +1558,14 @@ const Page = ({
       ).length;
 
       if (currentImageCount >= 20) {
-        alert(tWithParams('page.maxImagesPerPage', { max: 20 }));
+        notify({ kind: 'warning', text: tWithParams('page.maxImagesPerPage', { max: 20 }) });
         return;
       }
 
       // localStorage kullanım kontrolü
       const usagePercent = getLocalStorageUsagePercent();
       if (usagePercent >= 95) {
-        alert(t('page.storageFull'));
+        notify({ kind: 'warning', text: t('page.storageFull') });
         return;
       }
 

@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { HexColorPicker } from 'react-colorful';
 import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { getTranslation } from '../utils/translations';
 import { loadDefaultGallery } from '../utils/defaultGallery';
 import { parseGalleryText } from '../utils/galleryParse';
@@ -85,6 +87,8 @@ const SettingsBar = ({
 }) => {
   const binderImportInputRef = useRef(null);
   const { language } = useLanguage();
+  const { notify } = useToast();
+  const { confirm } = useConfirm();
   const t = (key, params) => {
     let translation = getTranslation(key, language);
     if (params) {
@@ -332,7 +336,7 @@ const SettingsBar = ({
         setBackImageUrlInput('');
         closeGallerySettingsModal();
       } else {
-        alert(t('settings.invalidUrl'));
+        notify({ kind: 'warning', text: t('settings.invalidUrl') });
       }
     }
   };
@@ -388,7 +392,7 @@ const SettingsBar = ({
       };
       reader.readAsText(file);
     } else {
-      alert(t('settings.invalidTextFile'));
+      notify({ kind: 'warning', text: t('settings.invalidTextFile') });
     }
     e.target.value = '';
   };
@@ -413,11 +417,11 @@ const SettingsBar = ({
   const handleDriveGalleryLoad = async () => {
     const input = driveFolderInput.trim();
     if (!input) {
-      alert(t('settings.driveGalleryInvalidFolder'));
+      notify({ kind: 'warning', text: t('settings.driveGalleryInvalidFolder') });
       return;
     }
     if (!parseDriveFolderId(input)) {
-      alert(t('settings.driveGalleryInvalidFolder'));
+      notify({ kind: 'warning', text: t('settings.driveGalleryInvalidFolder') });
       return;
     }
 
@@ -425,11 +429,11 @@ const SettingsBar = ({
     try {
       const { items, count } = await fetchDriveGallery(input);
       applyGalleryItems(items);
-      alert(t('settings.driveGallerySuccess', { count }));
+      notify({ kind: 'success', text: t('settings.driveGallerySuccess', { count }) });
       setDriveFolderInput('');
     } catch (error) {
       console.error('Drive galeri yüklenirken hata:', error);
-      alert(getDriveGalleryErrorMessage(error));
+      notify({ kind: 'error', text: getDriveGalleryErrorMessage(error) });
     } finally {
       setDriveGalleryLoading(false);
     }
@@ -461,6 +465,23 @@ const SettingsBar = ({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       handleBinderNameCancel();
+    }
+  };
+
+  const handleDeleteOrLeaveBinder = async (binder) => {
+    const confirmKey = binder.shared
+      ? 'binder.leaveSharedConfirm'
+      : 'binder.deleteBinderConfirm';
+    const ok = await confirm({
+      title: t(binder.shared ? 'dialog.title.leaveBinder' : 'dialog.title.deleteBinder'),
+      message: t(confirmKey),
+      confirmLabel: t(binder.shared ? 'dialog.leave' : 'dialog.delete'),
+      cancelLabel: t('dialog.cancel'),
+      danger: true,
+    });
+    if (ok) {
+      onDeleteBinder && onDeleteBinder(binder.id);
+      setShowBinderMenu(false);
     }
   };
 
@@ -706,13 +727,7 @@ const SettingsBar = ({
                       className="binder-menu-action-btn binder-menu-delete-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const confirmKey = binder.shared
-                          ? 'binder.leaveSharedConfirm'
-                          : 'binder.deleteBinderConfirm';
-                        if (window.confirm(t(confirmKey))) {
-                          onDeleteBinder && onDeleteBinder(binder.id);
-                          setShowBinderMenu(false);
-                        }
+                        handleDeleteOrLeaveBinder(binder);
                       }}
                       title={binder.shared ? t('binder.leaveShared') : t('binder.deleteBinder')}
                     >

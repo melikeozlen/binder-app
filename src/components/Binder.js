@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useRef, useState } from 'react';
 import './Binder.css';
 import Page from './Page';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { getTranslation } from '../utils/translations';
 
 const Binder = ({ 
@@ -39,6 +40,7 @@ const Binder = ({
   onAddPage
 }) => {
   const { language } = useLanguage();
+  const { confirm } = useConfirm();
   const t = (key) => getTranslation(key, language);
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ width: 1, height: 1 });
@@ -395,11 +397,16 @@ const Binder = ({
               </button>
               <button
                 className="binder-page-delete-button button-holes-side"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  if (window.confirm(t('binder.deleteConfirm'))) {
-                    onDeletePage && onDeletePage(leftPage.id);
-                  }
+                  const ok = await confirm({
+                    title: t('dialog.title.deletePage'),
+                    message: t('binder.deleteConfirm'),
+                    confirmLabel: t('dialog.delete'),
+                    cancelLabel: t('dialog.cancel'),
+                    danger: true,
+                  });
+                  if (ok) onDeletePage && onDeletePage(leftPage.id);
                 }}
                 title={t('binder.deletePage')}
               >
@@ -459,11 +466,16 @@ const Binder = ({
               </button>
               <button
                 className="binder-page-delete-button button-holes-side"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  if (window.confirm(t('binder.deleteConfirm'))) {
-                    onDeletePage && onDeletePage(rightPage.id);
-                  }
+                  const ok = await confirm({
+                    title: t('dialog.title.deletePage'),
+                    message: t('binder.deleteConfirm'),
+                    confirmLabel: t('dialog.delete'),
+                    cancelLabel: t('dialog.cancel'),
+                    danger: true,
+                  });
+                  if (ok) onDeletePage && onDeletePage(rightPage.id);
                 }}
                 title={t('binder.deletePage')}
               >

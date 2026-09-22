@@ -198,6 +198,47 @@
   color: #777;
 }
 
+.admin-stats-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.admin-stats-scroll--activity {
+  max-height: min(40dvh, 280px);
+}
+
+.admin-stats-scroll--logins {
+  max-height: min(28dvh, 180px);
+}
+
+.admin-stats-scroll .admin-stats-recent {
+  padding: 0.35rem 0.55rem;
+  gap: 0;
+}
+
+.admin-stats-scroll .admin-stats-recent li {
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid #ececec;
+  align-items: flex-start;
+}
+
+.admin-stats-scroll .admin-stats-recent li:last-child {
+  border-bottom: none;
+}
+
+.admin-stats-recent-time {
+  flex-shrink: 0;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .admin-stats-recent {
   list-style: none;
   margin: 0;

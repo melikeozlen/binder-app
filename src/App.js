@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import { useToast } from './contexts/ToastContext';
+import { useConfirm } from './contexts/ConfirmContext';
 import { useCloudSync } from './hooks/useCloudSync';
 import { useShares } from './hooks/useShares';
 import { usePresence } from './hooks/usePresence';
@@ -697,7 +698,16 @@ const savePageWithSeparateImages = async (page, binderId) => {
     console.error(`Sayfa ${page.id} kaydedilirken hata:`, e);
     if (e.name === 'QuotaExceededError') {
       console.error('localStorage dolu! Bazı veriler kaydedilemedi.');
-      alert('localStorage dolu! Bazı veriler kaydedilemedi. Lütfen bazı resimleri silin veya tarayıcı verilerini temizleyin.');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('binder-notify', {
+            detail: {
+              kind: 'error',
+              text: 'Depolama dolu. Bazı veriler kaydedilemedi; resim silin veya önbelleği temizleyin.',
+            },
+          })
+        );
+      }
     }
   }
 };
@@ -834,6 +844,7 @@ const saveAllPages = async (pages, binderId) => {
 function App() {
   const { language } = useLanguage();
   const { notify } = useToast();
+  const { confirm } = useConfirm();
   const {
     user: authUser,
     status: authStatus,
@@ -1601,14 +1612,14 @@ function App() {
     
     // Sayfa limiti kontrolü
     if (pages.length >= MAX_PAGES) {
-      alert(t('binder.maxPagesReached', { max: MAX_PAGES }));
+      notify({ kind: 'warning', text: t('binder.maxPagesReached', { max: MAX_PAGES }) });
       return;
     }
     
     // localStorage kullanım kontrolü
     const usagePercent = getLocalStorageUsagePercent();
     if (usagePercent >= 95) {
-      alert(t('binder.storageAlmostFull'));
+      notify({ kind: 'warning', text: t('binder.storageAlmostFull') });
       return;
     }
     
@@ -1858,9 +1869,17 @@ function App() {
   // Tüm sayfaları sil (resimleri de sil)
   const handleDeleteAllPages = async () => {
     if (pages.length === 0 || !selectedBinderId) return;
-    
-    if (window.confirm(t('binder.deletePagesConfirm'))) {
-      try {
+
+    const ok = await confirm({
+      title: t('dialog.title.deletePages'),
+      message: t('binder.deletePagesConfirm'),
+      confirmLabel: t('dialog.delete'),
+      cancelLabel: t('dialog.cancel'),
+      danger: true,
+    });
+    if (!ok) return;
+
+    try {
         const prefix = getBinderKeyPrefix(selectedBinderId);
         
         // Tüm sayfaların resimlerini topla ve sil
@@ -1931,17 +1950,24 @@ function App() {
       } catch (e) {
         console.error('Sayfalar silinirken hata:', e);
       }
-    }
   };
 
   // Tüm sayfaları tek seferde sil - Şu an kullanılmıyor
   // eslint-disable-next-line no-unused-vars
   const handleResetAllPages = async () => {
     if (pages.length === 0) return;
-    
-    if (window.confirm(t('binder.resetConfirm'))) {
-      // Tüm sayfaları ve resimlerini sil
-      try {
+
+    const ok = await confirm({
+      title: t('dialog.title.deletePages'),
+      message: t('binder.resetConfirm'),
+      confirmLabel: t('dialog.delete'),
+      cancelLabel: t('dialog.cancel'),
+      danger: true,
+    });
+    if (!ok) return;
+
+    // Tüm sayfaları ve resimlerini sil
+    try {
         if (!selectedBinderId) return;
         
         const prefix = getBinderKeyPrefix(selectedBinderId);
@@ -2027,7 +2053,6 @@ function App() {
       setPages([]);
       setSelectedPageIndex(null);
       setCurrentSpreadIndex(0);
-    }
   };
 
   // Sayfa güncellendiğinde hem state'i hem localStorage'ı güncelle

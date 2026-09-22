@@ -176,37 +176,41 @@ const AdminStatsModal = ({ open, onClose }) => {
           {activity.length === 0 ? (
             <p className="admin-stats-empty">{t('stats.emptyActivity')}</p>
           ) : (
-            <ul className="admin-stats-recent">
-              {activity.map((row, i) => (
-                <li key={`${row.name}-${row.at}-${i}`}>
-                  <span>
-                    {row.username
-                      ? `@${row.username}`
-                      : t('stats.guestLabel', { id: row.guestId || '????' })}
-                    {' · '}
-                    {actionLabel(row.name, t)}
-                  </span>
-                  <span>{formatTime(row.at, language)}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="admin-stats-scroll admin-stats-scroll--activity">
+              <ul className="admin-stats-recent">
+                {activity.map((row, i) => (
+                  <li key={`${row.name}-${row.at}-${i}`}>
+                    <span>
+                      {row.username
+                        ? `@${row.username}`
+                        : t('stats.guestLabel', { id: row.guestId || '????' })}
+                      {' · '}
+                      {actionLabel(row.name, t)}
+                    </span>
+                    <span className="admin-stats-recent-time">{formatTime(row.at, language)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           <p className="admin-stats-subtitle">{t('stats.recentLogins')}</p>
           {loginRows.length === 0 ? (
             <p className="admin-stats-empty">{t('stats.emptyLogins')}</p>
           ) : (
-            <ul className="admin-stats-recent">
-              {loginRows.map((row, i) => (
-                <li key={`login-${row.username}-${row.at}-${i}`}>
-                  <span>
-                    @{row.username}
-                    {row.kind === 'register' ? ` · ${t('stats.event.register')}` : ''}
-                  </span>
-                  <span>{formatTime(row.at, language)}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="admin-stats-scroll admin-stats-scroll--logins">
+              <ul className="admin-stats-recent">
+                {loginRows.map((row, i) => (
+                  <li key={`login-${row.username}-${row.at}-${i}`}>
+                    <span>
+                      @{row.username}
+                      {row.kind === 'register' ? ` · ${t('stats.event.register')}` : ''}
+                    </span>
+                    <span className="admin-stats-recent-time">{formatTime(row.at, language)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       </div>
