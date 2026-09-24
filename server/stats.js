@@ -168,7 +168,7 @@ async function collectStats(pool, presence) {
         FROM events e
         LEFT JOIN users u ON u.id = e.user_id
        WHERE e.name = ANY($2::text[])
-         AND e.created_at >= now() - interval '12 hours'
+         AND e.created_at >= now() - interval '24 hours'
          AND (u.username IS NULL OR lower(u.username) <> ALL($1::text[]))
        ORDER BY e.created_at DESC
        LIMIT 60`,
