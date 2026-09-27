@@ -1,0 +1,89 @@
+.buy-me-coffee {
+  position: fixed;
+  /* PageOrderBar (70px) + boşluk; footer üstünde */
+  right: calc(70px + 10px + var(--safe-right, 0px));
+  bottom: calc(48px + var(--safe-bottom, 0px));
+  z-index: 980;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ffdd00;
+  color: #0d0c22;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  text-decoration: none;
+  opacity: 0.88;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+
+.buy-me-coffee:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.buy-me-coffee:focus-visible {
+  outline: 2px solid #0d0c22;
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+.buy-me-coffee-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Footer gizli / fullscreen: köşeye yaklaştır */
+.App.footer-hidden .buy-me-coffee,
+.App.fullscreen-mode .buy-me-coffee {
+  bottom: calc(12px + var(--safe-bottom, 0px));
+}
+
+.App.fullscreen-mode .buy-me-coffee {
+  right: calc(12px + var(--safe-right, 0px));
+  opacity: 0.7;
+}
+
+.App.fullscreen-mode .buy-me-coffee:hover {
+  opacity: 1;
+}
+
+/* Mobil: PageOrderBar altta — sağ alt köşe, footer üstünde */
+@media (max-width: 1024px) {
+  .buy-me-coffee {
+    right: calc(10px + var(--safe-right, 0px));
+    bottom: calc(52px + var(--safe-bottom, 0px));
+    width: 36px;
+    height: 36px;
+  }
+
+  .buy-me-coffee-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .App.footer-hidden .buy-me-coffee {
+    bottom: calc(48px + var(--safe-bottom, 0px));
+  }
+
+  .App.fullscreen-mode .buy-me-coffee {
+    bottom: calc(10px + var(--safe-bottom, 0px));
+  }
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+  .buy-me-coffee {
+    bottom: calc(40px + var(--safe-bottom, 0px));
+    width: 32px;
+    height: 32px;
+  }
+
+  .buy-me-coffee-icon {
+    width: 16px;
+    height: 16px;
+  }
+}

@@ -5,6 +5,7 @@ import SettingsBar from './components/SettingsBar';
 import PageOrderBar from './components/PageOrderBar';
 import Binder from './components/Binder';
 import Footer from './components/Footer';
+import BuyMeCoffee from './components/BuyMeCoffee';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import { useToast } from './contexts/ToastContext';
@@ -2501,6 +2502,7 @@ function App() {
         readOnly={readOnly}
       />
       <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} shares={authUser ? shares : null} />
+      <BuyMeCoffee />
       <ShareModal
         open={Boolean(shareBinderId)}
         binderName={shareBinderName}
