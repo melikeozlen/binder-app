@@ -140,7 +140,14 @@ async function purgeOldEvents(pool, days = config.stats.eventRetentionDays) {
 
 async function collectStats(pool, presence) {
   const admins = [...config.adminUsernames];
-  const [{ rows: countRows }, { rows: recentLoginRows }, { rows: activityRows }] = await Promise.all([
+  const [
+    { rows: loginCountRows },
+    { rows: eventCountRows },
+    { rows: uniqueRows },
+    { rows: recentLoginRows },
+    { rows: activityRows },
+    { rows: feedbackCountRows },
+  ] = await Promise.all([
     pool.query(
       `
       SELECT count(*) FILTER (WHERE e.created_at >= date_trunc('day', now()))::int AS today,
@@ -148,6 +155,33 @@ async function collectStats(pool, presence) {
         FROM events e
         JOIN users u ON u.id = e.user_id
        WHERE e.name IN ('login', 'register')
+         AND lower(u.username) <> ALL($1::text[])`,
+      [admins]
+    ),
+    pool.query(
+      `
+      SELECT
+        count(*) FILTER (WHERE e.name = 'register' AND e.created_at >= date_trunc('day', now()))::int AS registers_today,
+        count(*) FILTER (WHERE e.name = 'register' AND e.created_at >= now() - interval '7 days')::int AS registers_week,
+        count(*) FILTER (WHERE e.name = 'visit' AND e.created_at >= date_trunc('day', now()))::int AS visits_today,
+        count(*) FILTER (WHERE e.name = 'visit' AND e.created_at >= now() - interval '7 days')::int AS visits_week,
+        count(*) FILTER (WHERE e.name = 'binder_saved' AND e.created_at >= date_trunc('day', now()))::int AS saves_today,
+        count(*) FILTER (WHERE e.name = 'binder_saved' AND e.created_at >= now() - interval '7 days')::int AS saves_week,
+        count(*) FILTER (WHERE e.name = 'share_sent' AND e.created_at >= date_trunc('day', now()))::int AS shares_today,
+        count(*) FILTER (WHERE e.name = 'share_sent' AND e.created_at >= now() - interval '7 days')::int AS shares_week
+        FROM events e
+        LEFT JOIN users u ON u.id = e.user_id
+       WHERE e.name = ANY($2::text[])
+         AND (u.username IS NULL OR lower(u.username) <> ALL($1::text[]))`,
+      [admins, [...ACTIVITY_EVENT_NAMES]]
+    ),
+    pool.query(
+      `
+      SELECT count(DISTINCT e.user_id)::int AS active_users_week
+        FROM events e
+        JOIN users u ON u.id = e.user_id
+       WHERE e.created_at >= now() - interval '7 days'
+         AND e.user_id IS NOT NULL
          AND lower(u.username) <> ALL($1::text[])`,
       [admins]
     ),
@@ -174,19 +208,39 @@ async function collectStats(pool, presence) {
        LIMIT 60`,
       [admins, [...ACTIVITY_EVENT_NAMES]]
     ),
+    pool.query(
+      `SELECT count(*)::int AS total,
+              count(*) FILTER (WHERE created_at >= date_trunc('day', now()))::int AS today
+         FROM feedback`
+    ).catch(() => ({ rows: [{ total: 0, today: 0 }] })),
   ]);
 
   const onlineCounts = presence?.counts?.() || { total: 0, users: 0, guests: 0 };
   const people = typeof presence?.people === 'function' ? presence.people() : [];
+  const ev = eventCountRows[0] || {};
 
   return {
+    generatedAt: new Date().toISOString(),
     online: {
       ...onlineCounts,
       people,
     },
     logins: {
-      today: countRows[0]?.today || 0,
-      week: countRows[0]?.week || 0,
+      today: loginCountRows[0]?.today || 0,
+      week: loginCountRows[0]?.week || 0,
+    },
+    summary: {
+      registersToday: ev.registers_today || 0,
+      registersWeek: ev.registers_week || 0,
+      visitsToday: ev.visits_today || 0,
+      visitsWeek: ev.visits_week || 0,
+      savesToday: ev.saves_today || 0,
+      savesWeek: ev.saves_week || 0,
+      sharesToday: ev.shares_today || 0,
+      sharesWeek: ev.shares_week || 0,
+      activeUsersWeek: uniqueRows[0]?.active_users_week || 0,
+      feedbackTotal: feedbackCountRows[0]?.total || 0,
+      feedbackToday: feedbackCountRows[0]?.today || 0,
     },
     recentLogins: recentLoginRows.map((r) => ({
       username: r.username,
