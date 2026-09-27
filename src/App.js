@@ -1126,8 +1126,6 @@ function App() {
   // Max spread: pages.length (son spread'de sadece sol sayfa var, sağ kapak)
   const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
   const maxSpreadIndex = Math.max(0, sortedPages.length); // En fazla pages.length spread olabilir
-  const pageNavLockRef = useRef(false);
-  const PAGE_FLIP_LOCK_MS = 720;
   
   const [selectedPageIndex, setSelectedPageIndex] = useState(null);
 
@@ -2188,36 +2186,26 @@ function App() {
   };
 
   const handleNextPage = useCallback(() => {
-    if (pages.length === 0 || pageNavLockRef.current) return;
+    if (pages.length === 0) return;
     
     // Bir sonraki spread'e geç
     if (currentSpreadIndex < maxSpreadIndex) {
-      pageNavLockRef.current = true;
       setCurrentSpreadIndex(prev => prev + 1);
-      window.setTimeout(() => {
-        pageNavLockRef.current = false;
-      }, PAGE_FLIP_LOCK_MS);
     }
   }, [pages.length, currentSpreadIndex, maxSpreadIndex]);
 
   const handlePrevPage = useCallback(() => {
-    if (pages.length === 0 || pageNavLockRef.current) return;
+    if (pages.length === 0) return;
     
     // Bir önceki spread'e geç
     if (currentSpreadIndex > 0) {
-      pageNavLockRef.current = true;
       setCurrentSpreadIndex(prev => prev - 1);
-      window.setTimeout(() => {
-        pageNavLockRef.current = false;
-      }, PAGE_FLIP_LOCK_MS);
     }
   }, [pages.length, currentSpreadIndex]);
 
   const handleGoToPage = useCallback((pageId) => {
     const sortedIndex = sortedPages.findIndex((p) => p.id === pageId);
     if (sortedIndex === -1) return;
-    // Direkt atlamada çevirme animasyonu yok; kilidi aç
-    pageNavLockRef.current = false;
     setCurrentSpreadIndex(Math.min(sortedIndex, maxSpreadIndex));
   }, [sortedPages, maxSpreadIndex]);
 

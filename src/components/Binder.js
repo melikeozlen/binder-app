@@ -1,11 +1,9 @@
-import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import './Binder.css';
 import Page from './Page';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { getTranslation } from '../utils/translations';
-
-const FLIP_DURATION_MS = 720;
 
 const Binder = ({ 
   binderColor, 
@@ -48,9 +46,6 @@ const Binder = ({
   const [containerSize, setContainerSize] = useState({ width: 1, height: 1 });
   const touchStartRef = useRef(null);
   const touchEndRef = useRef(null);
-  const prevSpreadIndexRef = useRef(currentSpreadIndex);
-  const skipFlipOnMountRef = useRef(true);
-  const [flip, setFlip] = useState(null);
 
 
   useEffect(() => {
@@ -78,8 +73,6 @@ const Binder = ({
 
   // Touch sürükleme ile sayfa değiştirme
   const minSwipeDistance = 50;
-  const requestNextPageRef = useRef(() => {});
-  const requestPrevPageRef = useRef(() => {});
 
   const onTouchStart = (e) => {
     touchEndRef.current = null;
@@ -105,8 +98,14 @@ const Binder = ({
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    if (isLeftSwipe) requestNextPageRef.current();
-    if (isRightSwipe) requestPrevPageRef.current();
+    if (isLeftSwipe && onNextPage) {
+      // Sağdan sola sürükleme - sonraki sayfa
+      onNextPage();
+    }
+    if (isRightSwipe && onPrevPage) {
+      // Soldan sağa sürükleme - önceki sayfa
+      onPrevPage();
+    }
   };
 
   const binderAspectRatio = widthRatio / heightRatio;
@@ -242,73 +241,6 @@ const Binder = ({
     });
     return map;
   }, [sortedPages]);
-
-  // Spread değişince gerçekçi 3D çevirme başlat (tek adımlı ileri/geri)
-  useEffect(() => {
-    if (skipFlipOnMountRef.current) {
-      skipFlipOnMountRef.current = false;
-      prevSpreadIndexRef.current = currentSpreadIndex;
-      return;
-    }
-
-    const from = prevSpreadIndexRef.current;
-    const to = currentSpreadIndex;
-    prevSpreadIndexRef.current = to;
-    if (from === to) return;
-
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion || Math.abs(to - from) !== 1) {
-      setFlip(null);
-      return;
-    }
-
-    const direction = to > from ? 'next' : 'prev';
-    const sheet =
-      direction === 'next'
-        ? sortedPages[from] || null
-        : sortedPages[from - 1] || null;
-    if (!sheet) {
-      setFlip(null);
-      return;
-    }
-
-    if (direction === 'next') {
-      setFlip({
-        direction,
-        sheet,
-        underLeft: from > 0 ? sortedPages[from - 1] : null,
-        underRight: to < sortedPages.length ? sortedPages[to] : null,
-      });
-    } else {
-      setFlip({
-        direction,
-        sheet,
-        underLeft: to > 0 ? sortedPages[to - 1] : null,
-        underRight: from < sortedPages.length ? sortedPages[from] : null,
-      });
-    }
-  }, [currentSpreadIndex, sortedPages]);
-
-  useEffect(() => {
-    if (!flip) return undefined;
-    const id = window.setTimeout(() => setFlip(null), FLIP_DURATION_MS);
-    return () => window.clearTimeout(id);
-  }, [flip]);
-
-  const requestNextPage = useCallback(() => {
-    if (flip) return;
-    onNextPage?.();
-  }, [flip, onNextPage]);
-
-  const requestPrevPage = useCallback(() => {
-    if (flip) return;
-    onPrevPage?.();
-  }, [flip, onPrevPage]);
-
-  requestNextPageRef.current = requestNextPage;
-  requestPrevPageRef.current = requestPrevPage;
   
   // Mevcut spread'deki sayfaları bul
   const leftPage = currentSpread.leftPageId 
@@ -322,130 +254,8 @@ const Binder = ({
   const leftPagePhysicalIndex = leftPage ? pageIdToPhysicalIndex.get(leftPage.id) : null;
   const rightPagePhysicalIndex = rightPage ? pageIdToPhysicalIndex.get(rightPage.id) : null;
   
-  const leftPageNumber = leftPagePhysicalIndex !== null && leftPagePhysicalIndex !== undefined
-    ? leftPagePhysicalIndex * 2 + 2
-    : null; // Arka yüz
-  const rightPageNumber = rightPagePhysicalIndex !== null && rightPagePhysicalIndex !== undefined
-    ? rightPagePhysicalIndex * 2 + 1
-    : null; // Ön yüz
-
-  const getPageNumbers = (page) => {
-    if (!page) return { front: null, back: null };
-    const idx = pageIdToPhysicalIndex.get(page.id);
-    if (idx === undefined || idx === null) return { front: null, back: null };
-    return { front: idx * 2 + 1, back: idx * 2 + 2 };
-  };
-
-  const renderPageChrome = (page, position) => {
-    if (!page || flip) return null;
-    const pageIndex = pages.findIndex((p) => p.id === page.id);
-    const isSelected = selectedPageIndex !== null && pages[selectedPageIndex]?.id === page.id;
-    return (
-      <>
-        <button
-          type="button"
-          className="binder-page-select-button button-holes-side"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (pageIndex === -1) return;
-            if (isSelected) {
-              onPageGridEdit && onPageGridEdit(page.id, page.gridSize || '2x2');
-            } else {
-              onPageSelect && onPageSelect(page.id);
-            }
-          }}
-          title={t('binder.selectPage')}
-          aria-label={t('binder.selectPage')}
-        >
-          {isSelected ? '⚙' : '○'}
-        </button>
-        <button
-          type="button"
-          className="binder-page-delete-button button-holes-side"
-          onClick={async (e) => {
-            e.stopPropagation();
-            const ok = await confirm({
-              title: t('dialog.title.deletePage'),
-              message: t('binder.deleteConfirm'),
-              confirmLabel: t('dialog.delete'),
-              cancelLabel: t('dialog.cancel'),
-              danger: true,
-            });
-            if (ok) onDeletePage && onDeletePage(page.id);
-          }}
-          title={t('binder.deletePage')}
-          aria-label={t('binder.deletePage')}
-        >
-          ×
-        </button>
-      </>
-    );
-  };
-
-  const renderBinderPage = ({
-    page,
-    position,
-    zIndex,
-    interactive = true,
-    flipMode = false,
-    extraClassName = '',
-  }) => {
-    if (!page) return null;
-    const nums = getPageNumbers(page);
-    const isSelected =
-      selectedPageIndex !== null && pages[selectedPageIndex]?.id === page.id;
-    const coverSide = flipMode ? 'right' : position === 'left' ? 'left' : 'right';
-    const pagePos = flipMode ? 'flip' : position;
-    const canInteract = interactive && !flip && !flipMode;
-
-    return (
-      <div
-        key={`binder-page-${page.id}`}
-        className={[
-          'binder-page',
-          flipMode ? 'flip-sheet' : `${position}-page`,
-          canInteract ? 'page-interactive' : '',
-          flip && !flipMode ? 'flip-under' : '',
-          flipMode && flip ? `flip-${flip.direction}` : '',
-          extraClassName,
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        style={{
-          zIndex,
-          pointerEvents: canInteract ? 'auto' : 'none',
-        }}
-      >
-        {canInteract ? renderPageChrome(page, position) : null}
-        <Page
-          page={page}
-          gridSize={page.gridSize || '2x2'}
-          coverSide={coverSide}
-          pageType={pageType}
-          defaultBackImage={defaultBackImage}
-          isSelected={isSelected}
-          isFlipped={false}
-          pagePosition={pagePos}
-          // Çevirme sırasında page-non-interactive kullanma → PC/+ opacity flash olmasın
-          pointerEvents="auto"
-          pageZIndex={zIndex}
-          frontPageNumber={
-            flipMode || position === 'right' ? nums.front : null
-          }
-          backPageNumber={flipMode || position === 'left' ? nums.back : null}
-          isTopPage={!flipMode}
-          imageInputMode={imageInputMode}
-          galleryUrls={galleryUrls}
-          binderUsedImages={binderUsedImages}
-          binderId={binderId}
-          onUpdate={onPageUpdate}
-          onGridEdit={() =>
-            onPageGridEdit && onPageGridEdit(page.id, page.gridSize || '2x2')
-          }
-        />
-      </div>
-    );
-  };
+  const leftPageNumber = leftPagePhysicalIndex !== null ? leftPagePhysicalIndex * 2 + 2 : null; // Arka yüz
+  const rightPageNumber = rightPagePhysicalIndex !== null ? rightPagePhysicalIndex * 2 + 1 : null; // Ön yüz
 
   return (
     <div 
@@ -506,7 +316,7 @@ const Binder = ({
         '--ring-base-rgba': ringBaseRgba
       }}>
         <div
-          className={`binder binder-type-${binderType}${flip ? ' is-flipping' : ''}`}
+          className={`binder binder-type-${binderType}`}
           style={{
             '--grid-stitch-color': gridStitchColor,
             '--grid-stitch-color-outer': gridStitchColor,
@@ -560,44 +370,151 @@ const Binder = ({
             </div>
           </div>
 
-          {/* Sayfalar - Spread / 3D çevirme (key = page.id → React instance korunur) */}
-          {flip ? (
-            <>
-              {renderBinderPage({
-                page: flip.underLeft,
-                position: 'left',
+          {/* Sayfalar - Spread mantığına göre render */}
+          {/* Sol sayfa (arka yüz) */}
+          {leftPage && (
+            <div 
+              key={`left-${leftPage.id}-${currentSpreadIndex}`}
+              className="binder-page left-page page-interactive page-flip-animation"
+              style={{
                 zIndex: 1000,
-                interactive: false,
-              })}
-              {renderBinderPage({
-                page: flip.underRight,
-                position: 'right',
+                pointerEvents: 'auto'
+              }}
+            >
+              <button
+                type="button"
+                className="binder-page-select-button button-holes-side"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const pageIndex = pages.findIndex(p => p.id === leftPage.id);
+                  if (pageIndex !== -1) {
+                    const isSelected = selectedPageIndex === pageIndex;
+                    if (isSelected) {
+                      onPageGridEdit && onPageGridEdit(leftPage.id, leftPage.gridSize || '2x2');
+                    } else {
+                      onPageSelect && onPageSelect(leftPage.id);
+                    }
+                  }
+                }}
+                title={t('binder.selectPage')}
+                aria-label={t('binder.selectPage')}
+              >
+                {selectedPageIndex !== null && pages[selectedPageIndex]?.id === leftPage.id ? '⚙' : '○'}
+              </button>
+              <button
+                type="button"
+                className="binder-page-delete-button button-holes-side"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const ok = await confirm({
+                    title: t('dialog.title.deletePage'),
+                    message: t('binder.deleteConfirm'),
+                    confirmLabel: t('dialog.delete'),
+                    cancelLabel: t('dialog.cancel'),
+                    danger: true,
+                  });
+                  if (ok) onDeletePage && onDeletePage(leftPage.id);
+                }}
+                title={t('binder.deletePage')}
+                aria-label={t('binder.deletePage')}
+              >
+                ×
+              </button>
+              <Page 
+                page={leftPage} 
+                gridSize={leftPage.gridSize || '2x2'} 
+                coverSide="left"
+                pageType={pageType}
+                defaultBackImage={defaultBackImage}
+                isSelected={selectedPageIndex !== null && pages[selectedPageIndex]?.id === leftPage.id}
+                isFlipped={false}
+                pagePosition="left"
+                pointerEvents="auto"
+                pageZIndex={1000}
+                frontPageNumber={null}
+                backPageNumber={leftPageNumber}
+                isTopPage={true}
+                imageInputMode={imageInputMode}
+                galleryUrls={galleryUrls}
+                binderUsedImages={binderUsedImages}
+                binderId={binderId}
+                onUpdate={onPageUpdate}
+                onGridEdit={() => onPageGridEdit && onPageGridEdit(leftPage.id, leftPage.gridSize || '2x2')}
+              />
+            </div>
+          )}
+          
+          {/* Sağ sayfa (ön yüz) */}
+          {rightPage && (
+            <div 
+              key={`right-${rightPage.id}-${currentSpreadIndex}`}
+              className="binder-page right-page page-interactive page-flip-animation"
+              style={{
                 zIndex: 1001,
-                interactive: false,
-              })}
-              {renderBinderPage({
-                page: flip.sheet,
-                position: 'right',
-                zIndex: 1200,
-                interactive: false,
-                flipMode: true,
-              })}
-            </>
-          ) : (
-            <>
-              {renderBinderPage({
-                page: leftPage,
-                position: 'left',
-                zIndex: 1000,
-                interactive: true,
-              })}
-              {renderBinderPage({
-                page: rightPage,
-                position: 'right',
-                zIndex: 1001,
-                interactive: true,
-              })}
-            </>
+                pointerEvents: 'auto'
+              }}
+            >
+              <button
+                type="button"
+                className="binder-page-select-button button-holes-side"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const pageIndex = pages.findIndex(p => p.id === rightPage.id);
+                  if (pageIndex !== -1) {
+                    const isSelected = selectedPageIndex === pageIndex;
+                    if (isSelected) {
+                      onPageGridEdit && onPageGridEdit(rightPage.id, rightPage.gridSize || '2x2');
+                    } else {
+                      onPageSelect && onPageSelect(rightPage.id);
+                    }
+                  }
+                }}
+                title={t('binder.selectPage')}
+                aria-label={t('binder.selectPage')}
+              >
+                {selectedPageIndex !== null && pages[selectedPageIndex]?.id === rightPage.id ? '⚙' : '○'}
+              </button>
+              <button
+                type="button"
+                className="binder-page-delete-button button-holes-side"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const ok = await confirm({
+                    title: t('dialog.title.deletePage'),
+                    message: t('binder.deleteConfirm'),
+                    confirmLabel: t('dialog.delete'),
+                    cancelLabel: t('dialog.cancel'),
+                    danger: true,
+                  });
+                  if (ok) onDeletePage && onDeletePage(rightPage.id);
+                }}
+                title={t('binder.deletePage')}
+                aria-label={t('binder.deletePage')}
+              >
+                ×
+              </button>
+              <Page 
+                page={rightPage} 
+                gridSize={rightPage.gridSize || '2x2'} 
+                coverSide="right"
+                pageType={pageType}
+                defaultBackImage={defaultBackImage}
+                isSelected={selectedPageIndex !== null && pages[selectedPageIndex]?.id === rightPage.id}
+                isFlipped={false}
+                pagePosition="right"
+                pointerEvents="auto"
+                pageZIndex={1001}
+                imageInputMode={imageInputMode}
+                galleryUrls={galleryUrls}
+                binderUsedImages={binderUsedImages}
+                binderId={binderId}
+                frontPageNumber={rightPageNumber}
+                backPageNumber={null}
+                isTopPage={true}
+                onUpdate={onPageUpdate}
+                onGridEdit={() => onPageGridEdit && onPageGridEdit(rightPage.id, rightPage.gridSize || '2x2')}
+              />
+            </div>
           )}
 
           {/* Sayfa navigasyon butonları */}
@@ -606,8 +523,8 @@ const Binder = ({
               <button 
                 type="button"
                 className="nav-button nav-prev"
-                onClick={requestPrevPage}
-                disabled={currentSpreadIndex === 0 || Boolean(flip)}
+                onClick={onPrevPage}
+                disabled={currentSpreadIndex === 0}
                 title={t('binder.prevPage')}
                 aria-label={t('binder.prevPage')}
               >
@@ -633,8 +550,8 @@ const Binder = ({
               <button 
                 type="button"
                 className="nav-button nav-next"
-                onClick={requestNextPage}
-                disabled={currentSpreadIndex >= maxSpreadIndex || Boolean(flip)}
+                onClick={onNextPage}
+                disabled={currentSpreadIndex >= maxSpreadIndex}
                 title={t('binder.nextPage')}
                 aria-label={t('binder.nextPage')}
               >

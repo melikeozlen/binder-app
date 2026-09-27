@@ -1711,14 +1711,8 @@ const Page = ({
   // Sayfa pozisyonuna göre hangi yüzün gösterileceğini belirle
   // Sağ pozisyon → ön yüz gösterilmeli
   // Sol pozisyon → arka yüz gösterilmeli
-  // flip → her iki yüz 3D çevirme için hazır (flipped class yok)
-  const isFlipMode = pagePosition === 'flip';
   const shouldShowBack = pagePosition === 'left';
   const shouldShowFront = pagePosition === 'right';
-  // Çevirmede delikler hep omurga (tel) tarafında kalsın:
-  // ön yüz sağ sayfa düzeni, arka yüz sol sayfa düzeni
-  const frontCoverSide = isFlipMode ? 'right' : coverSide;
-  const backCoverSide = isFlipMode ? 'left' : coverSide;
 
   const isRowHorizontal = (rowCellCount) =>
     layout.type === 'uniform' && layout.rows > layout.cols;
@@ -1743,8 +1737,8 @@ const Page = ({
       .join(' ');
     const imageWrapperClasses = [
       'cell-image-wrapper',
-      isHorizontal && frontCoverSide === 'right' ? 'align-right' : '',
-      isHorizontal && frontCoverSide === 'left' ? 'align-left' : '',
+      isHorizontal && coverSide === 'right' ? 'align-right' : '',
+      isHorizontal && coverSide === 'left' ? 'align-left' : '',
     ]
       .filter(Boolean)
       .join(' ');
@@ -1906,8 +1900,8 @@ const Page = ({
       .join(' ');
     const backImageWrapperClasses = [
       'cell-image-wrapper',
-      isHorizontalBack && backCoverSide === 'right' ? 'align-left' : '',
-      isHorizontalBack && backCoverSide === 'left' ? 'align-right' : '',
+      isHorizontalBack && coverSide === 'right' ? 'align-left' : '',
+      isHorizontalBack && coverSide === 'left' ? 'align-right' : '',
     ]
       .filter(Boolean)
       .join(' ');
@@ -2105,7 +2099,7 @@ const Page = ({
   return (
     <>
       <div
-        className={`page-container ${shouldShowBack ? 'flipped' : ''} ${isFlipMode ? 'page-flip-mode' : ''} ${pointerEvents === 'none' ? 'page-non-interactive' : ''}`}
+        className={`page-container ${shouldShowBack ? 'flipped' : ''} ${pointerEvents === 'none' ? 'page-non-interactive' : ''}`}
         style={{
           pointerEvents,
           '--page-z-index': pageZIndex
@@ -2113,11 +2107,11 @@ const Page = ({
       // Binder'a tıklama ile sayfa değiştirme kaldırıldı - sadece ileri/geri tuşları ile
       >
         <div
-          className={`page ${isTransparent ? 'transparent' : ''} ${frontCoverSide === 'left' ? 'page-left' : 'page-right'} page-type-${pageType} ${isSelected ? 'page-selected' : ''} page-front`}
+          className={`page ${isTransparent ? 'transparent' : ''} ${coverSide === 'left' ? 'page-left' : 'page-right'} page-type-${pageType} ${isSelected ? 'page-selected' : ''} page-front`}
           data-density="hard"
         >
           {/* Ring delikleri - grid hücrelerinin dışında */}
-          <div className={`page-holes ${frontCoverSide === 'left' ? 'holes-left' : 'holes-right'}`}>
+          <div className={`page-holes ${coverSide === 'left' ? 'holes-left' : 'holes-right'}`}>
             {Array.from({ length: ringHoles }).map((_, index) => (
               <div key={index} className="ring-hole"></div>
             ))}
@@ -2130,9 +2124,9 @@ const Page = ({
 
 
 
-            {/* Sayfa numarası - ön yüz, sağ pozisyonda veya çevirme animasyonunda */}
-            {frontPageNumber !== null && (shouldShowFront || isFlipMode) && (
-              <div className={`page-number ${frontCoverSide === 'left' ? 'page-number-left' : 'page-number-right'} ${isTopPage ? '' : 'page-number-hidden'}`}>
+            {/* Sayfa numarası - ön yüz, sadece sağ pozisyonda göster */}
+            {frontPageNumber !== null && shouldShowFront && (
+              <div className={`page-number ${coverSide === 'left' ? 'page-number-left' : 'page-number-right'} ${isTopPage ? '' : 'page-number-hidden'}`}>
                 {frontPageNumber}
               </div>
             )}
@@ -2141,11 +2135,11 @@ const Page = ({
 
         {/* Arka yüz */}
         <div
-          className={`page ${isTransparent ? 'transparent' : ''} ${backCoverSide === 'left' ? 'page-left' : 'page-right'} page-type-${pageType} page-back`}
+          className={`page ${isTransparent ? 'transparent' : ''} ${coverSide === 'left' ? 'page-left' : 'page-right'} page-type-${pageType} page-back`}
           data-density="hard"
         >
           {/* Ring delikleri - arka yüzde de görünür */}
-          <div className={`page-holes ${backCoverSide === 'left' ? 'holes-left' : 'holes-right'}`}>
+          <div className={`page-holes ${coverSide === 'left' ? 'holes-left' : 'holes-right'}`}>
             {Array.from({ length: ringHoles }).map((_, index) => (
               <div key={index} className="ring-hole"></div>
             ))}
@@ -2155,9 +2149,9 @@ const Page = ({
             <div className={gridClassName} style={gridStyle}>
               {renderBackGridCells()}
             </div>
-            {/* Sayfa numarası - arka yüz, sol pozisyonda veya çevirme animasyonunda */}
-            {backPageNumber !== null && (shouldShowBack || isFlipMode) && (
-              <div className={`page-number ${backCoverSide === 'left' ? 'page-number-right' : 'page-number-left'} ${isTopPage ? '' : 'page-number-hidden'}`}>
+            {/* Sayfa numarası - arka yüz, sadece sol pozisyonda göster */}
+            {backPageNumber !== null && shouldShowBack && (
+              <div className={`page-number ${coverSide === 'left' ? 'page-number-right' : 'page-number-left'} ${isTopPage ? '' : 'page-number-hidden'}`}>
                 {backPageNumber}
               </div>
             )}

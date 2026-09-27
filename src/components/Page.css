@@ -9,16 +9,6 @@
   /* isolation: isolate kaldırıldı - z-index'in child elementlere inherit edilmesi için */
 }
 
-/* Binder 3D çevirme: parent perspective kullanılsın, yüz geçişi animasyona bırakılsın */
-.page-container.page-flip-mode {
-  perspective: none;
-  transform-style: preserve-3d;
-}
-
-.page-container.page-flip-mode .page {
-  transition: none;
-}
-
 /* Alttaki sayfalar için tüm içerik tıklanamaz olmalı */
 .page-container.page-non-interactive {
   pointer-events: none !important;
@@ -88,8 +78,7 @@
   left: 0;
   backface-visibility: hidden;
   transform-style: preserve-3d;
-  /* Çevirme sonrası yüz geçişinde PC/+ flash olmasın */
-  transition: none;
+  transition: transform 0.6s;
   /* Boş alanlar tıklamaları engellemeli - sadece child elementler tıklanabilir */
   pointer-events: none;
 }
