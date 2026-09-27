@@ -626,8 +626,7 @@
   overflow: visible;
   display: flex;
   flex-direction: column;
-  /* left transition yok — çevirme bitince demir üzerinden kaymayı önler */
-  transition: none;
+  transition: left 0.6s ease-in-out;
   transform-style: preserve-3d;
   animation-fill-mode: both;
   backface-visibility: hidden;
