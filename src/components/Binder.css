@@ -99,8 +99,8 @@
 }
 
 .binder-wrapper {
-  perspective: 2000px;
-  perspective-origin: center center;
+  perspective: 1600px;
+  perspective-origin: 50% 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,6 +113,7 @@
   flex-shrink: 1;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .binder {
@@ -131,6 +132,7 @@
     inset 0 -2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
+  transform-style: preserve-3d;
   --binder-left-width: 19%;
   --binder-right-width: 17%;
   --binder-spine-center: calc(var(--binder-left-width) + (100% - var(--binder-left-width) - var(--binder-right-width)) / 2);
@@ -142,6 +144,11 @@
   --ring-hole-inner: 8px;
   /* Orta bölgenin ~%60.9'u — eski 52%×3/4 oranıyla uyumlu, her iki yanda eşit */
   --page-sheet-width: calc((100% - var(--binder-left-width) - var(--binder-right-width)) * 0.609375);
+}
+
+/* 3D çevirme sırasında overflow flatten'ı engelle */
+.binder.is-flipping {
+  overflow: visible;
 }
 
 /* Binder tipleri */
@@ -621,49 +628,114 @@
   flex-direction: column;
   transition: left 0.6s ease-in-out;
   transform-style: preserve-3d;
-  /* Animasyon sırasında transition'ı devre dışı bırak */
   animation-fill-mode: both;
   backface-visibility: hidden;
   will-change: transform;
 }
 
-/* Sayfa çevirme animasyonu - giriş */
-@keyframes pageFlipInLeft {
+/* Gerçekçi sayfa çevirme — omurgadan 3D katlanma */
+.binder-page.flip-sheet {
+  left: calc(var(--binder-spine-center) + var(--ring-spine-width) / 2 + var(--page-ring-gap));
+  width: var(--page-sheet-width);
+  transform: translateY(-50%);
+  transform-origin: left center;
+  transition: none;
+  backface-visibility: visible;
+  z-index: 1200;
+  pointer-events: none;
+  will-change: transform, box-shadow;
+}
+
+.binder-page.flip-sheet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 60;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.08) 14%,
+    rgba(255, 255, 255, 0.12) 42%,
+    transparent 68%
+  );
+  opacity: 0;
+  animation: binderFlipShade 0.72s ease;
+}
+
+.binder-page.flip-sheet.flip-next {
+  animation: binderFlipNext 0.72s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
+}
+
+.binder-page.flip-sheet.flip-prev {
+  animation: binderFlipPrev 0.72s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes binderFlipNext {
   0% {
-    transform: translate(-100%, -50%) rotateY(-90deg) scale(0.95);
-    opacity: 0;
+    transform: translateY(-50%) rotateY(0deg);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      0 1px 3px rgba(0, 0, 0, 0.1);
   }
-  50% {
-    opacity: 0.5;
+  42% {
+    box-shadow:
+      -12px 10px 32px rgba(0, 0, 0, 0.38),
+      -2px 2px 8px rgba(0, 0, 0, 0.2);
   }
   100% {
-    transform: translate(-100%, -50%) rotateY(0deg) scale(1);
+    transform: translateY(-50%)
+      translateX(calc(-1 * (var(--ring-spine-width) + 2 * var(--page-ring-gap))))
+      rotateY(-180deg);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes binderFlipPrev {
+  0% {
+    transform: translateY(-50%)
+      translateX(calc(-1 * (var(--ring-spine-width) + 2 * var(--page-ring-gap))))
+      rotateY(-180deg);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  42% {
+    box-shadow:
+      12px 10px 32px rgba(0, 0, 0, 0.38),
+      2px 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    transform: translateY(-50%) rotateY(0deg);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes binderFlipShade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  45% {
     opacity: 1;
   }
 }
 
-@keyframes pageFlipInRight {
-  0% {
-    transform: translateY(-50%) rotateY(90deg) scale(0.95);
-    opacity: 0;
-  }
-  50% {
-    opacity: 0.5;
-  }
-  100% {
-    transform: translateY(-50%) rotateY(0deg) scale(1);
-    opacity: 1;
-  }
+.binder-page.flip-under {
+  pointer-events: none;
 }
 
-/* Sol sayfa için animasyon - sadece yeni sayfa geldiğinde */
-.binder-page.left-page.page-flip-animation {
-  animation: pageFlipInLeft 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-/* Sağ sayfa için animasyon - sadece yeni sayfa geldiğinde */
-.binder-page.right-page.page-flip-animation {
-  animation: pageFlipInRight 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+@media (prefers-reduced-motion: reduce) {
+  .binder-page.flip-sheet.flip-next,
+  .binder-page.flip-sheet.flip-prev,
+  .binder-page.flip-sheet::after {
+    animation-duration: 0.01ms !important;
+  }
 }
 
 
