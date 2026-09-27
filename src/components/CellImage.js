@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 
-const CellImage = ({
+const CellImage = memo(function CellImage({
   src,
   alt,
   rotationClass = '',
@@ -9,19 +9,22 @@ const CellImage = ({
   extraImgClass = '',
   sleeveRingPx = 6,
   onFit,
-}) => {
+}) {
   const imgRef = useRef(null);
   const wrapperRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setLoaded(false);
+    setFailed(false);
   }, [src]);
 
   useEffect(() => {
     const img = imgRef.current;
     if (img?.complete && img.naturalWidth > 0) {
       setLoaded(true);
+      setFailed(false);
       if (wrapperRef.current) {
         onFit?.(img, wrapperRef.current);
       }
@@ -31,58 +34,76 @@ const CellImage = ({
   const wrapperClassName = [
     wrapperClasses,
     sleeveColor ? 'cell-image-wrapper--sleeve' : '',
-    loaded ? 'cell-image-wrapper--loaded' : 'cell-image-wrapper--loading',
+    failed
+      ? 'cell-image-wrapper--error'
+      : loaded
+        ? 'cell-image-wrapper--loaded'
+        : 'cell-image-wrapper--loading',
   ]
     .filter(Boolean)
     .join(' ');
 
   const handleLoad = (e) => {
     setLoaded(true);
+    setFailed(false);
     const wrapper = wrapperRef.current;
     if (wrapper) {
       onFit?.(e.target, wrapper);
     }
   };
 
+  const handleError = () => {
+    setLoaded(true);
+    setFailed(true);
+  };
+
   return (
     <div
       ref={wrapperRef}
       className={wrapperClassName}
-      title={alt || undefined}
-      aria-busy={!loaded}
+      title={failed ? undefined : alt || undefined}
+      aria-busy={!loaded && !failed}
       aria-label={alt || undefined}
     >
-      {!loaded && (
+      {!loaded && !failed && (
         <div className="cell-image-placeholder" aria-hidden="true">
           <span className="cell-image-placeholder-icon" />
         </div>
       )}
-      <img
-        ref={imgRef}
-        src={src}
-        alt={alt || ''}
-        draggable={false}
-        decoding="async"
-        className={[
-          'cell-image',
-          extraImgClass,
-          rotationClass,
-          sleeveColor ? 'has-sleeve' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        style={
-          sleeveColor
-            ? {
-                '--sleeve-color': sleeveColor,
-                '--sleeve-width': `${sleeveRingPx}px`,
-              }
-            : undefined
-        }
-        onLoad={handleLoad}
-      />
+      {failed ? (
+        <div className="cell-image-error" role="img" aria-label={alt || 'Image unavailable'}>
+          <span aria-hidden="true">!</span>
+        </div>
+      ) : (
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt || ''}
+          draggable={false}
+          decoding="async"
+          loading="lazy"
+          className={[
+            'cell-image',
+            extraImgClass,
+            rotationClass,
+            sleeveColor ? 'has-sleeve' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          style={
+            sleeveColor
+              ? {
+                  '--sleeve-color': sleeveColor,
+                  '--sleeve-width': `${sleeveRingPx}px`,
+                }
+              : undefined
+          }
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      )}
     </div>
   );
-};
+});
 
 export default CellImage;

@@ -115,3 +115,15 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS events_created_at_idx ON events(created_at);
 CREATE INDEX IF NOT EXISTS events_name_created_idx ON events(name, created_at DESC);
+
+-- Kullanıcı geri bildirimi (giriş zorunlu değil; anonim seçeneği var)
+CREATE TABLE IF NOT EXISTS feedback (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       UUID REFERENCES users(id) ON DELETE SET NULL,
+  client_id     TEXT,
+  username      TEXT,
+  anonymous     BOOLEAN NOT NULL DEFAULT false,
+  message       TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS feedback_created_at_idx ON feedback(created_at DESC);

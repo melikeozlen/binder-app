@@ -44,14 +44,19 @@ const AdminStatsModal = ({ open, onClose }) => {
   const { language } = useLanguage();
   const t = (key, params) => fill(getTranslation(key, language), params);
   const [data, setData] = useState(null);
+  const [feedback, setFeedback] = useState([]);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setBusy(true);
     try {
-      const next = await api('/api/admin/stats');
+      const [next, fb] = await Promise.all([
+        api('/api/admin/stats'),
+        api('/api/feedback').catch(() => ({ items: [] })),
+      ]);
       setData(next);
+      setFeedback(Array.isArray(fb?.items) ? fb.items : []);
       setError(null);
     } catch (err) {
       if (err?.status === 403 || err?.status === 404) {
@@ -207,6 +212,31 @@ const AdminStatsModal = ({ open, onClose }) => {
                       {row.kind === 'register' ? ` · ${t('stats.event.register')}` : ''}
                     </span>
                     <span className="admin-stats-recent-time">{formatTime(row.at, language)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <p className="admin-stats-subtitle">{t('stats.feedback')}</p>
+          {feedback.length === 0 ? (
+            <p className="admin-stats-empty">{t('stats.emptyFeedback')}</p>
+          ) : (
+            <div className="admin-stats-scroll admin-stats-scroll--feedback">
+              <ul className="admin-stats-feedback">
+                {feedback.map((item) => (
+                  <li key={item.id}>
+                    <div className="admin-stats-feedback-meta">
+                      <span>
+                        {item.username
+                          ? `@${item.username}`
+                          : t('stats.feedbackAnonymous')}
+                      </span>
+                      <span className="admin-stats-recent-time">
+                        {formatTime(item.createdAt, language)}
+                      </span>
+                    </div>
+                    <p className="admin-stats-feedback-msg">{item.message}</p>
                   </li>
                 ))}
               </ul>

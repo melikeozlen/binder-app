@@ -422,7 +422,8 @@ const PageOrderBar = ({
       >
         {pages.length === 0 ? (
           <div className="page-order-empty">
-            <div className="page-order-empty-text">{t('pageOrder.noPages')}</div>
+            <div className="page-order-empty-text">{t('empty.collectionTitle')}</div>
+            <div className="page-order-empty-sub">{t('empty.pageOrderHint')}</div>
           </div>
         ) : (
           <>

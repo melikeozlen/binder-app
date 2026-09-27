@@ -217,6 +217,46 @@
   max-height: min(28dvh, 180px);
 }
 
+.admin-stats-scroll--feedback {
+  max-height: min(36dvh, 240px);
+}
+
+.admin-stats-feedback {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.admin-stats-feedback li {
+  padding: 0.5rem 0.15rem;
+  border-bottom: 1px solid #ececec;
+}
+
+.admin-stats-feedback li:last-child {
+  border-bottom: none;
+}
+
+.admin-stats-feedback-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.admin-stats-feedback-msg {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #333;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .admin-stats-scroll .admin-stats-recent {
   padding: 0.35rem 0.55rem;
   gap: 0;

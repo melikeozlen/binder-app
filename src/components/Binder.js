@@ -271,17 +271,21 @@ const Binder = ({
         <div className="fullscreen-controls">
           {/* Üstte ortada sayfa ekle butonu */}
           <button
+            type="button"
             className="fullscreen-add-page-btn"
             onClick={onAddPage}
             title={t('binder.addPage')}
+            aria-label={t('binder.addPage')}
           >
             +
           </button>
           {/* Sağda ekran küçültme butonu */}
           <button
+            type="button"
             className="fullscreen-exit-btn"
             onClick={onToggleFullscreen}
             title={t('binder.exitFullscreen')}
+            aria-label={t('binder.exitFullscreen')}
           >
             ✕
           </button>
@@ -378,6 +382,7 @@ const Binder = ({
               }}
             >
               <button
+                type="button"
                 className="binder-page-select-button button-holes-side"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -392,10 +397,12 @@ const Binder = ({
                   }
                 }}
                 title={t('binder.selectPage')}
+                aria-label={t('binder.selectPage')}
               >
                 {selectedPageIndex !== null && pages[selectedPageIndex]?.id === leftPage.id ? '⚙' : '○'}
               </button>
               <button
+                type="button"
                 className="binder-page-delete-button button-holes-side"
                 onClick={async (e) => {
                   e.stopPropagation();
@@ -409,6 +416,7 @@ const Binder = ({
                   if (ok) onDeletePage && onDeletePage(leftPage.id);
                 }}
                 title={t('binder.deletePage')}
+                aria-label={t('binder.deletePage')}
               >
                 ×
               </button>
@@ -447,6 +455,7 @@ const Binder = ({
               }}
             >
               <button
+                type="button"
                 className="binder-page-select-button button-holes-side"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -461,10 +470,12 @@ const Binder = ({
                   }
                 }}
                 title={t('binder.selectPage')}
+                aria-label={t('binder.selectPage')}
               >
                 {selectedPageIndex !== null && pages[selectedPageIndex]?.id === rightPage.id ? '⚙' : '○'}
               </button>
               <button
+                type="button"
                 className="binder-page-delete-button button-holes-side"
                 onClick={async (e) => {
                   e.stopPropagation();
@@ -478,6 +489,7 @@ const Binder = ({
                   if (ok) onDeletePage && onDeletePage(rightPage.id);
                 }}
                 title={t('binder.deletePage')}
+                aria-label={t('binder.deletePage')}
               >
                 ×
               </button>
@@ -509,14 +521,16 @@ const Binder = ({
           {pages.length > 0 && (
             <div className="page-navigation">
               <button 
+                type="button"
                 className="nav-button nav-prev"
                 onClick={onPrevPage}
                 disabled={currentSpreadIndex === 0}
                 title={t('binder.prevPage')}
+                aria-label={t('binder.prevPage')}
               >
                 ‹
               </button>
-              <div className="page-counter">
+              <div className="page-counter" aria-live="polite">
                 {(() => {
                   // Mevcut spread'deki sayfa numaralarını göster (sol-sağ birlikte)
                   const pageNumbers = [];
@@ -534,13 +548,31 @@ const Binder = ({
                 })()}
               </div>
               <button 
+                type="button"
                 className="nav-button nav-next"
                 onClick={onNextPage}
                 disabled={currentSpreadIndex >= maxSpreadIndex}
                 title={t('binder.nextPage')}
+                aria-label={t('binder.nextPage')}
               >
                 ›
               </button>
+            </div>
+          )}
+
+          {pages.length === 0 && (
+            <div className="binder-empty-state" role="status">
+              <p className="binder-empty-title">{t('empty.collectionTitle')}</p>
+              <p className="binder-empty-desc">{t('empty.collectionDesc')}</p>
+              {onAddPage && (
+                <button
+                  type="button"
+                  className="binder-empty-cta"
+                  onClick={onAddPage}
+                >
+                  {t('empty.addFirstPage')}
+                </button>
+              )}
             </div>
           )}
 

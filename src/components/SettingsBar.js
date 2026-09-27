@@ -151,6 +151,19 @@ const SettingsBar = ({
     return () => mq.removeEventListener('change', update);
   }, []);
 
+  // Görünüm / renk seçici: ESC ile kapat
+  useEffect(() => {
+    if (!showAppearanceModal && !showColorPicker) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      if (showColorPicker) setShowColorPicker(false);
+      else if (showAppearanceModal) setShowAppearanceModal(false);
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [showAppearanceModal, showColorPicker]);
+
   // widthRatio ve heightRatio ref'lerini güncelle
   useEffect(() => {
     widthRatioRef.current = widthRatio;
@@ -614,137 +627,144 @@ const SettingsBar = ({
 
       <div className="binder-menu-section binder-menu-section--list">
         <p className="binder-menu-section-label">{t('binder.menuBinders')}</p>
-        {binders.map(binder => (
-          <div
-            key={binder.id}
-            className={`binder-menu-item-wrapper${binder.id === selectedBinderId ? ' binder-menu-item-wrapper--selected' : ''}`}
-            onClick={() => handleBinderItemSelect(binder.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleBinderItemSelect(binder.id);
-              }
-            }}
-            role="button"
-            tabIndex={0}
-            title={binder.name}
-          >
-            {editingBinderId === binder.id ? (
-              <div className="binder-edit-input-wrapper">
-                <input
-                  type="text"
-                  value={editingBinderName}
-                  onChange={(e) => setEditingBinderName(e.target.value)}
-                  onKeyDown={handleBinderNameKeyDown}
-                  onBlur={handleBinderNameSave}
-                  className="binder-edit-input"
-                  placeholder={t('binder.binderNamePlaceholder')}
-                  autoFocus
-                />
-                <button
-                  className="binder-edit-action-btn binder-edit-save-btn"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={handleBinderNameSave}
-                  title={t('binder.save')}
-                >
-                  ✓
-                </button>
-                <button
-                  className="binder-edit-action-btn binder-edit-cancel-btn"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={handleBinderNameCancel}
-                  title={t('binder.cancel')}
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <div className="binder-menu-item-content">
-                <div className="binder-menu-item-card">
-                  <div className="binder-menu-item-name">
-                    <span className="binder-menu-item-text" title={binder.name}>
-                      {binder.name}
-                    </span>
-                    {binder.shared && (
-                      <span
-                        className="binder-menu-item-meta"
-                        title={`${t('binder.sharedBinder')} · @${binder.ownerUsername || '?'} · ${
-                          binder.role === 'view' ? t('share.roleView') : t('share.roleEdit')
-                        }`}
-                      >
-                        {binder.role === 'view' ? '👁' : '👥'} @{binder.ownerUsername || '?'}
+        {binders.length === 0 ? (
+          <div className="binder-menu-empty">
+            <p className="binder-menu-empty-title">{t('empty.noBindersTitle')}</p>
+            <p className="binder-menu-empty-desc">{t('empty.noBindersDesc')}</p>
+          </div>
+        ) : (
+          binders.map((binder) => (
+            <div
+              key={binder.id}
+              className={`binder-menu-item-wrapper${binder.id === selectedBinderId ? ' binder-menu-item-wrapper--selected' : ''}`}
+              onClick={() => handleBinderItemSelect(binder.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleBinderItemSelect(binder.id);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              title={binder.name}
+            >
+              {editingBinderId === binder.id ? (
+                <div className="binder-edit-input-wrapper">
+                  <input
+                    type="text"
+                    value={editingBinderName}
+                    onChange={(e) => setEditingBinderName(e.target.value)}
+                    onKeyDown={handleBinderNameKeyDown}
+                    onBlur={handleBinderNameSave}
+                    className="binder-edit-input"
+                    placeholder={t('binder.binderNamePlaceholder')}
+                    autoFocus
+                  />
+                  <button
+                    className="binder-edit-action-btn binder-edit-save-btn"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleBinderNameSave}
+                    title={t('binder.save')}
+                  >
+                    ✓
+                  </button>
+                  <button
+                    className="binder-edit-action-btn binder-edit-cancel-btn"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleBinderNameCancel}
+                    title={t('binder.cancel')}
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div className="binder-menu-item-content">
+                  <div className="binder-menu-item-card">
+                    <div className="binder-menu-item-name">
+                      <span className="binder-menu-item-text" title={binder.name}>
+                        {binder.name}
                       </span>
-                    )}
-                  </div>
-                  <div className="binder-menu-item-actions">
-                    {cloudEnabled && !binder.shared && (
+                      {binder.shared && (
+                        <span
+                          className="binder-menu-item-meta"
+                          title={`${t('binder.sharedBinder')} · @${binder.ownerUsername || '?'} · ${
+                            binder.role === 'view' ? t('share.roleView') : t('share.roleEdit')
+                          }`}
+                        >
+                          {binder.role === 'view' ? '👁' : '👥'} @{binder.ownerUsername || '?'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="binder-menu-item-actions">
+                      {cloudEnabled && !binder.shared && (
+                        <button
+                          type="button"
+                          className="binder-menu-action-btn binder-menu-cloud-btn"
+                          disabled={savingBinderIds?.has(binder.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSaveBinderToCloud?.(binder.id);
+                          }}
+                          title={t('binder.saveAs')}
+                          aria-label={t('binder.saveAsShort')}
+                        >
+                          <MenuIcon
+                            name={savingBinderIds?.has(binder.id) ? 'spinner' : 'save-as'}
+                            className={
+                              savingBinderIds?.has(binder.id)
+                                ? 'menu-icon menu-icon--spin'
+                                : 'menu-icon'
+                            }
+                          />
+                        </button>
+                      )}
+                      {cloudEnabled && onShareBinder && !binder.shared && (
+                        <button
+                          type="button"
+                          className="binder-menu-action-btn binder-menu-share-btn"
+                          disabled={savingBinderIds?.has(binder.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onShareBinder(binder.id);
+                          }}
+                          title={t('share.shareBinder')}
+                          aria-label={t('share.shareShort')}
+                        >
+                          <MenuIcon name="share" />
+                        </button>
+                      )}
+                      {!(binder.shared && binder.role === 'view') && (
+                        <button
+                          type="button"
+                          className="binder-menu-action-btn binder-menu-edit-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingBinderId(binder.id);
+                            setEditingBinderName(binder.name);
+                          }}
+                          title={t('binder.renameBinder')}
+                        >
+                          <MenuIcon name="edit" />
+                        </button>
+                      )}
                       <button
                         type="button"
-                        className="binder-menu-action-btn binder-menu-cloud-btn"
-                        disabled={savingBinderIds?.has(binder.id)}
+                        className="binder-menu-action-btn binder-menu-delete-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSaveBinderToCloud?.(binder.id);
+                          handleDeleteOrLeaveBinder(binder);
                         }}
-                        title={t('binder.saveAs')}
-                        aria-label={t('binder.saveAsShort')}
+                        title={binder.shared ? t('binder.leaveShared') : t('binder.deleteBinder')}
                       >
-                        <MenuIcon
-                          name={savingBinderIds?.has(binder.id) ? 'spinner' : 'save-as'}
-                          className={
-                            savingBinderIds?.has(binder.id)
-                              ? 'menu-icon menu-icon--spin'
-                              : 'menu-icon'
-                          }
-                        />
+                        <MenuIcon name={binder.shared ? 'leave' : 'trash'} />
                       </button>
-                    )}
-                    {cloudEnabled && onShareBinder && !binder.shared && (
-                      <button
-                        type="button"
-                        className="binder-menu-action-btn binder-menu-share-btn"
-                        disabled={savingBinderIds?.has(binder.id)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onShareBinder(binder.id);
-                        }}
-                        title={t('share.shareBinder')}
-                        aria-label={t('share.shareShort')}
-                      >
-                        <MenuIcon name="share" />
-                      </button>
-                    )}
-                    {!(binder.shared && binder.role === 'view') && (
-                      <button
-                        type="button"
-                        className="binder-menu-action-btn binder-menu-edit-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingBinderId(binder.id);
-                          setEditingBinderName(binder.name);
-                        }}
-                        title={t('binder.renameBinder')}
-                      >
-                        <MenuIcon name="edit" />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="binder-menu-action-btn binder-menu-delete-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteOrLeaveBinder(binder);
-                      }}
-                      title={binder.shared ? t('binder.leaveShared') : t('binder.deleteBinder')}
-                    >
-                      <MenuIcon name={binder.shared ? 'leave' : 'trash'} />
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -760,9 +780,11 @@ const SettingsBar = ({
       {onToggleFullscreen && (
         <div className="setting-item">
           <button
+            type="button"
             className="fullscreen-toggle-btn-left"
             onClick={onToggleFullscreen}
             title={isFullscreen ? t('binder.exitFullscreen') : t('binder.enterFullscreen')}
+            aria-label={isFullscreen ? t('binder.exitFullscreen') : t('binder.enterFullscreen')}
           >
             {isFullscreen ? '⛶' : '⛶'}
           </button>
@@ -776,6 +798,7 @@ const SettingsBar = ({
             className={`footer-toggle-btn ${footerVisible ? 'footer-toggle-btn--on' : 'footer-toggle-btn--off'}`}
             onClick={onToggleFooter}
             title={footerVisible ? t('footer.hideFooter') : t('footer.showFooter')}
+            aria-label={footerVisible ? t('footer.hideFooter') : t('footer.showFooter')}
             aria-pressed={footerVisible}
           >
             <span className="footer-toggle-glyph" aria-hidden="true" />
@@ -791,6 +814,7 @@ const SettingsBar = ({
             onChange={(e) => onSelectBinder && onSelectBinder(e.target.value)}
             className="settings-control binder-select"
             title={t('binder.selectBinder')}
+            aria-label={t('binder.selectBinder')}
           >
             {binders.map(binder => (
               <option key={binder.id} value={binder.id}>
@@ -799,9 +823,13 @@ const SettingsBar = ({
             ))}
           </select>
           <button
+            type="button"
             className="binder-menu-btn"
             onClick={() => setShowBinderMenu(!showBinderMenu)}
             title={t('binder.selectBinder')}
+            aria-label={t('binder.menuActions')}
+            aria-expanded={showBinderMenu}
+            aria-haspopup="menu"
           >
             ⋮
           </button>
@@ -1483,8 +1511,10 @@ const SettingsBar = ({
                   : t('settings.background')
               }</h3>
               <button
+                type="button"
                 className="color-picker-close"
                 onClick={() => setShowColorPicker(false)}
+                aria-label={t('binder.cancel')}
               >
                 ×
               </button>

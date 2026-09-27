@@ -59,6 +59,7 @@ const BACKEND_PATHS = [
   '/api/auth',
   '/api/binders',
   '/api/shares',
+  '/api/feedback',
   '/api/health',
   '/api/presence',
   '/api/admin',

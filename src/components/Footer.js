@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import AuthModal from './AuthModal';
 import AdminStatsModal from './AdminStats';
+import FeedbackModal from './FeedbackModal';
 
 const SYNC_ICONS = {
   idle: '',
@@ -140,6 +141,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
   const { confirm } = useConfirm();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Başka bir yerden (örn. binder "Kaydet" butonu) giriş istendi → pencereyi aç
   useEffect(() => {
@@ -316,14 +318,25 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
           ℹ️ {t('info.button')}
         </button>
         <span className="footer-separator">•</span>
+        <button
+          type="button"
+          className="footer-feedback-btn"
+          onClick={() => setShowFeedbackModal(true)}
+          title={t('feedback.title')}
+          aria-label={t('feedback.title')}
+        >
+          💬 {t('feedback.sendShort')}
+        </button>
+        <span className="footer-separator">•</span>
         <select
           className="footer-language-select"
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          title="Dil / Language / 언어"
+          aria-label={t('footer.language')}
+          title={t('footer.language')}
         >
-          <option value="tr">TR</option>
           <option value="en">EN</option>
+          <option value="tr">TR</option>
           <option value="kr">KR</option>
         </select>
         <span className="footer-separator">•</span>
@@ -359,6 +372,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
         shares={shares}
       />
       <AdminStatsModal open={showStatsModal} onClose={() => setShowStatsModal(false)} />
+      <FeedbackModal open={showFeedbackModal} onClose={() => setShowFeedbackModal(false)} />
 
       {/* Info Modal */}
       {showInfoModal && createPortal(

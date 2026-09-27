@@ -1,7 +1,7 @@
 {
-  "short_name": "Binder App",
+  "short_name": "Binder",
   "name": "Binder App",
-  "description": "Photocard Collector App",
+  "description": "Digital photocard binder — organize your K-pop PCs in pages and sleeves.",
   "icons": [
     {
       "src": "260185-.png",
@@ -58,5 +58,5 @@
   "theme_color": "#ffffff",
   "background_color": "#ffffff",
   "scope": "/",
-  "categories": ["productivity", "utilities"]
+  "categories": ["lifestyle", "productivity", "utilities"]
 }

@@ -273,63 +273,127 @@ export async function exportBinderToFile(binderId, binderName) {
 }
 
 export function parseBinderImportFile(text) {
-  const data = JSON.parse(text);
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    const err = new Error('INVALID_JSON');
+    err.code = 'INVALID_JSON';
+    throw err;
+  }
   if (!data || data.format !== EXPORT_FORMAT) {
-    throw new Error('INVALID_FORMAT');
+    const err = new Error('INVALID_FORMAT');
+    err.code = 'INVALID_FORMAT';
+    throw err;
   }
   if (!data.binder || !Array.isArray(data.binder.pages)) {
-    throw new Error('INVALID_DATA');
+    const err = new Error('INVALID_DATA');
+    err.code = 'INVALID_DATA';
+    throw err;
   }
   return data;
+}
+
+function isQuotaError(e) {
+  return (
+    e?.name === 'QuotaExceededError' ||
+    e?.code === 22 ||
+    e?.code === 1014 ||
+    /quota/i.test(String(e?.message || ''))
+  );
 }
 
 export async function applyBinderImport(data, newBinderId) {
   const { binder } = data;
   const prefix = getBinderKeyPrefix(newBinderId);
+  const writtenKeys = [];
 
-  if (binder.settings) {
-    localStorage.setItem(`${prefix}settings`, JSON.stringify(binder.settings));
-  }
-
-  localStorage.setItem(
-    `${prefix}gallery-urls`,
-    JSON.stringify(binder.galleryUrls || [])
-  );
-
-  if (binder.defaultBackImage) {
-    await saveDefaultBackImageToIndexedDB(binder.defaultBackImage, newBinderId);
-  } else {
-    await removeDefaultBackImageFromIndexedDB(newBinderId);
-  }
-
-  const images = binder.images || {};
-  for (const [imageKey, imageData] of Object.entries(images)) {
-    if (imageData && typeof imageData === 'string') {
-      await saveImageToIndexedDB(imageKey, imageData, newBinderId);
+  const setItem = (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+      writtenKeys.push(key);
+    } catch (e) {
+      if (isQuotaError(e)) {
+        writtenKeys.forEach((k) => {
+          try {
+            localStorage.removeItem(k);
+          } catch {
+            // ignore
+          }
+        });
+        const err = new Error('STORAGE_FULL');
+        err.code = 'STORAGE_FULL';
+        throw err;
+      }
+      throw e;
     }
-  }
-
-  const sortedPages = sortPagesByOrder(binder.pages).map(pickPageFields);
-  const pageIds =
-    Array.isArray(binder.pageIds) && binder.pageIds.length > 0
-      ? binder.pageIds
-      : sortedPages.map((p) => p.id);
-
-  const orderedPages = pageIds
-    .map((id) => sortedPages.find((p) => p.id === id))
-    .filter(Boolean);
-
-  const pagesToSave = orderedPages.length > 0 ? orderedPages : sortedPages;
-  const finalPageIds = pagesToSave.map((p) => p.id);
-
-  for (const page of pagesToSave) {
-    localStorage.setItem(`${prefix}page-${page.id}`, JSON.stringify(page));
-  }
-  localStorage.setItem(`${prefix}pages-list`, JSON.stringify(finalPageIds));
-
-  return {
-    name: binder.name || 'Imported Binder',
-    pageCount: finalPageIds.length,
-    imageCount: Object.keys(images).length,
   };
+
+  try {
+    if (binder.settings) {
+      setItem(`${prefix}settings`, JSON.stringify(binder.settings));
+    }
+
+    setItem(`${prefix}gallery-urls`, JSON.stringify(binder.galleryUrls || []));
+
+    if (binder.defaultBackImage) {
+      await saveDefaultBackImageToIndexedDB(binder.defaultBackImage, newBinderId);
+    } else {
+      await removeDefaultBackImageFromIndexedDB(newBinderId);
+    }
+
+    const images = binder.images || {};
+    for (const [imageKey, imageData] of Object.entries(images)) {
+      if (imageData && typeof imageData === 'string') {
+        try {
+          await saveImageToIndexedDB(imageKey, imageData, newBinderId);
+        } catch (e) {
+          if (isQuotaError(e)) {
+            const err = new Error('STORAGE_FULL');
+            err.code = 'STORAGE_FULL';
+            throw err;
+          }
+          console.warn('Image import skipped:', imageKey, e);
+        }
+      }
+    }
+
+    const sortedPages = sortPagesByOrder(binder.pages || []).map(pickPageFields);
+    const pageIds =
+      Array.isArray(binder.pageIds) && binder.pageIds.length > 0
+        ? binder.pageIds
+        : sortedPages.map((p) => p.id);
+
+    const orderedPages = pageIds
+      .map((id) => sortedPages.find((p) => p.id === id))
+      .filter(Boolean);
+
+    const pagesToSave = orderedPages.length > 0 ? orderedPages : sortedPages;
+    const finalPageIds = pagesToSave.map((p) => p.id);
+
+    for (const page of pagesToSave) {
+      setItem(`${prefix}page-${page.id}`, JSON.stringify(page));
+    }
+    setItem(`${prefix}pages-list`, JSON.stringify(finalPageIds));
+
+    return {
+      name: binder.name || 'Imported Binder',
+      pageCount: finalPageIds.length,
+      imageCount: Object.keys(images).length,
+    };
+  } catch (e) {
+    if (e?.code === 'STORAGE_FULL' || isQuotaError(e)) {
+      writtenKeys.forEach((k) => {
+        try {
+          localStorage.removeItem(k);
+        } catch {
+          // ignore
+        }
+      });
+      const err = new Error('STORAGE_FULL');
+      err.code = 'STORAGE_FULL';
+      throw err;
+    }
+    throw e;
+  }
 }

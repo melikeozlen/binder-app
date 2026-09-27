@@ -11,6 +11,7 @@ const { createBindersRouter } = require('./routes/binders');
 const { createSharesRouter } = require('./routes/shares');
 const { createDriveRouter } = require('./routes/drive');
 const { createStatsRouter } = require('./routes/stats');
+const { createFeedbackRouter } = require('./routes/feedback');
 const { createPresenceStore } = require('./stats');
 
 function createApp(pool) {
@@ -49,6 +50,7 @@ function createApp(pool) {
   app.use('/api/auth', createAuthRouter(pool));
   app.use('/api/binders', createBindersRouter(pool));
   app.use('/api/shares', createSharesRouter(pool));
+  app.use('/api/feedback', createFeedbackRouter(pool));
   app.use('/api', createStatsRouter(pool, presence));
   app.use('/api', createDriveRouter());
 

@@ -795,9 +795,21 @@ const loadAllPages = async (binderId) => {
     const pagesListKey = `${getBinderKeyPrefix(binderId)}pages-list`;
     const savedList = localStorage.getItem(pagesListKey);
     if (savedList) {
-      const pageIds = JSON.parse(savedList);
+      let pageIds;
+      try {
+        pageIds = JSON.parse(savedList);
+      } catch {
+        console.warn('Sayfa listesi bozuk JSON, boş liste kullanılıyor');
+        return [];
+      }
+      if (!Array.isArray(pageIds)) return [];
       // Her sayfayı ayrı key'den yükle
-      const pagePromises = pageIds.map(id => loadPage(id, binderId));
+      const pagePromises = pageIds.map((id) =>
+        loadPage(id, binderId).catch((err) => {
+          console.warn('Sayfa yüklenemedi:', id, err);
+          return null;
+        })
+      );
       let pages = (await Promise.all(pagePromises)).filter(Boolean);
       
       // Eğer sayfalarda order yoksa, ID'ye göre sıralayıp order ekle (migration)
@@ -1594,7 +1606,16 @@ function App() {
       notify({ kind: 'success', text: t('notify.binderImported', { name: newBinder.name }) });
     } catch (error) {
       console.error('Binder içe aktarılırken hata:', error);
-      notify({ kind: 'error', text: t('binder.importFailed') });
+      const code = error?.code || error?.message;
+      const key =
+        code === 'INVALID_JSON'
+          ? 'binder.importInvalidJson'
+          : code === 'INVALID_FORMAT' || code === 'INVALID_DATA'
+            ? 'binder.importInvalidFormat'
+            : code === 'STORAGE_FULL' || error?.name === 'QuotaExceededError'
+              ? 'binder.importStorageFull'
+              : 'binder.importFailed';
+      notify({ kind: 'error', text: t(key) });
     }
   };
 

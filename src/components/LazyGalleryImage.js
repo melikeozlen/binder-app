@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, memo } from 'react';
 import { getDriveImageFallbacks, normalizeDriveImageUrl } from '../utils/driveImageUrl';
 
-const LazyGalleryImage = ({ src, alt, onError, onLoad }) => {
+const LazyGalleryImage = memo(function LazyGalleryImage({ src, alt, onError, onLoad }) {
   const imgRef = useRef(null);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [srcIndex, setSrcIndex] = useState(0);
@@ -49,7 +49,7 @@ const LazyGalleryImage = ({ src, alt, onError, onLoad }) => {
     <img
       ref={imgRef}
       src={shouldLoad ? activeSrc : undefined}
-      alt={alt}
+      alt={alt || ''}
       draggable="false"
       loading="lazy"
       decoding="async"
@@ -58,6 +58,6 @@ const LazyGalleryImage = ({ src, alt, onError, onLoad }) => {
       onLoad={onLoad}
     />
   );
-};
+});
 
 export default LazyGalleryImage;
