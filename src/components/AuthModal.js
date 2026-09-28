@@ -165,7 +165,6 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
       <p className={`auth-modal-status auth-modal-status--${syncStatus}`}>
         {t(`auth.status.${syncStatus}`)}
       </p>
-      <p className="auth-modal-hint">{t('auth.cloudInfo')}</p>
 
       {shares && (
         <div className="auth-shares">
@@ -427,8 +426,6 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
       </div>
 
       <form className="auth-modal-body" onSubmit={handleSubmit} noValidate>
-        <p className="auth-modal-hint">{t('auth.cloudInfo')}</p>
-
         <label className="auth-field">
           <span>{t('auth.username')}</span>
           <input
