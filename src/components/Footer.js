@@ -8,6 +8,7 @@ import { useConfirm } from '../contexts/ConfirmContext';
 import AuthModal from './AuthModal';
 import AdminStatsModal from './AdminStats';
 import FeedbackModal from './FeedbackModal';
+import { version as PACKAGE_VERSION } from '../../package.json';
 
 const SYNC_ICONS = {
   idle: '',
@@ -16,15 +17,25 @@ const SYNC_ICONS = {
   error: '!',
 };
 
+const getAppVersionLabel = () => {
+  if (process.env.REACT_APP_BUILD_NUMBER) return `v${process.env.REACT_APP_BUILD_NUMBER}`;
+  if (process.env.REACT_APP_BUILD_SHA) {
+    return String(process.env.REACT_APP_BUILD_SHA).slice(0, 7);
+  }
+  return `v${PACKAGE_VERSION || '0.1.0'}`;
+};
+
 const INFO_SECTIONS = [
   {
     id: 'basics',
+    icon: '📒',
     titleKey: 'info.sec.basics.title',
     itemKeys: ['info.sec.basics.1', 'info.sec.basics.2', 'info.sec.basics.3'],
     defaultOpen: true,
   },
   {
     id: 'addImages',
+    icon: '🖼️',
     titleKey: 'info.sec.addImages.title',
     itemKeys: [
       'info.sec.addImages.1',
@@ -34,20 +45,22 @@ const INFO_SECTIONS = [
       'info.sec.addImages.5',
       'info.sec.addImages.6',
     ],
-    defaultOpen: true,
   },
   {
     id: 'pages',
+    icon: '📄',
     titleKey: 'info.sec.pages.title',
     itemKeys: ['info.sec.pages.1', 'info.sec.pages.2', 'info.sec.pages.3'],
   },
   {
     id: 'images',
+    icon: '✨',
     titleKey: 'info.sec.images.title',
     itemKeys: ['info.sec.images.1', 'info.sec.images.2', 'info.sec.images.3'],
   },
   {
     id: 'more',
+    icon: '⚙️',
     titleKey: 'info.sec.more.title',
     itemKeys: ['info.sec.more.1', 'info.sec.more.2'],
   },
@@ -61,8 +74,9 @@ const InfoCollapseSection = ({ section, isOpen, onToggle, t }) => (
       onClick={onToggle}
       aria-expanded={isOpen}
     >
-      <span className="info-collapse-chevron" aria-hidden="true">{isOpen ? '▼' : '▶'}</span>
-      <span>{t(section.titleKey)}</span>
+      <span className="info-collapse-icon" aria-hidden="true">{section.icon}</span>
+      <span className="info-collapse-title">{t(section.titleKey)}</span>
+      <span className="info-collapse-chevron" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
     </button>
     {isOpen && (
       <div className="info-collapse-body">
@@ -156,17 +170,31 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
     };
   }, []);
 
-  // localStorage durumunu periyodik olarak güncelle
+  // localStorage: bilgi penceresi açıkken güncelle
   useEffect(() => {
+    if (!showInfoModal) return undefined;
     const updateStorageInfo = () => {
       setStorageUsage(getLocalStorageUsagePercent());
     };
-
     updateStorageInfo();
     const interval = setInterval(updateStorageInfo, 2000);
-
     return () => clearInterval(interval);
-  }, []);
+  }, [showInfoModal]);
+
+  // Bilgi penceresi: Escape ile kapat + arka plan kaydırmayı kilitle
+  useEffect(() => {
+    if (!showInfoModal) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setShowInfoModal(false);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [showInfoModal]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -308,29 +336,6 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
           <option value="tr">TR</option>
           <option value="kr">KR</option>
         </select>
-        <span className="footer-separator">•</span>
-        <div className="footer-storage-info">
-          <div className="footer-storage-bar-container">
-            <div 
-              className={`footer-storage-bar ${storageUsage >= 90 ? 'storage-critical' : storageUsage >= 75 ? 'storage-warning' : ''}`}
-              style={{ width: `${Math.min(100, storageUsage)}%` }}
-              title={`${storageUsage.toFixed(1)}% ${t('storage.usage')}`}
-            ></div>
-          </div>
-          <span className="footer-storage-text">
-            {storageUsage.toFixed(1)}%
-          </span>
-        </div>
-        {(process.env.REACT_APP_BUILD_NUMBER || process.env.REACT_APP_BUILD_SHA) && (
-          <>
-            <span className="footer-separator">•</span>
-            <span className="footer-version" title={process.env.REACT_APP_BUILD_SHA || undefined}>
-              {process.env.REACT_APP_BUILD_NUMBER
-                ? `v${process.env.REACT_APP_BUILD_NUMBER}`
-                : process.env.REACT_APP_BUILD_SHA}
-            </span>
-          </>
-        )}
       </div>
 
       <AuthModal
@@ -347,15 +352,25 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
       {showInfoModal && createPortal(
         <div 
           className="info-modal-overlay"
+          role="presentation"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowInfoModal(false);
             }
           }}
         >
-          <div className="info-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="info-modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="info-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="info-modal-header">
-              <h2>{t('info.title')}</h2>
+              <div className="info-modal-heading">
+                <p className="info-modal-kicker">PocaPocket</p>
+                <h2 id="info-modal-title">{t('info.title')}</h2>
+              </div>
               <button
                 className="info-modal-close"
                 onClick={() => setShowInfoModal(false)}
@@ -365,6 +380,55 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
               </button>
             </div>
             <div className="info-modal-body">
+              <p className="info-intro">{t('info.introDesc')}</p>
+
+              <div className="info-meta">
+                <span
+                  className="info-meta-version"
+                  title={process.env.REACT_APP_BUILD_SHA || t('info.version')}
+                >
+                  {getAppVersionLabel()}
+                </span>
+                <div
+                  className="info-meta-storage"
+                  title={t('storage.usageHelp')}
+                >
+                  <div className="info-storage-bar-container">
+                    <div
+                      className={`info-storage-bar ${
+                        storageUsage >= 90
+                          ? 'storage-critical'
+                          : storageUsage >= 75
+                            ? 'storage-warning'
+                            : ''
+                      }`}
+                      style={{ width: `${Math.min(100, storageUsage)}%` }}
+                    />
+                  </div>
+                  <span className="info-meta-pct">{storageUsage.toFixed(1)}%</span>
+                </div>
+                <button
+                  type="button"
+                  className="info-reset-btn"
+                  onClick={handleClearCache}
+                  title={t('footer.clearCacheHelp')}
+                >
+                  {t('footer.clearCache')}
+                </button>
+              </div>
+
+              <div className="info-collapse-list">
+                {INFO_SECTIONS.map((section) => (
+                  <InfoCollapseSection
+                    key={section.id}
+                    section={section}
+                    isOpen={!!openInfoSections[section.id]}
+                    onToggle={() => toggleInfoSection(section.id)}
+                    t={t}
+                  />
+                ))}
+              </div>
+
               <div className="info-brand">
                 <a
                   href="https://x.com/kepcang"
@@ -378,30 +442,8 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
                   © {currentYear} · {t('info.rights')}
                 </span>
               </div>
-              <p className="info-intro">{t('info.introDesc')}</p>
-              <div className="info-collapse-list">
-                {INFO_SECTIONS.map((section) => (
-                  <InfoCollapseSection
-                    key={section.id}
-                    section={section}
-                    isOpen={!!openInfoSections[section.id]}
-                    onToggle={() => toggleInfoSection(section.id)}
-                    t={t}
-                  />
-                ))}
-              </div>
             </div>
             <div className="info-modal-footer">
-              <div className="info-modal-footer-left">
-                <button
-                  type="button"
-                  className="info-reset-btn"
-                  onClick={handleClearCache}
-                  title={t('footer.clearCacheHelp')}
-                >
-                  🗑️ {t('footer.clearCache')}
-                </button>
-              </div>
               <button
                 className="info-modal-close-btn"
                 onClick={() => setShowInfoModal(false)}

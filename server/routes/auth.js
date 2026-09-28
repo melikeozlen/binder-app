@@ -120,13 +120,14 @@ function createAuthRouter(pool) {
     res.json({ user: req.user });
   });
 
-  // Kullanıcı kendi hesabını kalıcı siler (binder/oturum cascade)
+  // Kullanıcı "hesabımı sil" → pasife al (giriş engellenir; admin isterse tekrar açabilir)
   router.delete(
     '/me',
     auth.requireAuth,
     wrap(async (req, res) => {
       const userId = req.user.id;
-      await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+      await pool.query('UPDATE users SET active = false WHERE id = $1', [userId]);
+      await auth.destroyAllSessionsForUser(pool, userId);
       auth.clearSessionCookie(res);
       res.status(204).end();
     })
