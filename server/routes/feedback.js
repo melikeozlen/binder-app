@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { HttpError, badRequest, wrap } = require('../errors');
+const { HttpError, badRequest, notFound, wrap } = require('../errors');
 const { requireAuth } = require('../auth');
 const { isAdmin, isValidClientId } = require('../stats');
 
@@ -8,8 +8,9 @@ const MAX_MESSAGE_LENGTH = 2000;
 const MIN_MESSAGE_LENGTH = 3;
 
 /**
- *  POST /api/feedback   herkes (giriş opsiyonel; rate limited)
- *  GET  /api/feedback   admin — son geri bildirimler
+ *  POST   /api/feedback      herkes (giriş opsiyonel; rate limited)
+ *  GET    /api/feedback      admin — son geri bildirimler
+ *  DELETE /api/feedback/:id  admin — geri bildirimi sil
  */
 function createFeedbackRouter(pool) {
   const router = express.Router();
@@ -84,6 +85,21 @@ function createFeedbackRouter(pool) {
           createdAt: r.created_at,
         })),
       });
+    })
+  );
+
+  router.delete(
+    '/:id',
+    requireAuth,
+    wrap(async (req, res) => {
+      if (!isAdmin(req.user)) throw new HttpError(403, 'FORBIDDEN', 'Admin only');
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isFinite(id) || id < 1) {
+        throw badRequest('INVALID_ID', 'Invalid feedback id');
+      }
+      const result = await pool.query(`DELETE FROM feedback WHERE id = $1 RETURNING id`, [id]);
+      if (result.rowCount === 0) throw notFound('FEEDBACK_NOT_FOUND');
+      res.status(204).end();
     })
   );
 

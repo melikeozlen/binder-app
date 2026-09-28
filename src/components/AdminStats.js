@@ -61,6 +61,7 @@ const AdminStatsModal = ({ open, onClose }) => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [query, setQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [updatedAt, setUpdatedAt] = useState(null);
 
   useModalA11y({ open, onClose, containerRef: dialogRef });
@@ -151,6 +152,29 @@ const AdminStatsModal = ({ open, onClose }) => {
       window.setTimeout(() => setCopiedId(null), 1500);
     } catch {
       // ignore
+    }
+  };
+
+  const deleteFeedback = async (item) => {
+    const who = item.username ? `@${item.username}` : t('stats.feedbackAnonymous');
+    const ok = window.confirm(t('stats.deleteFeedbackConfirm', { who }));
+    if (!ok) return;
+    setDeletingId(item.id);
+    try {
+      await api(`/api/feedback/${encodeURIComponent(item.id)}`, { method: 'DELETE' });
+      setFeedback((prev) => prev.filter((f) => f.id !== item.id));
+      setData((prev) => {
+        if (!prev?.summary) return prev;
+        const total = Math.max(0, (prev.summary.feedbackTotal || 0) - 1);
+        return {
+          ...prev,
+          summary: { ...prev.summary, feedbackTotal: total },
+        };
+      });
+    } catch (err) {
+      window.alert(err?.message || t('stats.deleteFeedbackFailed'));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -444,6 +468,16 @@ const AdminStatsModal = ({ open, onClose }) => {
                             aria-label={t('stats.copyFeedback')}
                           >
                             {copiedId === item.id ? t('stats.copied') : t('stats.copy')}
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-stats-copy-btn admin-stats-delete-btn"
+                            onClick={() => deleteFeedback(item)}
+                            disabled={deletingId === item.id}
+                            title={t('stats.deleteFeedback')}
+                            aria-label={t('stats.deleteFeedback')}
+                          >
+                            {deletingId === item.id ? '…' : t('stats.delete')}
                           </button>
                         </span>
                       </div>

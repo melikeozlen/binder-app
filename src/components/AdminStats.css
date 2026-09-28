@@ -412,6 +412,22 @@
   color: #222;
 }
 
+.admin-stats-delete-btn {
+  color: #b42318;
+  border-color: #f0c4c0;
+}
+
+.admin-stats-delete-btn:hover:not(:disabled) {
+  background: #fff1f0;
+  color: #912018;
+  border-color: #e8a09a;
+}
+
+.admin-stats-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .admin-stats-feedback-msg {
   margin: 0;
   font-size: 0.8rem;
