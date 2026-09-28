@@ -808,6 +808,9 @@ const SettingsBar = ({
       
       {/* Binder seçimi ve yönetimi */}
       <div className="setting-item binder-selector">
+        <span className="setting-label setting-label--strong" title={t('binder.selectBinder')}>
+          {t('settings.binderShort')}
+        </span>
         <div className="binder-selector-wrapper">
           <select
             value={selectedBinderId || ''}
@@ -826,7 +829,7 @@ const SettingsBar = ({
             type="button"
             className="binder-menu-btn"
             onClick={() => setShowBinderMenu(!showBinderMenu)}
-            title={t('binder.selectBinder')}
+            title={t('binder.menuActionsHelp')}
             aria-label={t('binder.menuActions')}
             aria-expanded={showBinderMenu}
             aria-haspopup="menu"
@@ -873,6 +876,7 @@ const SettingsBar = ({
           className="settings-control action-button settings-add-page-btn"
           onClick={() => onAddPage()}
           disabled={!gridSize || readOnly}
+          title={t('settings.addPageHelp')}
         >
           {t('settings.addPage')}
         </button>
@@ -910,8 +914,10 @@ const SettingsBar = ({
         </button>
       </div>
       
-      <div className="setting-item">
-        <span className="setting-label" title={t('settings.widthHelp')}>{t('settings.width')}</span>
+      <div className="setting-item setting-item--size">
+        <span className="setting-label setting-label--strong" title={t('settings.widthHelp')}>
+          {t('settings.width')}
+        </span>
         <div className="ratio-input-wrapper">
           <input
             type="number"
@@ -949,6 +955,7 @@ const SettingsBar = ({
             step="0.01"
             className="settings-control ratio-input"
             title={t('settings.widthHelp')}
+            aria-label={t('settings.widthHelp')}
           />
           <div className="ratio-buttons">
             <button
@@ -965,7 +972,8 @@ const SettingsBar = ({
                 startWidthIncrease();
               }}
               onTouchEnd={stopWidthIncrease}
-              title={t('settings.increase')}
+              title={t('settings.wider')}
+              aria-label={t('settings.wider')}
             >
               ▲
             </button>
@@ -983,7 +991,8 @@ const SettingsBar = ({
                 startWidthDecrease();
               }}
               onTouchEnd={stopWidthDecrease}
-              title={t('settings.decrease')}
+              title={t('settings.narrower')}
+              aria-label={t('settings.narrower')}
             >
               ▼
             </button>
@@ -991,8 +1000,10 @@ const SettingsBar = ({
         </div>
       </div>
       
-      <div className="setting-item">
-        <span className="setting-label" title={t('settings.heightHelp')}>{t('settings.height')}</span>
+      <div className="setting-item setting-item--size">
+        <span className="setting-label setting-label--strong" title={t('settings.heightHelp')}>
+          {t('settings.height')}
+        </span>
         <div className="ratio-input-wrapper">
           <input
             type="number"
@@ -1030,6 +1041,7 @@ const SettingsBar = ({
             step="0.01"
             className="settings-control ratio-input"
             title={t('settings.heightHelp')}
+            aria-label={t('settings.heightHelp')}
           />
           <div className="ratio-buttons">
             <button
@@ -1046,7 +1058,8 @@ const SettingsBar = ({
                 startHeightIncrease();
               }}
               onTouchEnd={stopHeightIncrease}
-              title={t('settings.increase')}
+              title={t('settings.taller')}
+              aria-label={t('settings.taller')}
             >
               ▲
             </button>
@@ -1064,7 +1077,8 @@ const SettingsBar = ({
                 startHeightDecrease();
               }}
               onTouchEnd={stopHeightDecrease}
-              title={t('settings.decrease')}
+              title={t('settings.shorter')}
+              aria-label={t('settings.shorter')}
             >
               ▼
             </button>
@@ -1072,8 +1086,10 @@ const SettingsBar = ({
         </div>
       </div>
       
-      <div className="setting-item">
-        <span className="setting-label" title={t('settings.gridHelp')}>{t('settings.grid')}</span>
+      <div className="setting-item setting-item--grid">
+        <span className="setting-label setting-label--strong" title={t('settings.gridHelp')}>
+          {t('settings.grid')}
+        </span>
         <input
           type="text"
           value={gridSize}
@@ -1094,9 +1110,10 @@ const SettingsBar = ({
               onGridSizeChange('2x2');
             }
           }}
-          placeholder="2x2 / 3-2 / 2-3-2"
+          placeholder={t('settings.gridPlaceholder')}
           className="settings-control grid-input"
           title={t('settings.gridHelp')}
+          aria-label={t('settings.gridHelp')}
         />
       </div>
       
@@ -1119,6 +1136,7 @@ const SettingsBar = ({
           className="settings-control icon-button gallery-settings-btn"
           onClick={() => setShowGallerySettingsModal(true)}
           title={t('settings.gallerySettingsHelp')}
+          aria-label={t('settings.gallerySettingsHelp')}
         >
           🖼️
           <span className="icon-button-label">{t('settings.gallerySettings')}</span>
@@ -1133,9 +1151,10 @@ const SettingsBar = ({
       
       <div className="setting-item settings-add-page-desktop">
         <button
-          className="settings-control action-button"
+          className="settings-control action-button settings-add-page-btn"
           onClick={() => onAddPage()}
           disabled={!gridSize || readOnly}
+          title={t('settings.addPageHelp')}
         >
           {t('settings.addPage')}
         </button>
@@ -1427,12 +1446,19 @@ const SettingsBar = ({
                       📄 {t('settings.loadTextFile')}
                     </button>
                     <p className="gallery-settings-hint">{t('settings.loadTextFileHelp')}</p>
+                    <p className="gallery-settings-hint gallery-settings-hint--muted">
+                      {t('settings.loadTextFileExample')}
+                    </p>
                   </div>
 
                   <div className="gallery-settings-section">
                     <label className="gallery-settings-label" htmlFor="gallery-drive-folder-input">
                       {t('settings.driveGalleryLabel')}
                     </label>
+                    <p className="gallery-settings-hint">{t('settings.driveGalleryHelp')}</p>
+                    <p className="gallery-settings-hint gallery-settings-hint--muted">
+                      {t('settings.driveGalleryHint')}
+                    </p>
                     <input
                       id="gallery-drive-folder-input"
                       type="url"
@@ -1454,7 +1480,6 @@ const SettingsBar = ({
                     >
                       {driveGalleryLoading ? '…' : `📁 ${t('settings.driveGalleryLoad')}`}
                     </button>
-                    <p className="gallery-settings-hint">{t('settings.driveGalleryHelp')}</p>
                   </div>
 
                   <div className="gallery-settings-section gallery-settings-section--back-image">

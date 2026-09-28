@@ -1,62 +1,57 @@
 {
-  "short_name": "Binder",
-  "name": "Binder App",
+  "id": "/",
+  "short_name": "PocaPocket",
+  "name": "PocaPocket",
   "description": "Digital photocard binder — organize your K-pop PCs in pages and sleeves.",
   "icons": [
     {
-      "src": "260185-.png",
-      "sizes": "64x64 32x32 24x24 16x16",
+      "src": "brand/favicon-32.png",
+      "sizes": "32x32",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "260185-192.png",
+      "src": "brand/favicon-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "brand/favicon-64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "brand/app-icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "260185-.png",
+      "src": "brand/app-icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "260185-180.png",
-      "type": "image/png",
-      "sizes": "180x180",
       "purpose": "any"
     },
     {
-      "src": "260185-192.png",
+      "src": "brand/app-icon-maskable-192.png",
       "type": "image/png",
-      "sizes": "144x144",
-      "purpose": "any"
+      "sizes": "192x192",
+      "purpose": "maskable"
     },
     {
-      "src": "260185-192.png",
+      "src": "brand/app-icon-maskable-512.png",
       "type": "image/png",
-      "sizes": "96x96",
-      "purpose": "any"
-    },
-    {
-      "src": "260185-192.png",
-      "type": "image/png",
-      "sizes": "72x72",
-      "purpose": "any"
-    },
-    {
-      "src": "260185-192.png",
-      "type": "image/png",
-      "sizes": "48x48",
-      "purpose": "any"
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": ".",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "scope": "/",
+  "theme_color": "#F7F1E8",
+  "background_color": "#F7F1E8",
   "categories": ["lifestyle", "productivity", "utilities"]
 }

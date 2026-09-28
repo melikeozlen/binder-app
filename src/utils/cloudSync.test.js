@@ -16,6 +16,11 @@ describe('collectImageRefs', () => {
         content: {
           '0-0': '__IMAGE_REF__1-content-0-0',
           '0-1': { url: '__IMAGE_REF__1-content-0-1', name: 'x' },
+          '0-2': {
+            id: 'pc_1',
+            image: '__IMAGE_REF__1-content-0-2',
+            member: 'A',
+          },
           '1-0': 'https://example.com/a.jpg',
           '1-1': null,
         },
@@ -23,7 +28,12 @@ describe('collectImageRefs', () => {
       },
       { content: {}, backContent: undefined },
     ];
-    expect([...collectImageRefs(pages)].sort()).toEqual(['1-back-0-0', '1-content-0-0', '1-content-0-1']);
+    expect([...collectImageRefs(pages)].sort()).toEqual([
+      '1-back-0-0',
+      '1-content-0-0',
+      '1-content-0-1',
+      '1-content-0-2',
+    ]);
     expect(collectImageRefs([]).size).toBe(0);
     expect(collectImageRefs(undefined).size).toBe(0);
   });

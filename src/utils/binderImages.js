@@ -1,21 +1,16 @@
+import {
+  getPhotocardImage,
+  getPhotocardLabel,
+  getImageRefKey,
+  normalizePhotocard,
+  IMAGE_REF_PREFIX,
+} from './photocard';
+
+/** @deprecated tercih: getPhotocardImage / getPhotocardLabel */
 export const extractImageFromCell = (value) => {
-  if (!value) return { url: '', name: '' };
-  if (typeof value === 'string') {
-    if (
-      value.startsWith('data:image') ||
-      value.startsWith('http://') ||
-      value.startsWith('https://')
-    ) {
-      return { url: value, name: '' };
-    }
-    return { url: '', name: '' };
-  }
-  if (typeof value === 'object') {
-    const url = value.url || value.image || '';
-    const name = (value.name || '').trim();
-    return { url, name };
-  }
-  return { url: '', name: '' };
+  const url = getPhotocardImage(value);
+  const name = getPhotocardLabel(value);
+  return { url, name };
 };
 
 /** Galeri / binder URL karşılaştırması için normalize eder */
@@ -59,15 +54,15 @@ export const collectBinderUsedImages = (pages = [], defaultBackImage = null) => 
 
   pages.forEach((page) => {
     Object.values(page.content || {}).forEach((value) => {
-      addUrl(extractImageFromCell(value).url);
+      addUrl(getPhotocardImage(value));
     });
     Object.values(page.backContent || {}).forEach((value) => {
-      addUrl(extractImageFromCell(value).url);
+      addUrl(getPhotocardImage(value));
     });
   });
 
   if (defaultBackImage) {
-    addUrl(extractImageFromCell(defaultBackImage).url);
+    addUrl(getPhotocardImage(defaultBackImage));
   }
 
   return { urls };
@@ -76,9 +71,18 @@ export const collectBinderUsedImages = (pages = [], defaultBackImage = null) => 
 export const isGalleryItemInBinder = (item, usedImages) => {
   if (!usedImages?.urls) return false;
 
-  const url = typeof item === 'string' ? item : item?.url;
+  const url = typeof item === 'string' ? item : item?.url || item?.image;
   const normalized = normalizeImageUrl(url);
   if (!normalized) return false;
 
   return usedImages.urls.has(normalized);
 };
+
+/** Hücreden image-ref key topla (string veya photocard.image) */
+export const collectImageRefKeysFromValue = (value, into = new Set()) => {
+  const key = getImageRefKey(value);
+  if (key) into.add(key);
+  return into;
+};
+
+export { getPhotocardImage, getPhotocardLabel, getImageRefKey, normalizePhotocard, IMAGE_REF_PREFIX };

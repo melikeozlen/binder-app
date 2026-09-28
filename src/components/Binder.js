@@ -174,6 +174,32 @@ const Binder = ({
     }
   }, [binderColor]);
 
+  /** Şeffaf binder: seçilen rengin hafif opak (frosted PVC) hali */
+  const binderColorTint = useMemo(() => {
+    const raw = (binderColor || '#E6E6E6').trim();
+    const hexMatch = raw.replace('#', '');
+    let r = 230;
+    let g = 230;
+    let b = 230;
+    if (/^[0-9a-fA-F]{6}$/.test(hexMatch)) {
+      r = parseInt(hexMatch.slice(0, 2), 16);
+      g = parseInt(hexMatch.slice(2, 4), 16);
+      b = parseInt(hexMatch.slice(4, 6), 16);
+    } else {
+      const rgb = raw.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+      if (rgb) {
+        r = Number(rgb[1]);
+        g = Number(rgb[2]);
+        b = Number(rgb[3]);
+      }
+    }
+    return {
+      fill: `rgba(${r}, ${g}, ${b}, 0.32)`,
+      border: `rgba(${r}, ${g}, ${b}, 0.45)`,
+      gloss: `rgba(255, 255, 255, 0.28)`,
+    };
+  }, [binderColor]);
+
   // Ring rengini hesapla: hex'ten RGB'ye çevir ve farklı tonlar oluştur
   const ringColorRGB = useMemo(() => {
     const defaultRingColor = ringColor || '#878787';
@@ -294,6 +320,8 @@ const Binder = ({
       <div className="binder-wrapper" style={{ 
         ...wrapperStyle,
         '--binder-color': binderColor,
+        '--binder-color-tint': binderColorTint.fill,
+        '--binder-color-tint-border': binderColorTint.border,
         '--stitch-color': stitchColor,
         '--width-ratio': widthRatio,
         '--height-ratio': heightRatio,

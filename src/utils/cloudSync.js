@@ -26,9 +26,9 @@ import {
   removeAllImagesForBinder,
   removeDefaultBackImageFromIndexedDB,
 } from './indexedDB';
+import { getImageRefKey } from './photocard';
 
 const META_SUFFIX = 'cloud-meta';
-const IMAGE_REF_PREFIX = '__IMAGE_REF__';
 const UPLOAD_CHUNK_BYTES = 6 * 1024 * 1024;
 const UPLOAD_CHUNK_COUNT = 100;
 const FETCH_CHUNK_KEYS = 50;
@@ -82,16 +82,8 @@ export function collectImageRefs(pages) {
     for (const side of [page?.content, page?.backContent]) {
       if (!side || typeof side !== 'object') continue;
       for (const value of Object.values(side)) {
-        if (typeof value === 'string' && value.startsWith(IMAGE_REF_PREFIX)) {
-          keys.add(value.slice(IMAGE_REF_PREFIX.length));
-        } else if (
-          value &&
-          typeof value === 'object' &&
-          typeof value.url === 'string' &&
-          value.url.startsWith(IMAGE_REF_PREFIX)
-        ) {
-          keys.add(value.url.slice(IMAGE_REF_PREFIX.length));
-        }
+        const refKey = getImageRefKey(value);
+        if (refKey) keys.add(refKey);
       }
     }
   }

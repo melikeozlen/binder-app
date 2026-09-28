@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import './Footer.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
-import { clearAllIndexedDB } from '../utils/indexedDB.js';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import AuthModal from './AuthModal';
@@ -19,72 +18,38 @@ const SYNC_ICONS = {
 
 const INFO_SECTIONS = [
   {
-    id: 'nav',
-    titleKey: 'info.sec.nav.title',
-    itemKeys: ['info.sec.nav.1', 'info.sec.nav.2'],
+    id: 'basics',
+    titleKey: 'info.sec.basics.title',
+    itemKeys: ['info.sec.basics.1', 'info.sec.basics.2', 'info.sec.basics.3'],
     defaultOpen: true,
   },
   {
-    id: 'binder',
-    titleKey: 'info.sec.binder.title',
-    itemKeys: ['info.sec.binder.1', 'info.sec.binder.2', 'info.sec.binder.3', 'info.sec.binder.4', 'info.sec.binder.5', 'info.sec.binder.6'],
+    id: 'addImages',
+    titleKey: 'info.sec.addImages.title',
+    itemKeys: [
+      'info.sec.addImages.1',
+      'info.sec.addImages.2',
+      'info.sec.addImages.3',
+      'info.sec.addImages.4',
+      'info.sec.addImages.5',
+      'info.sec.addImages.6',
+    ],
+    defaultOpen: true,
   },
   {
     id: 'pages',
     titleKey: 'info.sec.pages.title',
-    itemKeys: ['info.sec.pages.1', 'info.sec.pages.2', 'info.sec.pages.3', 'info.sec.pages.4', 'info.sec.pages.5', 'info.sec.pages.6'],
+    itemKeys: ['info.sec.pages.1', 'info.sec.pages.2', 'info.sec.pages.3'],
   },
   {
-    id: 'look',
-    titleKey: 'info.sec.look.title',
-    itemKeys: ['info.sec.look.1', 'info.sec.look.2', 'info.sec.look.3', 'info.sec.look.4'],
+    id: 'images',
+    titleKey: 'info.sec.images.title',
+    itemKeys: ['info.sec.images.1', 'info.sec.images.2', 'info.sec.images.3'],
   },
   {
-    id: 'file',
-    titleKey: 'info.sec.file.title',
-    itemKeys: ['info.sec.file.1', 'info.sec.file.2', 'info.sec.file.3'],
-  },
-  {
-    id: 'url',
-    titleKey: 'info.sec.url.title',
-    itemKeys: ['info.sec.url.1', 'info.sec.url.2', 'info.sec.url.3', 'info.sec.url.4'],
-  },
-  {
-    id: 'gallery',
-    titleKey: 'info.sec.gallery.title',
-    itemKeys: ['info.sec.gallery.1', 'info.sec.gallery.2', 'info.sec.gallery.3', 'info.sec.gallery.4', 'info.sec.gallery.5'],
-    codeKey: 'info.sec.gallery.example',
-    noteKey: 'info.sec.gallery.note',
-  },
-  {
-    id: 'defaultGallery',
-    titleKey: 'info.sec.defaultGallery.title',
-    itemKeys: ['info.sec.defaultGallery.1', 'info.sec.defaultGallery.2', 'info.sec.defaultGallery.3'],
-  },
-  {
-    id: 'backImage',
-    titleKey: 'info.sec.backImage.title',
-    itemKeys: ['info.sec.backImage.1', 'info.sec.backImage.2', 'info.sec.backImage.3', 'info.sec.backImage.4'],
-  },
-  {
-    id: 'imageEdit',
-    titleKey: 'info.sec.imageEdit.title',
-    itemKeys: ['info.sec.imageEdit.1', 'info.sec.imageEdit.2', 'info.sec.imageEdit.3', 'info.sec.imageEdit.4', 'info.sec.imageEdit.5'],
-  },
-  {
-    id: 'imageDrag',
-    titleKey: 'info.sec.imageDrag.title',
-    itemKeys: ['info.sec.imageDrag.1', 'info.sec.imageDrag.2', 'info.sec.imageDrag.3'],
-  },
-  {
-    id: 'pageOrder',
-    titleKey: 'info.sec.pageOrder.title',
-    itemKeys: ['info.sec.pageOrder.1', 'info.sec.pageOrder.2', 'info.sec.pageOrder.3'],
-  },
-  {
-    id: 'footer',
-    titleKey: 'info.sec.footer.title',
-    itemKeys: ['info.sec.footer.1', 'info.sec.footer.2', 'info.sec.footer.3', 'info.sec.footer.4', 'info.sec.footer.5', 'info.sec.footer.6'],
+    id: 'more',
+    titleKey: 'info.sec.more.title',
+    itemKeys: ['info.sec.more.1', 'info.sec.more.2'],
   },
 ];
 
@@ -227,28 +192,32 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
     if (!ok) return;
 
     try {
-      // IndexedDB'yi temizle
-      await clearAllIndexedDB();
-
-      // Service Worker cache'ini temizle
-      if ('caches' in window) {
-        caches.keys().then((names) => {
-          names.forEach((name) => {
-            caches.delete(name);
-          });
-        });
+      // Service Worker'ları kaldır (eski sürüm / ikon takılı kalsın diye)
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((reg) => reg.unregister()));
       }
 
-      // localStorage'ı temizle
-      localStorage.clear();
+      // Cache Storage (SW önbelleği + tarayıcı cache API)
+      if ('caches' in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map((name) => caches.delete(name)));
+      }
 
-      // Sayfayı yenile
-      window.location.reload();
+      // Oturum önbelleği
+      try {
+        sessionStorage.clear();
+      } catch {
+        // ignore
+      }
+
+      // Hard reload — tarayıcı disk cache'ini de atlat
+      const url = new URL(window.location.href);
+      url.searchParams.set('_refresh', String(Date.now()));
+      window.location.replace(url.toString());
     } catch (error) {
       console.error('Önbellek temizlenirken hata:', error);
-      // Hata olsa bile localStorage'ı temizle ve sayfayı yenile
-      localStorage.clear();
-      window.location.reload();
+      window.location.reload(true);
     }
   };
 

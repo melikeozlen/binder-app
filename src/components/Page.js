@@ -9,6 +9,11 @@ import GalleryWithFolders from './GalleryWithFolders';
 import CellImage from './CellImage';
 import { GALLERY_UI_CONTEXT } from '../utils/galleryUiState';
 import { parseGridLayout, getMirroredCol, getRowSideGapUnits } from '../utils/gridLayout';
+import {
+  createPhotocard,
+  getPhotocardImage,
+  getPhotocardLabel,
+} from '../utils/photocard';
 
 const SLEEVE_PRESETS = [
   '#A8CCE8',
@@ -585,29 +590,12 @@ const Page = ({
     }
   }, [defaultBackImage, rotatedImages, applyRoundedCorners, rotatedDefaultBackImage]);
 
-  // Resim içeriğini normalize et - hem obje hem string formatını destekle (base64 veya URL)
+  // Resim içeriğini normalize et - Photocard / eski string / {url,name}
   const getImageUrl = (cellContent) => {
-    if (!cellContent) return null;
-    if (typeof cellContent === 'string') {
-      // Base64 resim veya URL
-      if (cellContent.startsWith('data:image') ||
-        cellContent.startsWith('http://') ||
-        cellContent.startsWith('https://')) {
-        return cellContent;
-      }
-    }
-    if (typeof cellContent === 'object') {
-      const url = cellContent.url || cellContent.image;
-      if (
-        url &&
-        (url.startsWith('data:image') ||
-          url.startsWith('http://') ||
-          url.startsWith('https://'))
-      ) {
-        return url;
-      }
-    }
-    return null;
+    const img = getPhotocardImage(cellContent);
+    if (!img) return null;
+    if (img.startsWith('__IMAGE_REF__')) return null;
+    return img;
   };
 
   const lookupGalleryImageName = (url) => {
@@ -623,18 +611,18 @@ const Page = ({
   };
 
   const getCellImageName = (cellContent) => {
-    if (cellContent && typeof cellContent === 'object' && cellContent.name) {
-      return cellContent.name.trim();
-    }
+    const label = getPhotocardLabel(cellContent);
+    if (label) return label;
     return lookupGalleryImageName(getImageUrl(cellContent));
   };
 
+  /** Minimum: image. name varsa notes’a yazılır (opsiyonel). */
   const createImageCellValue = (url, name = '') => {
     const trimmedName = (name || '').trim();
-    if (trimmedName) {
-      return { url, name: trimmedName };
-    }
-    return url;
+    return createPhotocard({
+      image: url,
+      ...(trimmedName ? { notes: trimmedName } : {}),
+    });
   };
 
   const isImageContent = (cellContent) => {
@@ -752,10 +740,11 @@ const Page = ({
     if (trimmedUrl) {
       // URL validasyonu
       if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://') || trimmedUrl.startsWith('data:image')) {
+        const cellValue = createPhotocard({ image: trimmedUrl });
         if (side === 'front') {
           const key = `${row}-${col}`;
           updatePageWithState(
-            (prevContent) => ({ ...prevContent, [key]: trimmedUrl }),
+            (prevContent) => ({ ...prevContent, [key]: cellValue }),
             undefined,
             undefined
           );
@@ -763,7 +752,7 @@ const Page = ({
           const key = `${row}-${col}`;
           updatePageWithState(
             undefined,
-            (prevBackContent) => ({ ...prevBackContent, [key]: trimmedUrl }),
+            (prevBackContent) => ({ ...prevBackContent, [key]: cellValue }),
             undefined
           );
         }
@@ -907,11 +896,13 @@ const Page = ({
     const file = e.target.files[0];
     if (file) {
       // Resim sayısı kontrolü
-      const currentImageCount = Object.keys(content).filter(key =>
-        content[key] && typeof content[key] === 'string' && content[key].startsWith('data:image')
-      ).length + Object.keys(backContent).filter(key =>
-        backContent[key] && typeof backContent[key] === 'string' && backContent[key].startsWith('data:image')
-      ).length;
+      const countDataImages = (map) =>
+        Object.values(map || {}).filter((v) => {
+          const img = getPhotocardImage(v);
+          return img && img.startsWith('data:image');
+        }).length;
+
+      const currentImageCount = countDataImages(content) + countDataImages(backContent);
 
       if (currentImageCount >= 20) {
         notify({ kind: 'warning', text: tWithParams('page.maxImagesPerPage', { max: 20 }) });
@@ -934,8 +925,9 @@ const Page = ({
             const key = `${row}-${col}`;
             // Sadece bu cep için güncelleme yap - sayfa ID kontrolü yap
             if (page.id) {
+              const cellValue = createPhotocard({ image: roundedImageDataUrl });
               updatePageWithState(
-                (prevContent) => ({ ...prevContent, [key]: roundedImageDataUrl }),
+                (prevContent) => ({ ...prevContent, [key]: cellValue }),
                 undefined,
                 undefined
               );
@@ -1551,11 +1543,13 @@ const Page = ({
     const file = e.target.files[0];
     if (file) {
       // Resim sayısı kontrolü
-      const currentImageCount = Object.keys(content).filter(key =>
-        content[key] && typeof content[key] === 'string' && content[key].startsWith('data:image')
-      ).length + Object.keys(backContent).filter(key =>
-        backContent[key] && typeof backContent[key] === 'string' && backContent[key].startsWith('data:image')
-      ).length;
+      const countDataImages = (map) =>
+        Object.values(map || {}).filter((v) => {
+          const img = getPhotocardImage(v);
+          return img && img.startsWith('data:image');
+        }).length;
+
+      const currentImageCount = countDataImages(content) + countDataImages(backContent);
 
       if (currentImageCount >= 20) {
         notify({ kind: 'warning', text: tWithParams('page.maxImagesPerPage', { max: 20 }) });
@@ -1575,12 +1569,13 @@ const Page = ({
         compressImage(event.target.result, (compressedImage) => {
           applyRoundedCorners(compressedImage, (roundedImageDataUrl) => {
             const key = `${row}-${col}`;
+            const cellValue = createPhotocard({ image: roundedImageDataUrl });
             // Sadece bu cep için güncelleme yap
             updatePageWithState(
               undefined,
               (prevBackContent) => {
                 // Sadece bu sayfanın backContent'ini güncelle
-                return { ...prevBackContent, [key]: roundedImageDataUrl };
+                return { ...prevBackContent, [key]: cellValue };
               },
               undefined
             );

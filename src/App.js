@@ -33,6 +33,13 @@ import {
   applyBinderImport,
 } from './utils/binderExportImport';
 import {
+  getImageRefKey,
+  getPhotocardImage,
+  normalizePhotocard,
+  toPersistedCellValue,
+  resolvePersistedCellValue,
+} from './utils/photocard';
+import {
   isValidGridSize,
   normalizeGridSizeInput,
   formatGridSizeForInput,
@@ -470,15 +477,13 @@ const autoCleanupLocalStorage = (binderId, aggressive = false) => {
           const backContent = page.backContent || {};
           
           Object.values(content).forEach(value => {
-            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-              usedImageKeys.add(value.replace('__IMAGE_REF__', ''));
-            }
+            const imageKey = getImageRefKey(value);
+            if (imageKey) usedImageKeys.add(imageKey);
           });
           
           Object.values(backContent).forEach(value => {
-            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-              usedImageKeys.add(value.replace('__IMAGE_REF__', ''));
-            }
+            const imageKey = getImageRefKey(value);
+            if (imageKey) usedImageKeys.add(imageKey);
           });
         }
       } catch (e) {
@@ -550,6 +555,21 @@ const autoCleanupLocalStorage = (binderId, aggressive = false) => {
   }
 };
 
+const collectDeletableImageKeysFromValue = (value, pageId, side, cellKey, into) => {
+  const refKey = getImageRefKey(value);
+  if (refKey) {
+    if (into instanceof Set) into.add(refKey);
+    else if (Array.isArray(into) && !into.includes(refKey)) into.push(refKey);
+    return;
+  }
+  const img = getPhotocardImage(value);
+  if (img && img.startsWith('data:image') && cellKey != null) {
+    const constructed = `${pageId}-${side}-${cellKey}`;
+    if (into instanceof Set) into.add(constructed);
+    else if (Array.isArray(into) && !into.includes(constructed)) into.push(constructed);
+  }
+};
+
 // Sayfadaki kullanılmayan resimleri temizle
 const cleanupUnusedImages = async (pageId, newContentRefs, newBackContentRefs, binderId) => {
   try {
@@ -564,34 +584,26 @@ const cleanupUnusedImages = async (pageId, newContentRefs, newBackContentRefs, b
     
     // Eski content'teki resim referanslarını topla
     const oldImageKeys = new Set();
-    Object.values(oldContent).forEach(value => {
-      if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-        const imageKey = value.replace('__IMAGE_REF__', '');
-        oldImageKeys.add(imageKey);
-      }
+    Object.values(oldContent).forEach((value) => {
+      const imageKey = getImageRefKey(value);
+      if (imageKey) oldImageKeys.add(imageKey);
     });
     
-    Object.values(oldBackContent).forEach(value => {
-      if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-        const imageKey = value.replace('__IMAGE_REF__', '');
-        oldImageKeys.add(imageKey);
-      }
+    Object.values(oldBackContent).forEach((value) => {
+      const imageKey = getImageRefKey(value);
+      if (imageKey) oldImageKeys.add(imageKey);
     });
     
     // Yeni content'teki resim referanslarını topla
     const newImageKeys = new Set();
-    Object.values(newContentRefs).forEach(value => {
-      if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-        const imageKey = value.replace('__IMAGE_REF__', '');
-        newImageKeys.add(imageKey);
-      }
+    Object.values(newContentRefs).forEach((value) => {
+      const imageKey = getImageRefKey(value);
+      if (imageKey) newImageKeys.add(imageKey);
     });
     
-    Object.values(newBackContentRefs).forEach(value => {
-      if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-        const imageKey = value.replace('__IMAGE_REF__', '');
-        newImageKeys.add(imageKey);
-      }
+    Object.values(newBackContentRefs).forEach((value) => {
+      const imageKey = getImageRefKey(value);
+      if (imageKey) newImageKeys.add(imageKey);
     });
     
     // Kullanılmayan resimleri sil
@@ -606,33 +618,28 @@ const cleanupUnusedImages = async (pageId, newContentRefs, newBackContentRefs, b
 };
 
 const getInlineImageDataUrl = (value) => {
-  if (!value) return null;
-  if (typeof value === 'string' && value.startsWith('data:image')) {
-    return value;
-  }
-  if (typeof value === 'object') {
-    const url = value.url || value.image;
-    if (url && typeof url === 'string' && url.startsWith('data:image')) {
-      return url;
-    }
-  }
+  const img = getPhotocardImage(value);
+  if (img && img.startsWith('data:image')) return img;
   return null;
 };
 
 const saveCellImageToStorage = async (pageId, side, cellKey, value, binderId) => {
+  if (value === null || value === undefined) return null;
+
   const imageData = getInlineImageDataUrl(value);
   if (!imageData) {
-    return value;
+    // HTTP(S) / zaten ref / photocard meta — normalize edip sakla
+    return normalizePhotocard(value) || value;
   }
 
   const imageKey = `${pageId}-${side}-${cellKey}`;
   try {
     await saveImageToStorage(imageKey, imageData, binderId);
-    return `__IMAGE_REF__${imageKey}`;
+    return toPersistedCellValue(value, imageKey);
   } catch (e) {
     const imageSize = imageData.length;
     if (imageSize < 50 * 1024) {
-      return value;
+      return normalizePhotocard(value) || value;
     }
     console.warn(`Resim ${imageKey} kaydedilemedi, atlandı.`);
     return null;
@@ -720,46 +727,29 @@ const loadPageWithSeparateImages = async (pageId, binderId) => {
     const saved = localStorage.getItem(key);
     if (saved) {
       const pageData = JSON.parse(saved);
-      
-      // Content'teki referansları geri yükle
-      const content = {};
-      for (const key of Object.keys(pageData.content || {})) {
-        const value = pageData.content[key];
-        // Null değerleri atla (kaydedilmemiş resimler)
-        if (value === null) {
-          continue;
-        }
-        if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-          // Bu bir referans, resmi yükle
-          const imageKey = value.replace('__IMAGE_REF__', '');
-          const imageData = await loadImageFromStorage(imageKey, binderId);
-          if (imageData) {
-            content[key] = imageData;
+
+      const resolveSide = async (sideContent) => {
+        const next = {};
+        for (const cellKey of Object.keys(sideContent || {})) {
+          const value = sideContent[cellKey];
+          if (value === null || value === undefined) continue;
+
+          const imageKey = getImageRefKey(value);
+          if (imageKey) {
+            const imageData = await loadImageFromStorage(imageKey, binderId);
+            if (imageData) {
+              next[cellKey] = resolvePersistedCellValue(value, imageData);
+            }
+            continue;
           }
-        } else if (value) {
-          content[key] = value;
+
+          next[cellKey] = normalizePhotocard(value) || value;
         }
-      }
-      
-      // BackContent'teki referansları geri yükle
-      const backContent = {};
-      for (const key of Object.keys(pageData.backContent || {})) {
-        const value = pageData.backContent[key];
-        // Null değerleri atla (kaydedilmemiş resimler)
-        if (value === null) {
-          continue;
-        }
-        if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-          // Bu bir referans, resmi yükle
-          const imageKey = value.replace('__IMAGE_REF__', '');
-          const imageData = await loadImageFromStorage(imageKey, binderId);
-          if (imageData) {
-            backContent[key] = imageData;
-          }
-        } else if (value) {
-          backContent[key] = value;
-        }
-      }
+        return next;
+      };
+
+      const content = await resolveSide(pageData.content);
+      const backContent = await resolveSide(pageData.backContent);
       
       return {
         id: pageData.id,
@@ -1767,35 +1757,13 @@ function App() {
             const backContent = pageData.backContent || {};
             
             // Content'teki resim referanslarını bul
-            Object.values(content).forEach(value => {
-              if (value && typeof value === 'string') {
-                if (value.startsWith('__IMAGE_REF__')) {
-                  const imageKey = value.replace('__IMAGE_REF__', '');
-                  imageKeysToDelete.push(imageKey);
-                } else if (value.startsWith('data:image')) {
-                  // Eğer direkt base64 ise, key oluştur
-                  const key = Object.keys(content).find(k => content[k] === value);
-                  if (key) {
-                    imageKeysToDelete.push(`${pageId}-content-${key}`);
-                  }
-                }
-              }
+            Object.entries(content).forEach(([cellKey, value]) => {
+              collectDeletableImageKeysFromValue(value, pageId, 'content', cellKey, imageKeysToDelete);
             });
             
             // BackContent'teki resim referanslarını bul
-            Object.values(backContent).forEach(value => {
-              if (value && typeof value === 'string') {
-                if (value.startsWith('__IMAGE_REF__')) {
-                  const imageKey = value.replace('__IMAGE_REF__', '');
-                  imageKeysToDelete.push(imageKey);
-                } else if (value.startsWith('data:image')) {
-                  // Eğer direkt base64 ise, key oluştur
-                  const key = Object.keys(backContent).find(k => backContent[k] === value);
-                  if (key) {
-                    imageKeysToDelete.push(`${pageId}-back-${key}`);
-                  }
-                }
-              }
+            Object.entries(backContent).forEach(([cellKey, value]) => {
+              collectDeletableImageKeysFromValue(value, pageId, 'back', cellKey, imageKeysToDelete);
             });
           } catch (e) {
             console.error(`Sayfa ${pageId} verisi parse edilemedi:`, e);
@@ -1806,45 +1774,13 @@ function App() {
         const page = pages[pageIndex];
         if (page) {
           // Content'teki resimleri kontrol et
-          Object.values(page.content || {}).forEach(value => {
-            if (value && typeof value === 'string') {
-              if (value.startsWith('__IMAGE_REF__')) {
-                const imageKey = value.replace('__IMAGE_REF__', '');
-                if (!imageKeysToDelete.includes(imageKey)) {
-                  imageKeysToDelete.push(imageKey);
-                }
-              } else if (value.startsWith('data:image')) {
-                // Direkt base64 ise, key oluştur
-                const key = Object.keys(page.content || {}).find(k => page.content[k] === value);
-                if (key) {
-                  const imageKey = `${pageId}-content-${key}`;
-                  if (!imageKeysToDelete.includes(imageKey)) {
-                    imageKeysToDelete.push(imageKey);
-                  }
-                }
-              }
-            }
+          Object.entries(page.content || {}).forEach(([cellKey, value]) => {
+            collectDeletableImageKeysFromValue(value, pageId, 'content', cellKey, imageKeysToDelete);
           });
           
           // BackContent'teki resimleri kontrol et
-          Object.values(page.backContent || {}).forEach(value => {
-            if (value && typeof value === 'string') {
-              if (value.startsWith('__IMAGE_REF__')) {
-                const imageKey = value.replace('__IMAGE_REF__', '');
-                if (!imageKeysToDelete.includes(imageKey)) {
-                  imageKeysToDelete.push(imageKey);
-                }
-              } else if (value.startsWith('data:image')) {
-                // Direkt base64 ise, key oluştur
-                const key = Object.keys(page.backContent || {}).find(k => page.backContent[k] === value);
-                if (key) {
-                  const imageKey = `${pageId}-back-${key}`;
-                  if (!imageKeysToDelete.includes(imageKey)) {
-                    imageKeysToDelete.push(imageKey);
-                  }
-                }
-              }
-            }
+          Object.entries(page.backContent || {}).forEach(([cellKey, value]) => {
+            collectDeletableImageKeysFromValue(value, pageId, 'back', cellKey, imageKeysToDelete);
           });
         }
         
@@ -1926,19 +1862,13 @@ function App() {
               const backContent = pageData.backContent || {};
               
               // Content'teki resim referanslarını bul
-              Object.values(content).forEach(value => {
-                if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-                  const imageKey = value.replace('__IMAGE_REF__', '');
-                  imageKeysToDelete.add(imageKey);
-                }
+              Object.entries(content).forEach(([cellKey, value]) => {
+                collectDeletableImageKeysFromValue(value, page.id, 'content', cellKey, imageKeysToDelete);
               });
               
               // BackContent'teki resim referanslarını bul
-              Object.values(backContent).forEach(value => {
-                if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-                  const imageKey = value.replace('__IMAGE_REF__', '');
-                  imageKeysToDelete.add(imageKey);
-                }
+              Object.entries(backContent).forEach(([cellKey, value]) => {
+                collectDeletableImageKeysFromValue(value, page.id, 'back', cellKey, imageKeysToDelete);
               });
             } catch (e) {
               console.error(`Sayfa ${page.id} verisi parse edilemedi:`, e);
@@ -1948,17 +1878,11 @@ function App() {
           // State'teki sayfa verisinden de kontrol et
           const content = page.content || {};
           const backContent = page.backContent || {};
-          Object.values(content).forEach(value => {
-            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-              const imageKey = value.replace('__IMAGE_REF__', '');
-              imageKeysToDelete.add(imageKey);
-            }
+          Object.entries(content).forEach(([cellKey, value]) => {
+            collectDeletableImageKeysFromValue(value, page.id, 'content', cellKey, imageKeysToDelete);
           });
-          Object.values(backContent).forEach(value => {
-            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-              const imageKey = value.replace('__IMAGE_REF__', '');
-              imageKeysToDelete.add(imageKey);
-            }
+          Object.entries(backContent).forEach(([cellKey, value]) => {
+            collectDeletableImageKeysFromValue(value, page.id, 'back', cellKey, imageKeysToDelete);
           });
           
           // Sayfa verisini sil
@@ -2016,19 +1940,13 @@ function App() {
               const backContent = pageObj.backContent || {};
               
               // Content'teki resim referanslarını bul
-              Object.values(content).forEach(value => {
-                if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-                  const imageKey = value.replace('__IMAGE_REF__', '');
-                  imageKeysToDelete.add(imageKey);
-                }
+              Object.entries(content).forEach(([cellKey, value]) => {
+                collectDeletableImageKeysFromValue(value, page.id, 'content', cellKey, imageKeysToDelete);
               });
               
               // BackContent'teki resim referanslarını bul
-              Object.values(backContent).forEach(value => {
-                if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-                  const imageKey = value.replace('__IMAGE_REF__', '');
-                  imageKeysToDelete.add(imageKey);
-                }
+              Object.entries(backContent).forEach(([cellKey, value]) => {
+                collectDeletableImageKeysFromValue(value, page.id, 'back', cellKey, imageKeysToDelete);
               });
             } catch (e) {
               console.error(`Sayfa ${page.id} verisi parse edilemedi:`, e);
@@ -2038,17 +1956,11 @@ function App() {
           // State'teki sayfa verisinden de kontrol et
           const content = page.content || {};
           const backContent = page.backContent || {};
-          Object.values(content).forEach(value => {
-            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-              const imageKey = value.replace('__IMAGE_REF__', '');
-              imageKeysToDelete.add(imageKey);
-            }
+          Object.entries(content).forEach(([cellKey, value]) => {
+            collectDeletableImageKeysFromValue(value, page.id, 'content', cellKey, imageKeysToDelete);
           });
-          Object.values(backContent).forEach(value => {
-            if (value && typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-              const imageKey = value.replace('__IMAGE_REF__', '');
-              imageKeysToDelete.add(imageKey);
-            }
+          Object.entries(backContent).forEach(([cellKey, value]) => {
+            collectDeletableImageKeysFromValue(value, page.id, 'back', cellKey, imageKeysToDelete);
           });
           
           // Sayfa verisini sil

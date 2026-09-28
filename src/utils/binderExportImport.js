@@ -6,6 +6,11 @@ import {
   removeDefaultBackImageFromIndexedDB,
   getAllImagesForBinder,
 } from './indexedDB.js';
+import {
+  getImageRefKey,
+  getPhotocardImage,
+  toPersistedCellValue,
+} from './photocard.js';
 
 export const EXPORT_VERSION = 1;
 export const EXPORT_FORMAT = 'binder-app-export';
@@ -33,18 +38,8 @@ const sortPagesByOrder = (pages) =>
   });
 
 const getCellImageDataUrl = (value) => {
-  if (!value) return null;
-  if (typeof value === 'string') {
-    if (value.startsWith('__IMAGE_REF__')) return null;
-    if (value.startsWith('data:image')) return value;
-    return null;
-  }
-  if (typeof value === 'object') {
-    const url = value.url || value.image;
-    if (url && typeof url === 'string' && url.startsWith('data:image')) {
-      return url;
-    }
-  }
+  const img = getPhotocardImage(value);
+  if (img && img.startsWith('data:image')) return img;
   return null;
 };
 
@@ -55,12 +50,8 @@ const collectImageRefsFromPages = (pages) => {
       ...Object.values(page.content || {}),
       ...Object.values(page.backContent || {}),
     ]) {
-      if (typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-        keys.add(value.replace('__IMAGE_REF__', ''));
-      }
-      if (typeof value === 'object' && value?.url?.startsWith('__IMAGE_REF__')) {
-        keys.add(value.url.replace('__IMAGE_REF__', ''));
-      }
+      const refKey = getImageRefKey(value);
+      if (refKey) keys.add(refKey);
     }
   }
   return keys;
@@ -75,7 +66,7 @@ const normalizePageCellsForExport = (page, images) => {
 
       const imageKey = `${page.id}-${sideName}-${cellKey}`;
       images[imageKey] = dataUrl;
-      next[cellKey] = `__IMAGE_REF__${imageKey}`;
+      next[cellKey] = toPersistedCellValue(value, imageKey);
     }
     return next;
   };
@@ -216,11 +207,9 @@ export async function buildBinderExportPayload(binderId, binderName) {
       ...Object.values(page.content || {}),
       ...Object.values(page.backContent || {}),
     ]) {
-      if (typeof value === 'string' && value.startsWith('__IMAGE_REF__')) {
-        const imageKey = value.replace('__IMAGE_REF__', '');
-        if (!images[imageKey]) {
-          missingRefs.push(imageKey);
-        }
+      const imageKey = getImageRefKey(value);
+      if (imageKey && !images[imageKey]) {
+        missingRefs.push(imageKey);
       }
     }
   }
