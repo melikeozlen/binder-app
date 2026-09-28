@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { api } from '../utils/apiClient';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useConfirm } from '../contexts/ConfirmContext';
+import { useToast } from '../contexts/ToastContext';
 import { getTranslation } from '../utils/translations';
 import { useModalA11y } from '../hooks/useModalA11y';
 import './AdminStats.css';
@@ -51,6 +53,8 @@ const matchesQuery = (haystack, query) => {
 
 const AdminStatsModal = ({ open, onClose }) => {
   const { language } = useLanguage();
+  const { confirm } = useConfirm();
+  const { notify } = useToast();
   const t = (key, params) => fill(getTranslation(key, language), params);
   const dialogRef = useRef(null);
   const [data, setData] = useState(null);
@@ -156,8 +160,15 @@ const AdminStatsModal = ({ open, onClose }) => {
   };
 
   const deleteFeedback = async (item) => {
-    const who = item.username ? `@${item.username}` : t('stats.feedbackAnonymous');
-    const ok = window.confirm(t('stats.deleteFeedbackConfirm', { who }));
+    const raw = String(item.message || '').trim();
+    const preview = raw.length > 15 ? `${raw.slice(0, 15)}…` : raw || '…';
+    const ok = await confirm({
+      title: t('dialog.title.deleteFeedback'),
+      message: t('stats.deleteFeedbackConfirm', { preview }),
+      confirmLabel: t('dialog.delete'),
+      cancelLabel: t('dialog.cancel'),
+      danger: true,
+    });
     if (!ok) return;
     setDeletingId(item.id);
     try {
@@ -172,7 +183,7 @@ const AdminStatsModal = ({ open, onClose }) => {
         };
       });
     } catch (err) {
-      window.alert(err?.message || t('stats.deleteFeedbackFailed'));
+      notify({ kind: 'error', text: err?.message || t('stats.deleteFeedbackFailed') });
     } finally {
       setDeletingId(null);
     }
