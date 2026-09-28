@@ -272,7 +272,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
             >
               📱 {t('footer.install')}
             </button>
-            <span className="footer-separator">•</span>
+            <span className="footer-separator">·</span>
           </>
         )}
         {authAvailable && authStatus === 'ready' && (
@@ -301,7 +301,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
                 <>👤 {t('auth.login')}</>
               )}
             </button>
-            <span className="footer-separator">•</span>
+            <span className="footer-separator">·</span>
             {user?.isAdmin && (
               <>
                 <button
@@ -312,7 +312,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
                 >
                   📊 {t('stats.title')}
                 </button>
-                <span className="footer-separator">•</span>
+                <span className="footer-separator">·</span>
               </>
             )}
           </>
@@ -324,7 +324,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
         >
           ℹ️ {t('info.button')}
         </button>
-        <span className="footer-separator">•</span>
+        <span className="footer-separator">·</span>
         <button
           type="button"
           className="footer-feedback-btn"
@@ -334,7 +334,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
         >
           💬 {t('feedback.sendShort')}
         </button>
-        <span className="footer-separator">•</span>
+        <span className="footer-separator">·</span>
         <a
           className="footer-share-btn"
           href={buildTwitterShareUrl(t('footer.shareTwitterText'))}
@@ -348,7 +348,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
           </svg>
           <span className="footer-share-label">{t('footer.shareShort')}</span>
         </a>
-        <span className="footer-separator">•</span>
+        <span className="footer-separator">·</span>
         <select
           className="footer-language-select"
           value={language}

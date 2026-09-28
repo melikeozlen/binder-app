@@ -1848,7 +1848,17 @@ const Page = ({
             return;
           }
           if (isImage && prefersTouchCellActions()) {
-            setCellImagePreview({ url: imageUrl, name: imageName || '' });
+            openCellActionSheet({
+              side: 'front',
+              row,
+              col,
+              isDefaultImage: false,
+              canMove: true,
+              canRemove: true,
+              canSleeve: true,
+              imageUrl,
+              imageName: imageName || '',
+            });
             return;
           }
           handleCellClick(row, col);
@@ -2030,9 +2040,16 @@ const Page = ({
             return;
           }
           if (isImage && prefersTouchCellActions()) {
-            setCellImagePreview({
-              url: displayImage,
-              name: backImageName || '',
+            openCellActionSheet({
+              side: 'back',
+              row,
+              col,
+              isDefaultImage: !!isDefaultImage,
+              canMove: !!canDragBack,
+              canRemove: !isDefaultImage,
+              canSleeve: !isDefaultImage,
+              imageUrl: displayImage,
+              imageName: backImageName || '',
             });
             return;
           }
@@ -2378,6 +2395,22 @@ const Page = ({
             ) : (
               <p className="cell-action-sheet-title">{t('page.cellActions')}</p>
             )}
+            {cellActionSheet.imageUrl ? (
+              <button
+                type="button"
+                className="cell-action-sheet-btn"
+                onClick={() => {
+                  const { imageUrl, imageName } = cellActionSheet;
+                  closeCellActionSheet();
+                  setCellImagePreview({
+                    url: imageUrl,
+                    name: imageName || '',
+                  });
+                }}
+              >
+                👁 {t('page.viewImage')}
+              </button>
+            ) : null}
             <button
               type="button"
               className="cell-action-sheet-btn"
