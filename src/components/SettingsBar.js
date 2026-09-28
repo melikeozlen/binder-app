@@ -872,7 +872,7 @@ const SettingsBar = ({
         </div>
       )}
 
-      {pagesCount > 0 && (
+      {pagesCount > 0 && isMobileLayout && (
         <div className="setting-item settings-add-page-mobile">
           <button
             className="settings-control action-button settings-add-page-btn"
@@ -1154,7 +1154,7 @@ const SettingsBar = ({
         </button>
       </div>
       
-      {pagesCount > 0 && (
+      {pagesCount > 0 && !isMobileLayout && (
         <div className="setting-item settings-add-page-desktop">
           <button
             className="settings-control action-button settings-add-page-btn"
