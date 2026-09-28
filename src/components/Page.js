@@ -25,10 +25,17 @@ const SLEEVE_PRESETS = [
   '#2A2A2A',
 ];
 const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
-const SLEEVE_RING_PX = 6; // Resmin dışına çizilen çerçeve kalınlığı (px)
-const IMAGE_TOUCH_DRAG_DELAY_MS = 250;
+const SLEEVE_RING_FALLBACK_PX = 6;
+const IMAGE_TOUCH_ACTION_DELAY_MS = 420;
 const IMAGE_TOUCH_SCROLL_CANCEL_PX = 12;
 const IMAGE_MOUSE_DRAG_START_PX = 5;
+
+const prefersTouchCellActions = () => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+  return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+};
 
 const Page = ({
   page,
@@ -71,10 +78,15 @@ const Page = ({
   const [defaultGalleryCell, setDefaultGalleryCell] = useState(null); // {row, col, side: 'front'|'back'}
   const [draggedCell, setDraggedCell] = useState(null); // {side, row, col}
   const [dragOverCell, setDragOverCell] = useState(null); // {side, row, col}
+  const [cellActionSheet, setCellActionSheet] = useState(null);
+  // { side, row, col, isDefaultImage, canMove, canRemove, canSleeve, imageUrl, imageName }
+  const [cellImagePreview, setCellImagePreview] = useState(null); // { url, name }
   const fileInputRefs = useRef({});
   const backFileInputRefs = useRef({});
   const sleevePickerRef = useRef(null);
   const colorPickerActiveRef = useRef(false);
+  const suppressCellClickRef = useRef(false);
+  const moveArmedRef = useRef(null); // { side, row, col } — menüden “Taşı” sonrası
   const touchDragRef = useRef({
     cell: null,
     startX: 0,
@@ -151,6 +163,17 @@ const Page = ({
     };
     loadGallery();
   }, []);
+
+  useEffect(() => {
+    if (!cellActionSheet && !cellImagePreview) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      setCellActionSheet(null);
+      setCellImagePreview(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [cellActionSheet, cellImagePreview]);
 
   // Galeri açıkken body'ye class ekle (sürükle bırak ile sayfa değiştirmeyi engellemek için)
   useEffect(() => {
@@ -1028,7 +1051,18 @@ const Page = ({
     const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
     const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
     const hasSleeve = img.classList.contains('has-sleeve');
-    const sleeveInset = hasSleeve ? SLEEVE_RING_PX * 2 : 0;
+    let sleeveInset = 0;
+    if (hasSleeve) {
+      const fromImg = parseFloat(getComputedStyle(img).getPropertyValue('--sleeve-width'));
+      const fromCell = parseFloat(
+        getComputedStyle(wrapper.closest('.grid-cell') || wrapper).getPropertyValue('--sleeve-width')
+      );
+      const ring =
+        (Number.isFinite(fromImg) && fromImg > 0 && fromImg) ||
+        (Number.isFinite(fromCell) && fromCell > 0 && fromCell) ||
+        SLEEVE_RING_FALLBACK_PX;
+      sleeveInset = ring * 2;
+    }
 
     const wrapperWidth = Math.max(0, wrapper.clientWidth - padX - sleeveInset);
     const wrapperHeight = Math.max(0, wrapper.clientHeight - padY - sleeveInset);
@@ -1135,15 +1169,43 @@ const Page = ({
 
   performCellMoveOrSwapRef.current = performCellMoveOrSwap;
 
-  const handleCellPointerDown = (side, row, col, isDraggable, inputType) => (e) => {
-    if (!isDraggable || pointerEvents === 'none' || !isTopPage) return;
-    if (e.target.closest('.cell-control-btn, .cell-sleeve-picker')) return;
+  const openCellActionSheet = useCallback((sheet) => {
+    if (pointerEvents === 'none' || !isTopPage) return;
+    suppressCellClickRef.current = true;
+    setCellImagePreview(null);
+    setCellActionSheet(sheet);
+    if (navigator.vibrate) navigator.vibrate(12);
+  }, [pointerEvents, isTopPage]);
+
+  const closeCellActionSheet = useCallback(() => {
+    setCellActionSheet(null);
+  }, []);
+
+  const armCellMove = useCallback((side, row, col) => {
+    moveArmedRef.current = { side, row, col };
+    setCellActionSheet(null);
+    notify({
+      kind: 'info',
+      text: getTranslation('page.dragHint', language),
+      duration: 2500,
+    });
+  }, [notify, language]);
+
+  const handleCellPointerDown = (side, row, col, isDraggable, inputType, options = {}) => (e) => {
+    if (pointerEvents === 'none' || !isTopPage) return;
+    if (e.target.closest('.cell-control-btn, .cell-sleeve-picker, .cell-action-sheet')) return;
+
+    const hasImage = options.hasImage === true;
+    const touchActions = inputType === 'touch' && prefersTouchCellActions();
 
     if (inputType === 'touch') {
       if (e.touches.length !== 1) return;
     } else if (e.button !== 0) {
       return;
     }
+
+    // Masaüstü: yalnızca sürüklenebilir hücrelerde mouse drag
+    if (inputType === 'mouse' && !isDraggable) return;
 
     const point = inputType === 'touch' ? e.touches[0] : e;
     const ts = touchDragRef.current;
@@ -1158,14 +1220,52 @@ const Page = ({
     ts.lastTarget = null;
     ts.inputType = inputType;
 
-    if (inputType === 'touch') {
-      ts.longPressTimer = setTimeout(() => {
-        ts.dragging = true;
-        ts.longPressTimer = null;
-        beginPointerDrag(cell);
-        if (navigator.vibrate) navigator.vibrate(12);
-      }, IMAGE_TOUCH_DRAG_DELAY_MS);
+    if (inputType !== 'touch') return;
+
+    // Menüden “Taşı” seçildiyse hemen sürüklemeye başla
+    const armed = moveArmedRef.current;
+    if (
+      armed &&
+      isDraggable &&
+      armed.side === side &&
+      armed.row === row &&
+      armed.col === col
+    ) {
+      moveArmedRef.current = null;
+      suppressCellClickRef.current = true;
+      ts.dragging = true;
+      beginPointerDrag(cell);
+      return;
     }
+
+    // Dokunmatik: uzun basış → aksiyon menüsü (hover butonları yok)
+    if (touchActions && hasImage) {
+      ts.longPressTimer = setTimeout(() => {
+        ts.longPressTimer = null;
+        ts.cell = null;
+        openCellActionSheet({
+          side,
+          row,
+          col,
+          isDefaultImage: !!options.isDefaultImage,
+          canMove: !!isDraggable,
+          canRemove: !options.isDefaultImage,
+          canSleeve: !options.isDefaultImage,
+          imageUrl: options.imageUrl || '',
+          imageName: options.imageName || '',
+        });
+      }, IMAGE_TOUCH_ACTION_DELAY_MS);
+      return;
+    }
+
+    // Eski davranış (hover destekleyen cihazlarda touch): uzun basış → sürükle
+    if (!isDraggable) return;
+    ts.longPressTimer = setTimeout(() => {
+      ts.dragging = true;
+      ts.longPressTimer = null;
+      beginPointerDrag(cell);
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, IMAGE_TOUCH_ACTION_DELAY_MS);
   };
 
   const getCellDragClassName = (side, row, col, isDraggable) => {
@@ -1418,7 +1518,6 @@ const Page = ({
         sleeveColor={sleeveColor}
         wrapperClasses={wrapperClasses}
         extraImgClass={extraImgClass}
-        sleeveRingPx={SLEEVE_RING_PX}
         onFit={fitImageToWrapper}
       />
     );
@@ -1744,10 +1843,29 @@ const Page = ({
         className={cellClasses}
         onClick={(e) => {
           e.stopPropagation();
+          if (suppressCellClickRef.current) {
+            suppressCellClickRef.current = false;
+            return;
+          }
+          if (isImage && prefersTouchCellActions()) {
+            setCellImagePreview({ url: imageUrl, name: imageName || '' });
+            return;
+          }
           handleCellClick(row, col);
         }}
-        onMouseDown={handleCellPointerDown('front', row, col, isImage, 'mouse')}
-        onTouchStart={handleCellPointerDown('front', row, col, isImage, 'touch')}
+        onContextMenu={(e) => {
+          if (prefersTouchCellActions() && isImage) e.preventDefault();
+        }}
+        onMouseDown={handleCellPointerDown('front', row, col, isImage, 'mouse', {
+          hasImage: isImage,
+          imageUrl,
+          imageName,
+        })}
+        onTouchStart={handleCellPointerDown('front', row, col, isImage, 'touch', {
+          hasImage: isImage,
+          imageUrl,
+          imageName,
+        })}
         title={isImage && imageName ? imageName : undefined}
         data-page-id={page.id}
         data-side="front"
@@ -1907,10 +2025,34 @@ const Page = ({
         className={backCellClasses}
         onClick={(e) => {
           e.stopPropagation();
+          if (suppressCellClickRef.current) {
+            suppressCellClickRef.current = false;
+            return;
+          }
+          if (isImage && prefersTouchCellActions()) {
+            setCellImagePreview({
+              url: displayImage,
+              name: backImageName || '',
+            });
+            return;
+          }
           handleBackCellClick(row, col);
         }}
-        onMouseDown={handleCellPointerDown('back', row, col, canDragBack, 'mouse')}
-        onTouchStart={handleCellPointerDown('back', row, col, canDragBack, 'touch')}
+        onContextMenu={(e) => {
+          if (prefersTouchCellActions() && isImage) e.preventDefault();
+        }}
+        onMouseDown={handleCellPointerDown('back', row, col, canDragBack, 'mouse', {
+          hasImage: isImage,
+          isDefaultImage,
+          imageUrl: displayImage,
+          imageName: backImageName,
+        })}
+        onTouchStart={handleCellPointerDown('back', row, col, canDragBack, 'touch', {
+          hasImage: isImage,
+          isDefaultImage,
+          imageUrl: displayImage,
+          imageName: backImageName,
+        })}
         title={isImage && backImageName ? backImageName : undefined}
         data-page-id={page.id}
         data-side="back"
@@ -2184,6 +2326,132 @@ const Page = ({
               binderUsedImages={binderUsedImages}
               stateContext={GALLERY_UI_CONTEXT.DEFAULT}
             />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {cellImagePreview && createPortal(
+        <div
+          className="cell-image-preview-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={cellImagePreview.name || t('page.previewImage')}
+          onClick={() => setCellImagePreview(null)}
+        >
+          <button
+            type="button"
+            className="cell-image-preview-close"
+            onClick={() => setCellImagePreview(null)}
+            aria-label={t('page.closePreview')}
+          >
+            ×
+          </button>
+          <img
+            className="cell-image-preview-img"
+            src={cellImagePreview.url}
+            alt={cellImagePreview.name || ''}
+            onClick={(e) => e.stopPropagation()}
+          />
+          {cellImagePreview.name ? (
+            <p className="cell-image-preview-name">{cellImagePreview.name}</p>
+          ) : null}
+        </div>,
+        document.body
+      )}
+
+      {cellActionSheet && createPortal(
+        <div
+          className="cell-action-sheet-overlay"
+          role="presentation"
+          onClick={closeCellActionSheet}
+        >
+          <div
+            className="cell-action-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('page.cellActions')}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {cellActionSheet.imageName ? (
+              <p className="cell-action-sheet-title">{cellActionSheet.imageName}</p>
+            ) : (
+              <p className="cell-action-sheet-title">{t('page.cellActions')}</p>
+            )}
+            <button
+              type="button"
+              className="cell-action-sheet-btn"
+              onClick={(e) => {
+                const { side, row, col } = cellActionSheet;
+                closeCellActionSheet();
+                if (side === 'back') handleRotateBackImage(e, row, col);
+                else handleRotateImage(e, row, col);
+              }}
+            >
+              ↻ {t('page.rotateImage')}
+            </button>
+            <button
+              type="button"
+              className="cell-action-sheet-btn"
+              onClick={(e) => {
+                const { side, row, col } = cellActionSheet;
+                closeCellActionSheet();
+                if (side === 'back') {
+                  if (cellActionSheet.isDefaultImage) handleBackCellClick(row, col);
+                  else handleReplaceBackImage(e, row, col);
+                } else {
+                  handleReplaceImage(e, row, col);
+                }
+              }}
+            >
+              + {t('page.replaceImage')}
+            </button>
+            {cellActionSheet.canRemove && (
+              <button
+                type="button"
+                className="cell-action-sheet-btn cell-action-sheet-btn--danger"
+                onClick={(e) => {
+                  const { side, row, col } = cellActionSheet;
+                  closeCellActionSheet();
+                  if (side === 'back') handleRemoveBackImage(e, row, col);
+                  else handleRemoveImage(e, row, col);
+                }}
+              >
+                × {t('page.removeImage')}
+              </button>
+            )}
+            {cellActionSheet.canSleeve && (
+              <button
+                type="button"
+                className="cell-action-sheet-btn"
+                onClick={(e) => {
+                  const { side, row, col } = cellActionSheet;
+                  closeCellActionSheet();
+                  handleSleeveButtonClick(e, side, row, col);
+                }}
+              >
+                ▢ {t('page.sleeve')}
+              </button>
+            )}
+            {cellActionSheet.canMove && (
+              <button
+                type="button"
+                className="cell-action-sheet-btn"
+                onClick={() => {
+                  const { side, row, col } = cellActionSheet;
+                  armCellMove(side, row, col);
+                }}
+              >
+                ⇅ {t('page.dragPhotocard')}
+              </button>
+            )}
+            <button
+              type="button"
+              className="cell-action-sheet-btn cell-action-sheet-btn--cancel"
+              onClick={closeCellActionSheet}
+            >
+              {t('binder.cancel')}
+            </button>
           </div>
         </div>,
         document.body

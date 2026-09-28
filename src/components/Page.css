@@ -575,6 +575,11 @@
   box-shadow: none;
   pointer-events: auto;
   z-index: inherit;
+  /* Cep boyutuna göre sleeve / dikiş ölçeklemesi */
+  container-type: inline-size;
+  container-name: pocket;
+  --sleeve-width: clamp(1.5px, 2.8cqw, 6px);
+  --pocket-stitch-width: clamp(1px, 1.4cqw, 3px);
 }
 
 /*
@@ -1060,6 +1065,153 @@
   color: #007bff;
 }
 
+/* Dokunmatik: küçük hover butonlarını gizle — uzun basış menüsü kullanılır */
+@media (hover: none) and (pointer: coarse) {
+  .grid-cell:hover .cell-image-controls,
+  .cell-image-controls {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  /* Sleeve picker menüden açıldığında görünür kalsın */
+  .cell-image-controls:has(.cell-sleeve-picker) {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .cell-image-controls:has(.cell-sleeve-picker) .cell-image-controls-buttons {
+    display: none;
+  }
+}
+
+/* Mobil kart aksiyon menüsü (alt sheet) */
+.cell-action-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10080;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding:
+    env(safe-area-inset-top, 0px)
+    env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  animation: fadeIn 0.15s ease;
+}
+
+.cell-action-sheet {
+  width: min(100%, 420px);
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 0.75rem 0.75rem max(0.75rem, env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  animation: slideUp 0.2s ease;
+}
+
+.cell-action-sheet-title {
+  margin: 0 0 0.25rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-action-sheet-btn {
+  min-height: 44px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #222;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.cell-action-sheet-btn:active {
+  background: #f0f0f0;
+}
+
+.cell-action-sheet-btn--danger {
+  color: #c62828;
+}
+
+.cell-action-sheet-btn--cancel {
+  margin-top: 0.15rem;
+  background: #fff;
+  color: #666;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Mobil kart önizleme */
+.cell-image-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10085;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding:
+    max(1rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(1rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+  animation: fadeIn 0.15s ease;
+}
+
+.cell-image-preview-close {
+  position: absolute;
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cell-image-preview-img {
+  max-width: 100%;
+  max-height: min(78dvh, 100%);
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cell-image-preview-name {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.85rem;
+  text-align: center;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cell-control-sleeve {
   color: #666;
   font-size: 10px;
@@ -1070,7 +1222,7 @@
   box-shadow: inset 0 0 0 2px var(--sleeve-btn-color, #a8cce8);
 }
 
-/* Sleeve: renkli halka resmin DIŞINDA — köşeli, piksel kırpmaz */
+/* Sleeve: renkli halka resmin DIŞINDA — köşeli, piksel kırpmaz; kalınlık cep boyutuna göre */
 .cell-image.has-sleeve {
   border-radius: 0;
   box-shadow: 0 0 0 var(--sleeve-width, 6px) var(--sleeve-color, #a8cce8);
@@ -1369,10 +1521,15 @@
   .page-grid {
     min-height: 0;
     overflow: hidden;
-    --pocket-stitch-width: 1.5px;
     --pocket-dash-length: 3px;
     --pocket-dash-gap: 2.5px;
-    --pocket-fit-slack: 2px;
+    --pocket-fit-slack: 1px;
+  }
+
+  .grid-cell {
+    --sleeve-width: clamp(1.5px, 2.2cqw, 4px);
+    --pocket-stitch-width: clamp(1px, 1.1cqw, 2px);
+    padding: 0;
   }
 
   .page-grid-row {
@@ -1453,6 +1610,12 @@
     --pocket-fit-slack: 2px;
   }
 
+  .grid-cell {
+    --sleeve-width: clamp(1px, 1.8cqw, 2.5px);
+    --pocket-stitch-width: clamp(0.75px, 0.9cqw, 1.5px);
+    padding: 0;
+  }
+
   .page-number {
     font-size: 6px;
     padding: 0 2px;
@@ -1497,6 +1660,24 @@
     width: 15px;
     height: 15px;
     font-size: 8px;
+  }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+  .grid-cell {
+    --sleeve-width: clamp(1px, 1.5cqw, 2px);
+    --pocket-stitch-width: clamp(0.5px, 0.75cqw, 1.25px);
+  }
+
+  .page-holes {
+    width: var(--page-holes-width, 8px);
+    min-width: var(--page-holes-width, 8px);
+  }
+}
+
+@media (max-width: 360px) and (orientation: portrait) {
+  .grid-cell {
+    --sleeve-width: clamp(1px, 1.2cqw, 1.75px);
   }
 }
 

@@ -985,8 +985,18 @@
 /* Mobil yatay: üst çubuk daha kompakt, binder + footer için yer aç */
 @media (max-width: 1024px) and (orientation: landscape) {
   .settings-bar {
-    gap: 0.2rem;
-    padding: 0.15rem 0.3rem;
+    gap: 0;
+    padding: 0.06rem 0.2rem !important;
+  }
+
+  .settings-bar-primary {
+    gap: 0.12rem;
+    min-height: 0;
+  }
+
+  .settings-bar-secondary {
+    padding-top: 0.1rem;
+    margin-top: 0.08rem;
   }
 
   .settings-bar .setting-label {
@@ -994,31 +1004,51 @@
   }
 
   .settings-control {
-    font-size: 0.6rem;
-    padding: 0.15rem 0.25rem;
+    font-size: 0.55rem;
+    padding: 0.1rem 0.2rem;
   }
 
   .action-button {
-    padding: 0.15rem 0.3rem;
-    font-size: 0.6rem;
+    padding: 0.1rem 0.25rem;
+    font-size: 0.55rem;
   }
 
   .color-input {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .ratio-input {
-    width: 38px;
+    width: 34px;
   }
 
   .grid-input {
-    width: 36px;
+    width: 32px;
   }
 
   .settings-bar-primary .binder-select {
-    max-width: min(28vw, 80px);
+    max-width: min(24vw, 72px);
     min-width: 0;
+    font-size: 0.55rem;
+    padding: 0.1rem 1rem 0.1rem 0.2rem;
+  }
+
+  .settings-bar-primary .binder-menu-btn {
+    padding: 0.08rem 0.18rem;
+    font-size: 0.65rem;
+  }
+
+  .settings-bar-primary .fullscreen-toggle-btn-left,
+  .settings-bar-primary .footer-toggle-btn {
+    width: 22px !important;
+    height: 20px !important;
+  }
+
+  .settings-mobile-toggle-item .settings-control,
+  .settings-add-page-mobile .action-button {
+    padding: 0.1rem 0.25rem;
+    font-size: 0.55rem;
+    min-height: 28px;
   }
 }
 

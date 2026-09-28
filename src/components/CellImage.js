@@ -7,7 +7,6 @@ const CellImage = memo(function CellImage({
   sleeveColor,
   wrapperClasses,
   extraImgClass = '',
-  sleeveRingPx = 6,
   onFit,
 }) {
   const imgRef = useRef(null);
@@ -94,7 +93,6 @@ const CellImage = memo(function CellImage({
             sleeveColor
               ? {
                   '--sleeve-color': sleeveColor,
-                  '--sleeve-width': `${sleeveRingPx}px`,
                 }
               : undefined
           }
