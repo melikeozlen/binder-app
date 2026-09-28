@@ -119,6 +119,34 @@
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.footer-share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.35rem;
+  border: none;
+  background: transparent;
+  color: #777;
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 0.7rem;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.footer-share-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.footer-share-label {
+  letter-spacing: 0.01em;
 }
 
 .footer-support-link {
@@ -144,6 +172,11 @@
   color: #333;
 }
 
+.footer-share-btn:hover,
+.footer-share-btn:focus-visible {
+  color: #222;
+}
+
 .footer-support-link:hover {
   border-color: #c9a800;
   background-color: #ffef88;
@@ -156,6 +189,10 @@
   outline: none;
   border-color: #666;
   background-color: #fff;
+}
+
+.footer-share-btn:focus {
+  outline: none;
 }
 
 /* Tablet yatay ekran (768px - 1024px) */
@@ -220,7 +257,6 @@
   }
 }
 
-/* Küçük mobil ekranlar */
 @media (max-width: 480px) {
   .app-footer {
     padding: 0.3rem 0.5rem;
@@ -240,7 +276,7 @@
     padding: 0.1rem 0.25rem;
     font-size: 0.6rem;
   }
-  
+
   .footer-language-select {
     padding: 0.12rem 1rem 0.12rem 0.3rem;
     font-size: 0.6rem;
