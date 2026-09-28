@@ -828,6 +828,7 @@ const SettingsBar = ({
           <button
             type="button"
             className="binder-menu-btn"
+            data-tour="binder-menu"
             onClick={() => setShowBinderMenu(!showBinderMenu)}
             title={t('binder.menuActionsHelp')}
             aria-label={t('binder.menuActions')}
@@ -871,16 +872,19 @@ const SettingsBar = ({
         </div>
       )}
 
-      <div className="setting-item settings-add-page-mobile">
-        <button
-          className="settings-control action-button settings-add-page-btn"
-          onClick={() => onAddPage()}
-          disabled={!gridSize || readOnly}
-          title={t('settings.addPageHelp')}
-        >
-          {t('settings.addPage')}
-        </button>
-      </div>
+      {pagesCount > 0 && (
+        <div className="setting-item settings-add-page-mobile">
+          <button
+            className="settings-control action-button settings-add-page-btn"
+            data-tour="add-page"
+            onClick={() => onAddPage()}
+            disabled={!gridSize || readOnly}
+            title={t('settings.addPageHelp')}
+          >
+            {t('settings.addPage')}
+          </button>
+        </div>
+      )}
 
       <div className="setting-item settings-mobile-toggle-item">
         <button
@@ -1134,6 +1138,7 @@ const SettingsBar = ({
         <button
           type="button"
           className="settings-control icon-button gallery-settings-btn"
+          data-tour="gallery"
           onClick={() => setShowGallerySettingsModal(true)}
           title={t('settings.gallerySettingsHelp')}
           aria-label={t('settings.gallerySettingsHelp')}
@@ -1149,16 +1154,19 @@ const SettingsBar = ({
         </button>
       </div>
       
-      <div className="setting-item settings-add-page-desktop">
-        <button
-          className="settings-control action-button settings-add-page-btn"
-          onClick={() => onAddPage()}
-          disabled={!gridSize || readOnly}
-          title={t('settings.addPageHelp')}
-        >
-          {t('settings.addPage')}
-        </button>
-      </div>
+      {pagesCount > 0 && (
+        <div className="setting-item settings-add-page-desktop">
+          <button
+            className="settings-control action-button settings-add-page-btn"
+            data-tour="add-page"
+            onClick={() => onAddPage()}
+            disabled={!gridSize || readOnly}
+            title={t('settings.addPageHelp')}
+          >
+            {t('settings.addPage')}
+          </button>
+        </div>
+      )}
 
       </div>
 

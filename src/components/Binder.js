@@ -547,7 +547,7 @@ const Binder = ({
 
           {/* Sayfa navigasyon butonları */}
           {pages.length > 0 && (
-            <div className="page-navigation">
+            <div className="page-navigation" data-tour="binder">
               <button 
                 type="button"
                 className="nav-button nav-prev"
@@ -589,13 +589,14 @@ const Binder = ({
           )}
 
           {pages.length === 0 && (
-            <div className="binder-empty-state" role="status">
+            <div className="binder-empty-state" role="status" data-tour="binder">
               <p className="binder-empty-title">{t('empty.collectionTitle')}</p>
               <p className="binder-empty-desc">{t('empty.collectionDesc')}</p>
               {onAddPage && (
                 <button
                   type="button"
                   className="binder-empty-cta"
+                  data-tour="add-page"
                   onClick={onAddPage}
                 >
                   {t('empty.addFirstPage')}
