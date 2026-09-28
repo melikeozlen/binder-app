@@ -384,6 +384,35 @@
   background: #fdecea;
 }
 
+.auth-danger-zone {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed #e8d0ce;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.auth-danger-zone-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #888;
+  line-height: 1.35;
+}
+
+.auth-btn--danger-outline {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid #e0b4b0;
+  color: #b3261e;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.auth-btn--danger-outline:hover:not(:disabled) {
+  background: #fdecea;
+}
+
 .auth-modal-actions {
   display: flex;
   gap: 0.5rem;

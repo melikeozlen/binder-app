@@ -10,6 +10,7 @@ import { shareErrorKey } from '../utils/shareErrors';
 
 const KNOWN_ERROR_CODES = new Set([
   'INVALID_CREDENTIALS',
+  'ACCOUNT_DISABLED',
   'USERNAME_EXISTS',
   'INVALID_USERNAME',
   'WEAK_PASSWORD',
@@ -31,7 +32,7 @@ const fill = (text, params) =>
  * - Giriş yapılmışsa: kullanıcı adı, eşitleme durumu, paylaşımlar, "Şimdi eşitle", "Çıkış"
  */
 const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) => {
-  const { user, login, register, logout } = useAuth();
+  const { user, login, register, logout, deleteAccount } = useAuth();
   const { notify } = useToast();
   const { confirm } = useConfirm();
   const { language } = useLanguage();
@@ -119,6 +120,30 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
       onClose?.();
     } catch (error) {
       setErrorCode(error?.code || 'GENERIC');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (busy) return;
+    const ok = await confirm({
+      title: t('dialog.title.deleteAccount'),
+      message: t('auth.deleteAccountConfirm', { username: user?.username || '' }),
+      confirmLabel: t('dialog.delete'),
+      cancelLabel: t('dialog.cancel'),
+      danger: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    setErrorCode(null);
+    try {
+      await deleteAccount();
+      notify({ kind: 'info', text: t('notify.accountDeleted') });
+      onClose?.();
+    } catch (error) {
+      setErrorCode(error?.code || 'GENERIC');
+      notify({ kind: 'error', text: t(errorKey(error?.code || 'GENERIC')) });
     } finally {
       setBusy(false);
     }
@@ -364,6 +389,17 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
           disabled={busy}
         >
           {t('auth.logout')}
+        </button>
+      </div>
+      <div className="auth-danger-zone">
+        <p className="auth-danger-zone-hint">{t('auth.deleteAccountHint')}</p>
+        <button
+          type="button"
+          className="auth-btn auth-btn--danger-outline"
+          onClick={handleDeleteAccount}
+          disabled={busy}
+        >
+          {t('auth.deleteAccount')}
         </button>
       </div>
     </div>

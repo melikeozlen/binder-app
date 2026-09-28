@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
 );
 -- Kullanıcı adı büyük/küçük harf duyarsız benzersiz (Melike == melike)
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx ON users (lower(username));
+-- Pasif hesaplar giriş yapamaz / oturum kullanamaz
+ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT true;
 
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash  TEXT PRIMARY KEY,

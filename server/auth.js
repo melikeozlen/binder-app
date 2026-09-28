@@ -24,6 +24,7 @@ const toPublicUser = (row) => ({
   id: row.id,
   username: row.username,
   createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+  active: row.active !== false,
   // İstatistik panelini görebilir mi (ADMIN_USERNAMES). Yetki kontrolü yine sunucuda yapılır.
   isAdmin: isAdminUsername(row.username),
 });
@@ -53,6 +54,11 @@ async function destroySession(pool, token) {
   await pool.query('DELETE FROM sessions WHERE token_hash = $1', [hashToken(token)]);
 }
 
+async function destroyAllSessionsForUser(pool, userId) {
+  if (!userId) return;
+  await pool.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
+}
+
 function setSessionCookie(res, token) {
   res.cookie(config.sessionCookieName, token, cookieOptions());
 }
@@ -71,15 +77,20 @@ function attachUser(pool) {
 
     try {
       const { rows } = await pool.query(
-        `SELECT u.id, u.username, u.created_at
+        `SELECT u.id, u.username, u.created_at, u.active
            FROM sessions s
            JOIN users u ON u.id = s.user_id
           WHERE s.token_hash = $1 AND s.expires_at > now()`,
         [hashToken(req.sessionToken)]
       );
-      if (rows[0]) {
-        req.user = toPublicUser(rows[0]);
+      const row = rows[0];
+      if (row && row.active !== false) {
+        req.user = toPublicUser(row);
       } else {
+        // Pasif / geçersiz oturum → temizle
+        if (row && row.active === false) {
+          await destroyAllSessionsForUser(pool, row.id);
+        }
         clearSessionCookie(res);
       }
       next();
@@ -109,6 +120,7 @@ module.exports = {
   toPublicUser,
   createSession,
   destroySession,
+  destroyAllSessionsForUser,
   setSessionCookie,
   clearSessionCookie,
   attachUser,

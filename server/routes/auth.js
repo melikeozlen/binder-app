@@ -87,7 +87,7 @@ function createAuthRouter(pool) {
       if (!auth.isValidUsername(username) || typeof password !== 'string') throw invalid();
 
       const { rows } = await pool.query(
-        'SELECT id, username, password_hash, created_at FROM users WHERE lower(username) = lower($1)',
+        'SELECT id, username, password_hash, created_at, active FROM users WHERE lower(username) = lower($1)',
         [username]
       );
       const row = rows[0];
@@ -95,6 +95,10 @@ function createAuthRouter(pool) {
 
       const ok = await auth.verifyPassword(password, row.password_hash);
       if (!ok) throw invalid();
+
+      if (row.active === false) {
+        throw new HttpError(403, 'ACCOUNT_DISABLED', 'This account is disabled');
+      }
 
       res.json(await signIn(req, res, row, 'login'));
     })
@@ -115,6 +119,18 @@ function createAuthRouter(pool) {
     }
     res.json({ user: req.user });
   });
+
+  // Kullanıcı kendi hesabını kalıcı siler (binder/oturum cascade)
+  router.delete(
+    '/me',
+    auth.requireAuth,
+    wrap(async (req, res) => {
+      const userId = req.user.id;
+      await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+      auth.clearSessionCookie(res);
+      res.status(204).end();
+    })
+  );
 
   return router;
 }

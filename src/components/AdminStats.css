@@ -428,6 +428,56 @@
   cursor: wait;
 }
 
+.admin-stats-accounts {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0.55rem;
+}
+
+.admin-stats-accounts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0.15rem;
+  border-bottom: 1px solid #ececec;
+}
+
+.admin-stats-accounts li:last-child {
+  border-bottom: none;
+}
+
+.admin-stats-account-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.admin-stats-account-name {
+  font-size: 0.82rem;
+  color: #333;
+  font-weight: 550;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.admin-stats-account-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: #e8f0fe;
+  color: #1a5fb4;
+}
+
+.admin-stats-account-badge--off {
+  background: #fdecea;
+  color: #b3261e;
+}
+
 .admin-stats-feedback-msg {
   margin: 0;
   font-size: 0.8rem;

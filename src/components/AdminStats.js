@@ -59,6 +59,7 @@ const AdminStatsModal = ({ open, onClose }) => {
   const dialogRef = useRef(null);
   const [data, setData] = useState(null);
   const [feedback, setFeedback] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState('overview');
@@ -66,6 +67,7 @@ const AdminStatsModal = ({ open, onClose }) => {
   const [query, setQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [accountBusyId, setAccountBusyId] = useState(null);
   const [updatedAt, setUpdatedAt] = useState(null);
 
   useModalA11y({ open, onClose, containerRef: dialogRef });
@@ -73,12 +75,14 @@ const AdminStatsModal = ({ open, onClose }) => {
   const load = useCallback(async () => {
     setBusy(true);
     try {
-      const [next, fb] = await Promise.all([
+      const [next, fb, users] = await Promise.all([
         api('/api/admin/stats'),
         api('/api/feedback').catch(() => ({ items: [] })),
+        api('/api/admin/users').catch(() => ({ items: [] })),
       ]);
       setData(next);
       setFeedback(Array.isArray(fb?.items) ? fb.items : []);
+      setAccounts(Array.isArray(users?.items) ? users.items : []);
       setUpdatedAt(next?.generatedAt || new Date().toISOString());
       setError(null);
     } catch (err) {
@@ -113,7 +117,6 @@ const AdminStatsModal = ({ open, onClose }) => {
   const logins = data?.logins || { today: 0, week: 0 };
   const summary = data?.summary || {};
   const activity = Array.isArray(data?.activity) ? data.activity : [];
-  const loginRows = Array.isArray(data?.recentLogins) ? data.recentLogins : [];
 
   const q = query.trim().toLowerCase();
 
@@ -136,9 +139,12 @@ const AdminStatsModal = ({ open, onClose }) => {
     [activity, q]
   );
 
-  const filteredLogins = useMemo(
-    () => loginRows.filter((row) => matchesQuery(`${row.username || ''} ${row.kind || ''}`, q)),
-    [loginRows, q]
+  const filteredAccounts = useMemo(
+    () =>
+      accounts.filter((row) =>
+        matchesQuery(`${row.username || ''} ${row.active ? 'active' : 'passive'}`, q)
+      ),
+    [accounts, q]
   );
 
   const filteredFeedback = useMemo(
@@ -156,6 +162,41 @@ const AdminStatsModal = ({ open, onClose }) => {
       window.setTimeout(() => setCopiedId(null), 1500);
     } catch {
       // ignore
+    }
+  };
+
+  const setAccountActive = async (item, active) => {
+    const ok = await confirm({
+      title: active ? t('dialog.title.activateAccount') : t('dialog.title.deactivateAccount'),
+      message: active
+        ? t('stats.activateAccountConfirm', { username: item.username })
+        : t('stats.deactivateAccountConfirm', { username: item.username }),
+      confirmLabel: active ? t('stats.activate') : t('stats.deactivate'),
+      cancelLabel: t('dialog.cancel'),
+      danger: !active,
+    });
+    if (!ok) return;
+    setAccountBusyId(item.id);
+    try {
+      const path = active
+        ? `/api/admin/users/${encodeURIComponent(item.id)}/activate`
+        : `/api/admin/users/${encodeURIComponent(item.id)}/deactivate`;
+      const result = await api(path, { method: 'POST' });
+      setAccounts((prev) =>
+        prev.map((row) =>
+          row.id === item.id ? { ...row, active: result?.active ?? active } : row
+        )
+      );
+      notify({
+        kind: 'success',
+        text: active
+          ? t('stats.accountActivated', { username: item.username })
+          : t('stats.accountDeactivated', { username: item.username }),
+      });
+    } catch (err) {
+      notify({ kind: 'error', text: err?.message || t('stats.accountActionFailed') });
+    } finally {
+      setAccountBusyId(null);
     }
   };
 
@@ -429,22 +470,48 @@ const AdminStatsModal = ({ open, onClose }) => {
             ))}
 
           {tab === 'accounts' &&
-            (filteredLogins.length === 0 ? (
+            (filteredAccounts.length === 0 ? (
               <p className="admin-stats-empty">
-                {q ? t('stats.noSearchResults') : t('stats.emptyLogins')}
+                {q ? t('stats.noSearchResults') : t('stats.emptyAccounts')}
               </p>
             ) : (
               <div className="admin-stats-scroll admin-stats-scroll--fill">
-                <ul className="admin-stats-recent">
-                  {filteredLogins.map((row, i) => (
-                    <li key={`login-${row.username}-${row.at}-${i}`}>
-                      <span>
-                        @{row.username}
-                        {row.kind === 'register' ? ` · ${t('stats.event.register')}` : ` · ${t('stats.event.login')}`}
-                      </span>
-                      <span className="admin-stats-recent-time">
-                        {formatTime(row.at, language)}
-                      </span>
+                <ul className="admin-stats-accounts">
+                  {filteredAccounts.map((row) => (
+                    <li key={row.id}>
+                      <div className="admin-stats-account-main">
+                        <span className="admin-stats-account-name">
+                          @{row.username}
+                          {row.isAdmin ? (
+                            <span className="admin-stats-account-badge">{t('stats.adminBadge')}</span>
+                          ) : null}
+                          {!row.active ? (
+                            <span className="admin-stats-account-badge admin-stats-account-badge--off">
+                              {t('stats.inactiveBadge')}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="admin-stats-recent-time">
+                          {row.lastLoginAt
+                            ? formatTime(row.lastLoginAt, language)
+                            : formatTime(row.createdAt, language)}
+                        </span>
+                      </div>
+                      {!row.isAdmin && (
+                        <button
+                          type="button"
+                          className={`admin-stats-copy-btn${row.active ? ' admin-stats-delete-btn' : ''}`}
+                          disabled={accountBusyId === row.id}
+                          onClick={() => setAccountActive(row, !row.active)}
+                          title={row.active ? t('stats.deactivate') : t('stats.activate')}
+                        >
+                          {accountBusyId === row.id
+                            ? '…'
+                            : row.active
+                              ? t('stats.deactivate')
+                              : t('stats.activate')}
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>

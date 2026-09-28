@@ -71,9 +71,24 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    await api('/api/auth/me', { method: 'DELETE' });
+    setUser(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, status, available, login, register, logout, loginRequest, requestLogin }),
-    [user, status, available, login, register, logout, loginRequest, requestLogin]
+    () => ({
+      user,
+      status,
+      available,
+      login,
+      register,
+      logout,
+      deleteAccount,
+      loginRequest,
+      requestLogin,
+    }),
+    [user, status, available, login, register, logout, deleteAccount, loginRequest, requestLogin]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
