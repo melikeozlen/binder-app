@@ -25,7 +25,6 @@ const SLEEVE_PRESETS = [
   '#2A2A2A',
 ];
 const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
-const SLEEVE_RING_FALLBACK_PX = 6;
 const IMAGE_TOUCH_ACTION_DELAY_MS = 420;
 const IMAGE_TOUCH_SCROLL_CANCEL_PX = 12;
 const IMAGE_MOUSE_DRAG_START_PX = 5;
@@ -1061,22 +1060,9 @@ const Page = ({
     const style = getComputedStyle(wrapper);
     const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
     const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    const hasSleeve = img.classList.contains('has-sleeve');
-    let sleeveInset = 0;
-    if (hasSleeve) {
-      const fromImg = parseFloat(getComputedStyle(img).getPropertyValue('--sleeve-width'));
-      const fromCell = parseFloat(
-        getComputedStyle(wrapper.closest('.grid-cell') || wrapper).getPropertyValue('--sleeve-width')
-      );
-      const ring =
-        (Number.isFinite(fromImg) && fromImg > 0 && fromImg) ||
-        (Number.isFinite(fromCell) && fromCell > 0 && fromCell) ||
-        SLEEVE_RING_FALLBACK_PX;
-      sleeveInset = ring * 2;
-    }
-
-    const wrapperWidth = Math.max(0, wrapper.clientWidth - padX - sleeveInset);
-    const wrapperHeight = Math.max(0, wrapper.clientHeight - padY - sleeveInset);
+    // Sleeve halkası ceptaki dikiş/slack boşluğuna taşar; resmi küçültme
+    const wrapperWidth = Math.max(0, wrapper.clientWidth - padX);
+    const wrapperHeight = Math.max(0, wrapper.clientHeight - padY);
 
     if (wrapperWidth < 2 || wrapperHeight < 2) {
       return;
