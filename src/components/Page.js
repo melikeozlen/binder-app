@@ -80,14 +80,13 @@ const Page = ({
   const [draggedCell, setDraggedCell] = useState(null); // {side, row, col}
   const [dragOverCell, setDragOverCell] = useState(null); // {side, row, col}
   const [cellActionSheet, setCellActionSheet] = useState(null);
-  // { side, row, col, isDefaultImage, canMove, canRemove, canSleeve, imageUrl, imageName }
+  // { side, row, col, isDefaultImage, canRemove, canSleeve, imageUrl, imageName }
   const [cellImagePreview, setCellImagePreview] = useState(null); // { url, name }
   const fileInputRefs = useRef({});
   const backFileInputRefs = useRef({});
   const sleevePickerRef = useRef(null);
   const colorPickerActiveRef = useRef(false);
   const suppressCellClickRef = useRef(false);
-  const moveArmedRef = useRef(null); // { side, row, col } — menüden “Taşı” sonrası
   const lastCellTapRef = useRef(null); // { side, row, col, time } — çift dokunuş
   const touchDragRef = useRef({
     cell: null,
@@ -1192,16 +1191,6 @@ const Page = ({
     setCellActionSheet(null);
   }, []);
 
-  const armCellMove = useCallback((side, row, col) => {
-    moveArmedRef.current = { side, row, col };
-    setCellActionSheet(null);
-    notify({
-      kind: 'info',
-      text: getTranslation('page.dragHint', language),
-      duration: 2500,
-    });
-  }, [notify, language]);
-
   const handleTouchImageTap = useCallback((sheet) => {
     const now = Date.now();
     const last = lastCellTapRef.current;
@@ -1256,25 +1245,6 @@ const Page = ({
     ts.canDrag = false;
 
     if (inputType !== 'touch') return;
-
-    // Menüden “Taşı” seçildiyse hemen sürüklemeye başla
-    const armed = moveArmedRef.current;
-    if (
-      armed &&
-      isDraggable &&
-      armed.side === side &&
-      armed.row === row &&
-      armed.col === col
-    ) {
-      moveArmedRef.current = null;
-      lastCellTapRef.current = null;
-      suppressCellClickRef.current = true;
-      ts.dragging = true;
-      ts.canDrag = true;
-      ts.touchActions = touchActions;
-      beginPointerDrag(cell);
-      return;
-    }
 
     // Mobil: uzun basış → PC taşı; sürükleme → sayfa swipe (Binder);
     // çift dokunuş → menü (onClick)
@@ -1897,7 +1867,6 @@ const Page = ({
               row,
               col,
               isDefaultImage: false,
-              canMove: true,
               canRemove: true,
               canSleeve: true,
               imageUrl,
@@ -2089,7 +2058,6 @@ const Page = ({
               row,
               col,
               isDefaultImage: !!isDefaultImage,
-              canMove: !!canDragBack,
               canRemove: !isDefaultImage,
               canSleeve: !isDefaultImage,
               imageUrl: displayImage,
@@ -2455,73 +2423,63 @@ const Page = ({
                 👁 {t('page.viewImage')}
               </button>
             ) : null}
-            <button
-              type="button"
-              className="cell-action-sheet-btn"
-              onClick={(e) => {
-                const { side, row, col } = cellActionSheet;
-                closeCellActionSheet();
-                if (side === 'back') handleRotateBackImage(e, row, col);
-                else handleRotateImage(e, row, col);
-              }}
-            >
-              ↻ {t('page.rotateImage')}
-            </button>
-            <button
-              type="button"
-              className="cell-action-sheet-btn"
-              onClick={(e) => {
-                const { side, row, col } = cellActionSheet;
-                closeCellActionSheet();
-                if (side === 'back') {
-                  if (cellActionSheet.isDefaultImage) handleBackCellClick(row, col);
-                  else handleReplaceBackImage(e, row, col);
-                } else {
-                  handleReplaceImage(e, row, col);
-                }
-              }}
-            >
-              + {t('page.replaceImage')}
-            </button>
-            {cellActionSheet.canRemove && (
-              <button
-                type="button"
-                className="cell-action-sheet-btn cell-action-sheet-btn--danger"
-                onClick={(e) => {
-                  const { side, row, col } = cellActionSheet;
-                  closeCellActionSheet();
-                  if (side === 'back') handleRemoveBackImage(e, row, col);
-                  else handleRemoveImage(e, row, col);
-                }}
-              >
-                × {t('page.removeImage')}
-              </button>
-            )}
-            {cellActionSheet.canSleeve && (
+            <div className="cell-action-sheet-actions">
               <button
                 type="button"
                 className="cell-action-sheet-btn"
                 onClick={(e) => {
                   const { side, row, col } = cellActionSheet;
                   closeCellActionSheet();
-                  handleSleeveButtonClick(e, side, row, col);
+                  if (side === 'back') handleRotateBackImage(e, row, col);
+                  else handleRotateImage(e, row, col);
                 }}
               >
-                ▢ {t('page.sleeve')}
+                ↻ {t('page.rotateImage')}
               </button>
-            )}
-            {cellActionSheet.canMove && (
               <button
                 type="button"
                 className="cell-action-sheet-btn"
-                onClick={() => {
+                onClick={(e) => {
                   const { side, row, col } = cellActionSheet;
-                  armCellMove(side, row, col);
+                  closeCellActionSheet();
+                  if (side === 'back') {
+                    if (cellActionSheet.isDefaultImage) handleBackCellClick(row, col);
+                    else handleReplaceBackImage(e, row, col);
+                  } else {
+                    handleReplaceImage(e, row, col);
+                  }
                 }}
               >
-                ⇅ {t('page.dragPhotocard')}
+                + {t('page.replaceImage')}
               </button>
-            )}
+              {cellActionSheet.canRemove && (
+                <button
+                  type="button"
+                  className="cell-action-sheet-btn cell-action-sheet-btn--danger"
+                  onClick={(e) => {
+                    const { side, row, col } = cellActionSheet;
+                    closeCellActionSheet();
+                    if (side === 'back') handleRemoveBackImage(e, row, col);
+                    else handleRemoveImage(e, row, col);
+                  }}
+                >
+                  × {t('page.removeImage')}
+                </button>
+              )}
+              {cellActionSheet.canSleeve && (
+                <button
+                  type="button"
+                  className="cell-action-sheet-btn"
+                  onClick={(e) => {
+                    const { side, row, col } = cellActionSheet;
+                    closeCellActionSheet();
+                    handleSleeveButtonClick(e, side, row, col);
+                  }}
+                >
+                  ▢ {t('page.sleeve')}
+                </button>
+              )}
+            </div>
             <button
               type="button"
               className="cell-action-sheet-btn cell-action-sheet-btn--cancel"

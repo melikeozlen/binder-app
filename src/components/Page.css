@@ -1133,6 +1133,12 @@ body.cell-drag-active .grid-cell.cell-draggable {
   white-space: nowrap;
 }
 
+.cell-action-sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .cell-action-sheet-btn {
   min-height: 44px;
   border: 1px solid #e8e8e8;
@@ -1162,6 +1168,35 @@ body.cell-drag-active .grid-cell.cell-draggable {
   color: #666;
   text-align: center;
   font-weight: 600;
+}
+
+/* Yatay: aksiyonlar 2×2 */
+@media (orientation: landscape) {
+  .cell-action-sheet-overlay {
+    align-items: center;
+    padding: 0.75rem;
+  }
+
+  .cell-action-sheet {
+    width: min(100%, 480px);
+    border-radius: 14px;
+    padding: 0.75rem;
+    max-height: min(90dvh, 420px);
+    overflow-y: auto;
+  }
+
+  .cell-action-sheet-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  .cell-action-sheet-actions .cell-action-sheet-btn {
+    text-align: center;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.88rem;
+    min-height: 42px;
+  }
 }
 
 /* Mobil kart önizleme */
