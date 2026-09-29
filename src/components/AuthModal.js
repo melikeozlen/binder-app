@@ -62,6 +62,45 @@ const errorKey = (code) => `auth.error.${KNOWN_ERROR_CODES.has(code) ? code : 'G
 const fill = (text, params) =>
   Object.entries(params || {}).reduce((acc, [k, v]) => acc.replace(`{${k}}`, v), text);
 
+const PasswordField = ({
+  label,
+  value,
+  onChange,
+  visible,
+  onToggleVisible,
+  showLabel,
+  hideLabel,
+  autoComplete,
+  autoFocus,
+  required,
+  minLength,
+}) => (
+  <label className="auth-field">
+    <span>{label}</span>
+    <div className="auth-password-wrap">
+      <input
+        type={visible ? 'text' : 'password'}
+        autoComplete={autoComplete}
+        value={value}
+        onChange={onChange}
+        required={required}
+        minLength={minLength}
+        autoFocus={autoFocus}
+      />
+      <button
+        type="button"
+        className="auth-password-toggle"
+        onClick={onToggleVisible}
+        aria-label={visible ? hideLabel : showLabel}
+        aria-pressed={visible}
+        tabIndex={-1}
+      >
+        <span className={`auth-eye${visible ? '' : ' auth-eye--closed'}`} aria-hidden="true" />
+      </button>
+    </div>
+  </label>
+);
+
 /**
  * Hesap penceresi.
  * - Çıkış yapılmışsa: "Giriş Yap" / "Hesap Oluştur" sekmeleri (kullanıcı adı + şifre)
@@ -106,10 +145,15 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
   const [forgotQuestionId, setForgotQuestionId] = useState(null);
   const [contactChannel, setContactChannel] = useState('email'); // email | x
   const [contactValue, setContactValue] = useState('');
+  const [showPassword, setShowPassword] = useState({});
   const [errorCode, setErrorCode] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const mustChange = Boolean(user?.mustChangePassword);
+  const isPasswordVisible = (key) => Boolean(showPassword[key]);
+  const togglePasswordVisible = (key) => {
+    setShowPassword((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     if (!open) return undefined;
@@ -135,6 +179,7 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     setForgotQuestionId(null);
     setContactChannel('email');
     setContactValue('');
+    setShowPassword({});
     if (user?.mustChangePassword) {
       setMode('changePassword');
     } else if (user) {
@@ -331,6 +376,7 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     setForgotQuestionId(null);
     setContactChannel('email');
     setContactValue('');
+    setShowPassword({});
     setCurrentPassword('');
     setNewPassword('');
     setNewPasswordConfirm('');
@@ -341,38 +387,41 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
       {mustChange && (
         <p className="auth-modal-hint auth-modal-hint--warn">{t('auth.mustChangePassword')}</p>
       )}
-      <label className="auth-field">
-        <span>{t('auth.currentPassword')}</span>
-        <input
-          type="password"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-        />
-      </label>
-      <label className="auth-field">
-        <span>{t('auth.newPassword')}</span>
-        <input
-          type="password"
-          autoComplete="new-password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          required
-          minLength={8}
-        />
-      </label>
-      <label className="auth-field">
-        <span>{t('auth.newPasswordConfirm')}</span>
-        <input
-          type="password"
-          autoComplete="new-password"
-          value={newPasswordConfirm}
-          onChange={(e) => setNewPasswordConfirm(e.target.value)}
-          required
-          minLength={8}
-        />
-      </label>
+      <PasswordField
+        label={t('auth.currentPassword')}
+        autoComplete="current-password"
+        value={currentPassword}
+        onChange={(e) => setCurrentPassword(e.target.value)}
+        visible={isPasswordVisible('current')}
+        onToggleVisible={() => togglePasswordVisible('current')}
+        showLabel={t('auth.showPassword')}
+        hideLabel={t('auth.hidePassword')}
+        required
+      />
+      <PasswordField
+        label={t('auth.newPassword')}
+        autoComplete="new-password"
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+        visible={isPasswordVisible('new')}
+        onToggleVisible={() => togglePasswordVisible('new')}
+        showLabel={t('auth.showPassword')}
+        hideLabel={t('auth.hidePassword')}
+        required
+        minLength={8}
+      />
+      <PasswordField
+        label={t('auth.newPasswordConfirm')}
+        autoComplete="new-password"
+        value={newPasswordConfirm}
+        onChange={(e) => setNewPasswordConfirm(e.target.value)}
+        visible={isPasswordVisible('newConfirm')}
+        onToggleVisible={() => togglePasswordVisible('newConfirm')}
+        showLabel={t('auth.showPassword')}
+        hideLabel={t('auth.hidePassword')}
+        required
+        minLength={8}
+      />
       {errorCode && <p className="auth-modal-error">{t(errorKey(errorCode))}</p>}
       <button type="submit" className="auth-btn auth-btn--primary" disabled={busy}>
         {busy ? t('auth.processing') : t('auth.changePassword')}
@@ -809,31 +858,33 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
           />
         </label>
 
-        <label className="auth-field">
-          <span>{t('auth.password')}</span>
-          <input
-            type="password"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={8}
-            required
-          />
-        </label>
+        <PasswordField
+          label={t('auth.password')}
+          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          visible={isPasswordVisible('password')}
+          onToggleVisible={() => togglePasswordVisible('password')}
+          showLabel={t('auth.showPassword')}
+          hideLabel={t('auth.hidePassword')}
+          minLength={8}
+          required
+        />
 
         {mode === 'register' && (
           <>
-            <label className="auth-field">
-              <span>{t('auth.passwordConfirm')}</span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                minLength={8}
-                required
-              />
-            </label>
+            <PasswordField
+              label={t('auth.passwordConfirm')}
+              autoComplete="new-password"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              visible={isPasswordVisible('passwordConfirm')}
+              onToggleVisible={() => togglePasswordVisible('passwordConfirm')}
+              showLabel={t('auth.showPassword')}
+              hideLabel={t('auth.hidePassword')}
+              minLength={8}
+              required
+            />
             <label className="auth-field">
               <span>{t('auth.securityQuestion')}</span>
               <select

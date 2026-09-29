@@ -196,6 +196,77 @@
   box-shadow: 0 0 0 2px rgba(26, 95, 180, 0.15);
 }
 
+.auth-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.auth-password-wrap input {
+  width: 100%;
+  padding-right: 2.5rem;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: 0.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.auth-password-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.auth-eye {
+  display: inline-block;
+  position: relative;
+  width: 16px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+.auth-eye::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 5px;
+  height: 5px;
+  background-color: currentColor;
+  border-radius: 50%;
+}
+
+.auth-eye--closed {
+  opacity: 0.75;
+}
+
+.auth-eye--closed::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  width: 20px;
+  height: 1.5px;
+  background-color: currentColor;
+  transform: translateY(-50%) rotate(-10deg);
+}
+
 .auth-modal-error {
   margin: 0;
   padding: 0.5rem 0.7rem;
