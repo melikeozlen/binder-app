@@ -125,6 +125,21 @@
   justify-content: center;
 }
 
+.page-order-version {
+  display: block;
+  margin-top: auto;
+  padding-top: 0.55rem;
+  text-align: center;
+  font-size: calc(0.58rem + 1px);
+  font-weight: 500;
+  color: #898989;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
 
 
 .page-order-list {
@@ -486,6 +501,15 @@ body.page-order-no-select * {
     flex-shrink: 0;
   }
 
+  .page-order-version {
+    margin-top: 0;
+    margin-left: auto;
+    padding-top: 0;
+    padding-right: 0.15rem;
+    font-size: calc(0.55rem + 1px);
+    color: #b0b0b0;
+  }
+
   .page-order-mobile-toggle {
     display: inline-flex;
     align-items: center;
@@ -542,6 +566,13 @@ body.page-order-no-select * {
     overflow-x: hidden;
     border-top-color: #90caf9;
     box-shadow: 0 -3px 12px rgba(25, 118, 210, 0.1);
+  }
+
+  .page-order-bar.is-mobile-expanded .page-order-version {
+    margin-left: 0;
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    text-align: center;
   }
 
   .page-order-bar.is-mobile-expanded .page-order-mobile-toggle {

@@ -8,30 +8,12 @@ import { useConfirm } from '../contexts/ConfirmContext';
 import AuthModal from './AuthModal';
 import AdminStatsModal from './AdminStats';
 import FeedbackModal from './FeedbackModal';
-import { version as PACKAGE_VERSION } from '../../package.json';
 
 const SYNC_ICONS = {
   idle: '',
   syncing: '⟳',
   synced: '✓',
   error: '!',
-};
-
-const APP_SHARE_URL = 'https://binder-app.up.railway.app/';
-
-const buildTwitterShareUrl = (text) => {
-  const params = new URLSearchParams({
-    text: `${text}\n${APP_SHARE_URL}`,
-  });
-  return `https://x.com/intent/tweet?${params.toString()}`;
-};
-
-const getAppVersionLabel = () => {
-  if (process.env.REACT_APP_BUILD_NUMBER) return `v${process.env.REACT_APP_BUILD_NUMBER}`;
-  if (process.env.REACT_APP_BUILD_SHA) {
-    return String(process.env.REACT_APP_BUILD_SHA).slice(0, 7);
-  }
-  return `v${PACKAGE_VERSION || '0.1.0'}`;
 };
 
 const INFO_SECTIONS = [
@@ -302,19 +284,6 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
               )}
             </button>
             <span className="footer-separator">·</span>
-            {user?.isAdmin && (
-              <>
-                <button
-                  type="button"
-                  className="footer-stats-btn"
-                  onClick={() => setShowStatsModal(true)}
-                  title={t('stats.title')}
-                >
-                  📊 {t('stats.title')}
-                </button>
-                <span className="footer-separator">·</span>
-              </>
-            )}
           </>
         )}
         <button
@@ -335,20 +304,6 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
           💬 {t('feedback.sendShort')}
         </button>
         <span className="footer-separator">·</span>
-        <a
-          className="footer-share-btn"
-          href={buildTwitterShareUrl(t('footer.shareTwitterText'))}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={t('footer.shareTwitter')}
-          aria-label={t('footer.shareTwitter')}
-        >
-          <svg className="footer-share-icon" viewBox="0 0 24 24" width="11" height="11" aria-hidden="true" fill="currentColor">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.727-8.863L1.254 2.25H8.08l4.254 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
-          </svg>
-          <span className="footer-share-label">{t('footer.shareShort')}</span>
-        </a>
-        <span className="footer-separator">·</span>
         <select
           className="footer-language-select"
           value={language}
@@ -368,6 +323,14 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
         syncStatus={syncStatus}
         onSyncNow={onSyncNow}
         shares={shares}
+        onOpenStats={
+          user?.isAdmin
+            ? () => {
+                setShowAuthModal(false);
+                setShowStatsModal(true);
+              }
+            : undefined
+        }
       />
       <AdminStatsModal open={showStatsModal} onClose={() => setShowStatsModal(false)} />
       <FeedbackModal open={showFeedbackModal} onClose={() => setShowFeedbackModal(false)} />
@@ -407,12 +370,6 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
               <p className="info-intro">{t('info.introDesc')}</p>
 
               <div className="info-meta">
-                <span
-                  className="info-meta-version"
-                  title={process.env.REACT_APP_BUILD_SHA || t('info.version')}
-                >
-                  {getAppVersionLabel()}
-                </span>
                 <div
                   className="info-meta-storage"
                   title={t('storage.usageHelp')}

@@ -422,6 +422,11 @@
   flex: 1;
 }
 
+.auth-stats-btn {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
 .auth-modal-switch {
   margin: 0;
   text-align: center;

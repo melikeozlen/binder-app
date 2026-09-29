@@ -31,7 +31,7 @@ const fill = (text, params) =>
  * - Çıkış yapılmışsa: "Giriş Yap" / "Hesap Oluştur" sekmeleri (kullanıcı adı + şifre)
  * - Giriş yapılmışsa: kullanıcı adı, eşitleme durumu, paylaşımlar, "Şimdi eşitle", "Çıkış"
  */
-const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) => {
+const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOpenStats }) => {
   const { user, login, register, logout, deleteAccount } = useAuth();
   const { notify } = useToast();
   const { confirm } = useConfirm();
@@ -372,6 +372,16 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares }) =>
       )}
 
       {errorCode && <p className="auth-modal-error">{t(errorKey(errorCode))}</p>}
+      {user?.isAdmin && onOpenStats && (
+        <button
+          type="button"
+          className="auth-btn auth-btn--secondary auth-stats-btn"
+          onClick={() => onOpenStats()}
+          disabled={busy}
+        >
+          📊 {t('stats.title')}
+        </button>
+      )}
       <div className="auth-modal-actions">
         <button
           type="button"

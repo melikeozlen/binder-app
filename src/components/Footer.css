@@ -83,9 +83,7 @@
 
 .footer-install-btn,
 .footer-info-btn,
-.footer-stats-btn,
 .footer-feedback-btn,
-.footer-share-btn,
 .footer-support-link {
   display: inline-flex;
   align-items: center;
@@ -104,21 +102,9 @@
   white-space: nowrap;
 }
 
-.footer-share-icon {
-  display: block;
-  flex-shrink: 0;
-}
-
-.footer-share-label {
-  letter-spacing: 0.01em;
-}
-
 .footer-install-btn:hover,
 .footer-info-btn:hover,
-.footer-stats-btn:hover,
 .footer-feedback-btn:hover,
-.footer-share-btn:hover,
-.footer-share-btn:focus-visible,
 .footer-support-link:hover {
   border-color: #bbb;
   background: #fafafa;
@@ -127,9 +113,7 @@
 
 .footer-install-btn:focus,
 .footer-info-btn:focus,
-.footer-stats-btn:focus,
-.footer-feedback-btn:focus,
-.footer-share-btn:focus {
+.footer-feedback-btn:focus {
   outline: none;
   border-color: #999;
   background: #fff;
@@ -171,9 +155,7 @@
 
   .footer-install-btn,
   .footer-info-btn,
-  .footer-stats-btn,
   .footer-feedback-btn,
-  .footer-share-btn,
   .footer-support-link,
   .footer-language-select {
     padding: 0.2rem 0.45rem;
@@ -203,9 +185,7 @@
 
   .footer-install-btn,
   .footer-info-btn,
-  .footer-stats-btn,
   .footer-feedback-btn,
-  .footer-share-btn,
   .footer-support-link,
   .footer-language-select {
     padding: 0.18rem 0.4rem;
@@ -271,15 +251,6 @@
   border: 1px solid #eee;
   border-radius: 8px;
   background: #fafafa;
-}
-
-.info-meta-version {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 650;
-  color: #555;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
 }
 
 .info-meta-storage {

@@ -1,6 +1,7 @@
-.buy-me-coffee {
+.bmc-stack {
   /* Footer (~40–48px) + boşluk; PageOrderBar (70px) solunda */
   --bmc-size: 36px;
+  --bmc-gap: 8px;
   --bmc-gap-above-footer: 10px;
   --bmc-footer-clearance: 48px;
 
@@ -10,21 +11,53 @@
     var(--bmc-footer-clearance) + var(--bmc-gap-above-footer) + var(--safe-bottom, 0px)
   );
   z-index: 990;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--bmc-gap);
+  pointer-events: none;
+}
+
+.bmc-share,
+.buy-me-coffee {
+  pointer-events: auto;
   width: var(--bmc-size);
   height: var(--bmc-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  text-decoration: none;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bmc-share {
+  background: #0f0f0f;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  opacity: 0.9;
+}
+
+.bmc-share:hover,
+.bmc-share:focus-visible {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+.bmc-share:focus-visible {
+  outline: 2px solid #0f0f0f;
+  outline-offset: 2px;
+}
+
+.buy-me-coffee {
   background: #ffdd00;
   color: #0d0c22;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
-  text-decoration: none;
   opacity: 0.9;
-  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-  pointer-events: auto;
-  box-sizing: border-box;
+  position: relative;
 }
 
 .buy-me-coffee:hover,
@@ -81,25 +114,32 @@
   transform: translateY(0);
 }
 
-.App.footer-hidden .buy-me-coffee,
-.App.fullscreen-mode .buy-me-coffee {
+.App.footer-hidden .bmc-stack,
+.App.fullscreen-mode .bmc-stack {
   --bmc-footer-clearance: 0px;
   --bmc-gap-above-footer: 12px;
 }
 
-.App.fullscreen-mode .buy-me-coffee {
+.App.fullscreen-mode .bmc-stack {
   right: calc(12px + var(--safe-right, 0px));
+}
+
+.App.fullscreen-mode .bmc-share,
+.App.fullscreen-mode .buy-me-coffee {
   opacity: 0.72;
 }
 
+.App.fullscreen-mode .bmc-share:hover,
+.App.fullscreen-mode .bmc-share:focus-visible,
 .App.fullscreen-mode .buy-me-coffee:hover,
 .App.fullscreen-mode .buy-me-coffee:focus-visible {
   opacity: 1;
 }
 
 @media (max-width: 1024px) {
-  .buy-me-coffee {
+  .bmc-stack {
     --bmc-size: 34px;
+    --bmc-gap: 7px;
     --bmc-footer-clearance: 56px;
     --bmc-gap-above-footer: 8px;
     right: calc(10px + var(--safe-right, 0px));
@@ -109,24 +149,35 @@
     font-size: 0.92rem;
   }
 
-  .App.footer-hidden .buy-me-coffee {
+  .bmc-share svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .App.footer-hidden .bmc-stack {
     --bmc-footer-clearance: 44px;
   }
 
-  .App.fullscreen-mode .buy-me-coffee {
+  .App.fullscreen-mode .bmc-stack {
     --bmc-footer-clearance: 0px;
     --bmc-gap-above-footer: 10px;
   }
 }
 
 @media (max-width: 1024px) and (orientation: landscape) {
-  .buy-me-coffee {
+  .bmc-stack {
     --bmc-size: 30px;
+    --bmc-gap: 6px;
     --bmc-footer-clearance: 42px;
   }
 
   .buy-me-coffee-emoji {
     font-size: 0.8rem;
+  }
+
+  .bmc-share svg {
+    width: 12px;
+    height: 12px;
   }
 }
 

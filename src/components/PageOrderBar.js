@@ -2,9 +2,18 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import './PageOrderBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { version as PACKAGE_VERSION } from '../../package.json';
 
 const TOUCH_DRAG_DELAY_MS = 220;
 const TOUCH_SCROLL_CANCEL_PX = 10;
+
+const getAppVersionLabel = () => {
+  if (process.env.REACT_APP_BUILD_NUMBER) return `v${process.env.REACT_APP_BUILD_NUMBER}`;
+  if (process.env.REACT_APP_BUILD_SHA) {
+    return String(process.env.REACT_APP_BUILD_SHA).slice(0, 7);
+  }
+  return `v${PACKAGE_VERSION || '0.1.0'}`;
+};
 
 const PageOrderBar = ({ 
   pages = [],
@@ -545,6 +554,13 @@ const PageOrderBar = ({
           </>
         )}
       </div>
+
+      <span
+        className="page-order-version"
+        title={process.env.REACT_APP_BUILD_SHA || t('info.version')}
+      >
+        {getAppVersionLabel()}
+      </span>
 
       {dragGhost && (
         <div
