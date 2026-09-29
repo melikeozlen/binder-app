@@ -914,6 +914,14 @@ body.cell-drag-active .grid-cell.cell-draggable {
   touch-action: none;
 }
 
+body.cell-hold-pending,
+body.cell-hold-pending .grid-cell.cell-draggable {
+  touch-action: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
 body.cell-drag-active {
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
@@ -945,6 +953,9 @@ body.cell-drag-active {
   min-height: 0;
   opacity: 1 !important;
   background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
   display: block;
   position: relative;
   border-radius: inherit;

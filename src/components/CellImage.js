@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState, memo } from 'react';
 
+/**
+ * Photocard görseli — <img> yerine boyalı div (background-image).
+ * Tablette uzun basınca tarayıcının “görseli kaydet / paylaş” menüsü açılmaz.
+ */
 const CellImage = memo(function CellImage({
   src,
   alt,
@@ -9,26 +13,66 @@ const CellImage = memo(function CellImage({
   extraImgClass = '',
   onFit,
 }) {
-  const imgRef = useRef(null);
+  const paintRef = useRef(null);
   const wrapperRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [naturalSize, setNaturalSize] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoaded(false);
     setFailed(false);
+    setNaturalSize(null);
+
+    if (!src) {
+      setLoaded(true);
+      setFailed(true);
+      return undefined;
+    }
+
+    const image = new window.Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      if (cancelled) return;
+      setNaturalSize({ w: image.naturalWidth, h: image.naturalHeight });
+      setLoaded(true);
+      setFailed(false);
+    };
+    image.onerror = () => {
+      if (cancelled) return;
+      setLoaded(true);
+      setFailed(true);
+    };
+    image.src = src;
+
+    return () => {
+      cancelled = true;
+      image.onload = null;
+      image.onerror = null;
+    };
   }, [src]);
 
   useEffect(() => {
-    const img = imgRef.current;
-    if (img?.complete && img.naturalWidth > 0) {
-      setLoaded(true);
-      setFailed(false);
-      if (wrapperRef.current) {
-        onFit?.(img, wrapperRef.current);
-      }
-    }
-  }, [src, onFit]);
+    if (!loaded || failed || !naturalSize) return;
+    const target = paintRef.current;
+    const wrapper = wrapperRef.current;
+    if (!target || !wrapper) return;
+
+    // fitImageToWrapper: naturalWidth/Height + classList/style bekler
+    onFit?.(
+      {
+        naturalWidth: naturalSize.w,
+        naturalHeight: naturalSize.h,
+        complete: true,
+        classList: target.classList,
+        style: target.style,
+        addEventListener() {},
+        removeEventListener() {},
+      },
+      wrapper
+    );
+  }, [loaded, failed, naturalSize, rotationClass, sleeveColor, src, onFit]);
 
   const wrapperClassName = [
     wrapperClasses,
@@ -42,18 +86,16 @@ const CellImage = memo(function CellImage({
     .filter(Boolean)
     .join(' ');
 
-  const handleLoad = (e) => {
-    setLoaded(true);
-    setFailed(false);
-    const wrapper = wrapperRef.current;
-    if (wrapper) {
-      onFit?.(e.target, wrapper);
-    }
-  };
-
-  const handleError = () => {
-    setLoaded(true);
-    setFailed(true);
+  const paintStyle = {
+    ...(sleeveColor ? { '--sleeve-color': sleeveColor } : {}),
+    ...(loaded && !failed && src
+      ? {
+          backgroundImage: `url(${JSON.stringify(String(src))})`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          backgroundSize: '100% 100%',
+        }
+      : {}),
   };
 
   return (
@@ -75,14 +117,12 @@ const CellImage = memo(function CellImage({
           <span aria-hidden="true">!</span>
         </div>
       ) : (
-        <img
-          ref={imgRef}
-          src={src}
-          alt={alt || ''}
-          draggable={false}
-          decoding="async"
-          loading="lazy"
-          onContextMenu={(e) => e.preventDefault()}
+        <div
+          ref={paintRef}
+          role="img"
+          aria-label={alt || ''}
+          data-natural-width={naturalSize?.w || undefined}
+          data-natural-height={naturalSize?.h || undefined}
           className={[
             'cell-image',
             extraImgClass,
@@ -91,15 +131,9 @@ const CellImage = memo(function CellImage({
           ]
             .filter(Boolean)
             .join(' ')}
-          style={
-            sleeveColor
-              ? {
-                  '--sleeve-color': sleeveColor,
-                }
-              : undefined
-          }
-          onLoad={handleLoad}
-          onError={handleError}
+          style={paintStyle}
+          onContextMenu={(e) => e.preventDefault()}
+          draggable={false}
         />
       )}
     </div>

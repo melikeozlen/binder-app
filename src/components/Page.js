@@ -25,7 +25,8 @@ const SLEEVE_PRESETS = [
   '#2A2A2A',
 ];
 const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
-const IMAGE_TOUCH_ACTION_DELAY_MS = 420;
+const IMAGE_TOUCH_ACTION_DELAY_MS = 350;
+const IMAGE_TOUCH_HOLD_ARM_MS = 180;
 const IMAGE_TOUCH_SCROLL_CANCEL_PX = 12;
 const IMAGE_MOUSE_DRAG_START_PX = 5;
 const IMAGE_TOUCH_DOUBLE_TAP_MS = 500;
@@ -101,6 +102,7 @@ const Page = ({
     startY: 0,
     dragging: false,
     longPressTimer: null,
+    holdArmTimer: null,
     lastTarget: null,
     inputType: null,
     touchActions: false,
@@ -233,6 +235,11 @@ const Page = ({
       clearTimeout(ts.longPressTimer);
       ts.longPressTimer = null;
     }
+    if (ts.holdArmTimer) {
+      clearTimeout(ts.holdArmTimer);
+      ts.holdArmTimer = null;
+    }
+    document.body.classList.remove('cell-hold-pending');
     ts.cell = null;
     ts.dragging = false;
     ts.lastTarget = null;
@@ -323,9 +330,18 @@ const Page = ({
     };
 
     const blockNativeImageMenu = (e) => {
+      const el = e.target;
+      if (
+        el?.closest?.(
+          '.grid-cell.cell-draggable, .grid-cell:has(.cell-image), .cell-image-wrapper, .cell-image'
+        )
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       const ts = touchDragRef.current;
-      // Uzun basış / sürükleme sırasında tarayıcı “görseli kaydet” menüsünü engelle
-      if (ts.inputType === 'touch' && (ts.longPressTimer || ts.dragging || ts.cell)) {
+      if (ts.inputType === 'touch' && (ts.longPressTimer || ts.holdArmTimer || ts.dragging || ts.cell)) {
         e.preventDefault();
       }
     };
@@ -1062,16 +1078,16 @@ const Page = ({
   };
 
   const fitImageToWrapper = useCallback((img, wrapper) => {
-    const imgW = img.naturalWidth;
-    const imgH = img.naturalHeight;
+    const imgW = img.naturalWidth || Number(img.dataset?.naturalWidth) || 0;
+    const imgH = img.naturalHeight || Number(img.dataset?.naturalHeight) || 0;
 
     if (!imgW || !imgH) {
-      if (!img.complete) {
+      if (img.complete === false || (!img.complete && img.addEventListener)) {
         const handleLoad = () => {
           fitImageToWrapper(img, wrapper);
-          img.removeEventListener('load', handleLoad);
+          img.removeEventListener?.('load', handleLoad);
         };
-        img.addEventListener('load', handleLoad, { once: true });
+        img.addEventListener?.('load', handleLoad, { once: true });
       }
       return;
     }
@@ -1246,6 +1262,7 @@ const Page = ({
     const cell = { side, row, col };
 
     if (ts.longPressTimer) clearTimeout(ts.longPressTimer);
+    if (ts.holdArmTimer) clearTimeout(ts.holdArmTimer);
 
     ts.cell = cell;
     ts.startX = point.clientX;
@@ -1255,6 +1272,7 @@ const Page = ({
     ts.inputType = inputType;
     ts.touchActions = false;
     ts.canDrag = false;
+    ts.holdArmTimer = null;
 
     if (inputType !== 'touch') return;
 
@@ -1264,6 +1282,22 @@ const Page = ({
       ts.touchActions = true;
       ts.canDrag = !!isDraggable;
       if (!isDraggable) return;
+
+      // Kısa beklemeden sonra native jestleri kilitle (menü / callout yarışı)
+      ts.holdArmTimer = setTimeout(() => {
+        const current = touchDragRef.current;
+        if (
+          !current.cell ||
+          current.cell.side !== cell.side ||
+          current.cell.row !== cell.row ||
+          current.cell.col !== cell.col
+        ) {
+          return;
+        }
+        current.holdArmTimer = null;
+        document.body.classList.add('cell-hold-pending');
+      }, IMAGE_TOUCH_HOLD_ARM_MS);
+
       ts.longPressTimer = setTimeout(() => {
         const current = touchDragRef.current;
         if (
@@ -1278,6 +1312,7 @@ const Page = ({
         current.dragging = true;
         lastCellTapRef.current = null;
         suppressCellClickRef.current = true;
+        document.body.classList.remove('cell-hold-pending');
         beginPointerDrag(cell);
         if (navigator.vibrate) navigator.vibrate(12);
       }, IMAGE_TOUCH_ACTION_DELAY_MS);
