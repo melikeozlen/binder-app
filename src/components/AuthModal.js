@@ -95,6 +95,13 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
 
   useEffect(() => {
     if (!open) return undefined;
+    // Yalnızca modal açılınca listeyi tazele (onClose her render'da değişmesin diye ayrı effect)
+    shares?.refresh?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
     setErrorCode(null);
     setShareMessage(null);
     setBusy(false);
@@ -113,14 +120,13 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     } else if (user) {
       setMode('login');
     }
-    shares?.refresh?.();
     const onKeyDown = (e) => {
       if (e.key === 'Escape' && !user?.mustChangePassword) onClose?.();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, onClose, user?.mustChangePassword, user?.id]);
+  }, [open, user?.mustChangePassword, user?.id]);
 
   if (!open) return null;
 

@@ -54,7 +54,7 @@ export function useShares({ user, onAccepted, onLeft, onIncoming }) {
   }, []);
 
   useEffect(() => {
-    if (!user) {
+    if (!user?.id) {
       setIncoming([]);
       setOutgoing([]);
       setMembers([]);
@@ -72,7 +72,7 @@ export function useShares({ user, onAccepted, onLeft, onIncoming }) {
     return () => {
       document.removeEventListener('visibilitychange', onFocus);
     };
-  }, [user, refresh]);
+  }, [user?.id, refresh]);
 
   const withBusy = useCallback(
     async (id, task) => {
