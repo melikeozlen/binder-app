@@ -28,8 +28,8 @@ const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
 const SLEEVE_RING_FALLBACK_PX = 6;
 const IMAGE_TOUCH_ACTION_DELAY_MS = 420;
 const IMAGE_TOUCH_SCROLL_CANCEL_PX = 12;
-const IMAGE_TOUCH_DRAG_START_PX = 14;
 const IMAGE_MOUSE_DRAG_START_PX = 5;
+const IMAGE_TOUCH_DOUBLE_TAP_MS = 400;
 
 const prefersTouchCellActions = () => {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -88,6 +88,7 @@ const Page = ({
   const colorPickerActiveRef = useRef(false);
   const suppressCellClickRef = useRef(false);
   const moveArmedRef = useRef(null); // { side, row, col } — menüden “Taşı” sonrası
+  const lastCellTapRef = useRef(null); // { side, row, col, time } — çift dokunuş
   const touchDragRef = useRef({
     cell: null,
     startX: 0,
@@ -262,25 +263,8 @@ const Page = ({
       if (!ts.dragging) {
         const dx = Math.abs(touch.clientX - ts.startX);
         const dy = Math.abs(touch.clientY - ts.startY);
-        const moved = dx > IMAGE_TOUCH_DRAG_START_PX || dy > IMAGE_TOUCH_DRAG_START_PX;
-        if (!moved) return;
 
-        // Dokunmatik + resim: sürükleyince doğrudan taşı
-        if (ts.touchActions && ts.canDrag) {
-          if (ts.longPressTimer) {
-            clearTimeout(ts.longPressTimer);
-            ts.longPressTimer = null;
-          }
-          suppressCellClickRef.current = true;
-          ts.dragging = true;
-          beginPointerDrag(ts.cell);
-          if (navigator.vibrate) navigator.vibrate(10);
-          e.preventDefault();
-          updateDragTargetAtPoint(touch.clientX, touch.clientY);
-          return;
-        }
-
-        // Menü/scroll: eşik aşılınca basışı iptal et
+        // Uzun basış beklemeden hareket → sayfa swipe'a bırak; PC taşımayı iptal et
         if (
           dx > IMAGE_TOUCH_SCROLL_CANCEL_PX ||
           dy > IMAGE_TOUCH_SCROLL_CANCEL_PX
@@ -1218,6 +1202,28 @@ const Page = ({
     });
   }, [notify, language]);
 
+  const handleTouchImageTap = useCallback((sheet) => {
+    const now = Date.now();
+    const last = lastCellTapRef.current;
+    if (
+      last &&
+      last.side === sheet.side &&
+      last.row === sheet.row &&
+      last.col === sheet.col &&
+      now - last.time <= IMAGE_TOUCH_DOUBLE_TAP_MS
+    ) {
+      lastCellTapRef.current = null;
+      openCellActionSheet(sheet);
+      return;
+    }
+    lastCellTapRef.current = {
+      side: sheet.side,
+      row: sheet.row,
+      col: sheet.col,
+      time: now,
+    };
+  }, [openCellActionSheet]);
+
   const handleCellPointerDown = (side, row, col, isDraggable, inputType, options = {}) => (e) => {
     if (pointerEvents === 'none' || !isTopPage) return;
     if (e.target.closest('.cell-control-btn, .cell-sleeve-picker, .cell-action-sheet')) return;
@@ -1261,6 +1267,7 @@ const Page = ({
       armed.col === col
     ) {
       moveArmedRef.current = null;
+      lastCellTapRef.current = null;
       suppressCellClickRef.current = true;
       ts.dragging = true;
       ts.canDrag = true;
@@ -1269,11 +1276,29 @@ const Page = ({
       return;
     }
 
-    // Dokunmatik: kısa dokunuş → menü (onClick);
-    // basılı tutup sürükle → doğrudan taşı (touchmove)
+    // Mobil: uzun basış → PC taşı; sürükleme → sayfa swipe (Binder);
+    // çift dokunuş → menü (onClick)
     if (touchActions && hasImage) {
       ts.touchActions = true;
       ts.canDrag = !!isDraggable;
+      if (!isDraggable) return;
+      ts.longPressTimer = setTimeout(() => {
+        const current = touchDragRef.current;
+        if (
+          !current.cell ||
+          current.cell.side !== cell.side ||
+          current.cell.row !== cell.row ||
+          current.cell.col !== cell.col
+        ) {
+          return;
+        }
+        current.longPressTimer = null;
+        current.dragging = true;
+        lastCellTapRef.current = null;
+        suppressCellClickRef.current = true;
+        beginPointerDrag(cell);
+        if (navigator.vibrate) navigator.vibrate(12);
+      }, IMAGE_TOUCH_ACTION_DELAY_MS);
       return;
     }
 
@@ -1867,7 +1892,7 @@ const Page = ({
             return;
           }
           if (isImage && prefersTouchCellActions()) {
-            openCellActionSheet({
+            handleTouchImageTap({
               side: 'front',
               row,
               col,
@@ -2059,7 +2084,7 @@ const Page = ({
             return;
           }
           if (isImage && prefersTouchCellActions()) {
-            openCellActionSheet({
+            handleTouchImageTap({
               side: 'back',
               row,
               col,

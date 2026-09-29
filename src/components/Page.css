@@ -893,13 +893,19 @@
 
 .grid-cell.cell-draggable {
   cursor: grab;
-  touch-action: none;
+  /* Sayfa swipe'a izin ver; taşıma sadece uzun basış sonrası */
+  touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .grid-cell.cell-draggable:active {
   cursor: grabbing;
+}
+
+body.cell-drag-active .grid-cell.cell-draggable {
+  touch-action: none;
 }
 
 .grid-cell.cell-dragging {
