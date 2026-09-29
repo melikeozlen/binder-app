@@ -570,3 +570,98 @@
     padding: 0.85rem 1rem 1.1rem;
   }
 }
+
+.admin-stats-temp-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: inherit;
+}
+
+.admin-stats-temp-dialog {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.15rem 1.15rem 1rem;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+}
+
+.admin-stats-temp-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: #222;
+  line-height: 1.3;
+}
+
+.admin-stats-temp-message {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #555;
+}
+
+.admin-stats-temp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-stats-temp-password {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #f7f7f7;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #222;
+  overflow-wrap: anywhere;
+}
+
+.admin-stats-temp-row .admin-stats-copy-btn {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.admin-stats-temp-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #777;
+}
+
+.admin-stats-temp-actions {
+  margin-top: 0.15rem;
+}
+
+.admin-stats-temp-ok {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #1a5fb4;
+  background: #1a5fb4;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-stats-temp-ok:hover {
+  background: #154d91;
+  border-color: #154d91;
+}

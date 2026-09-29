@@ -68,6 +68,8 @@ const AdminStatsModal = ({ open, onClose }) => {
   const [copiedId, setCopiedId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [accountBusyId, setAccountBusyId] = useState(null);
+  const [tempPasswordResult, setTempPasswordResult] = useState(null);
+  const [tempPasswordCopied, setTempPasswordCopied] = useState(false);
   const [updatedAt, setUpdatedAt] = useState(null);
 
   useModalA11y({ open, onClose, containerRef: dialogRef });
@@ -200,6 +202,16 @@ const AdminStatsModal = ({ open, onClose }) => {
     }
   };
 
+  const copyTempPassword = async (password) => {
+    try {
+      await navigator.clipboard.writeText(password || '');
+      setTempPasswordCopied(true);
+      window.setTimeout(() => setTempPasswordCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  };
+
   const resetUserPassword = async (item) => {
     const ok = await confirm({
       title: t('dialog.title.resetPassword'),
@@ -216,20 +228,10 @@ const AdminStatsModal = ({ open, onClose }) => {
         { method: 'POST' }
       );
       const temp = result?.temporaryPassword || '';
-      if (temp && navigator.clipboard?.writeText) {
-        try {
-          await navigator.clipboard.writeText(temp);
-        } catch {
-          // ignore
-        }
-      }
-      notify({
-        kind: 'success',
-        text: t('stats.resetPasswordDone', {
-          username: item.username,
-          password: temp,
-        }),
-        duration: 12000,
+      setTempPasswordCopied(false);
+      setTempPasswordResult({
+        username: result?.username || item.username,
+        password: temp,
       });
     } catch (err) {
       notify({ kind: 'error', text: err?.message || t('stats.accountActionFailed') });
@@ -618,6 +620,59 @@ const AdminStatsModal = ({ open, onClose }) => {
             ))}
         </div>
       </div>
+      {tempPasswordResult && (
+        <div
+          className="admin-stats-temp-overlay"
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setTempPasswordResult(null);
+              setTempPasswordCopied(false);
+            }
+          }}
+        >
+          <div
+            className="admin-stats-temp-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="admin-stats-temp-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="admin-stats-temp-title" className="admin-stats-temp-title">
+              {t('dialog.title.resetPasswordDone')}
+            </h2>
+            <p className="admin-stats-temp-message">
+              {t('stats.resetPasswordDone', { username: tempPasswordResult.username })}
+            </p>
+            <div className="admin-stats-temp-row">
+              <code className="admin-stats-temp-password">{tempPasswordResult.password}</code>
+              <button
+                type="button"
+                className="admin-stats-copy-btn"
+                onClick={() => copyTempPassword(tempPasswordResult.password)}
+                title={t('stats.copy')}
+                aria-label={t('stats.copy')}
+              >
+                {tempPasswordCopied ? t('stats.copied') : t('stats.copy')}
+              </button>
+            </div>
+            <p className="admin-stats-temp-hint">{t('stats.resetPasswordHint')}</p>
+            <div className="admin-stats-temp-actions">
+              <button
+                type="button"
+                className="admin-stats-temp-ok"
+                onClick={() => {
+                  setTempPasswordResult(null);
+                  setTempPasswordCopied(false);
+                }}
+                autoFocus
+              >
+                {t('dialog.ok')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );
