@@ -75,10 +75,16 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   }, []);
 
-  const requestForgotPassword = useCallback(async (username, securityAnswer) => {
+  const requestForgotPassword = useCallback(async (username, securityAnswer, contact) => {
     await api('/api/auth/forgot-password', {
       method: 'POST',
-      body: { username, securityAnswer, clientId: getClientId() },
+      body: {
+        username,
+        securityAnswer,
+        contactChannel: contact?.channel,
+        contactValue: contact?.value,
+        clientId: getClientId(),
+      },
     });
   }, []);
 

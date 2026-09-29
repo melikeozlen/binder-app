@@ -14,6 +14,24 @@ const {
 
 const PG_UNIQUE_VIOLATION = '23505';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const X_HANDLE_RE = /^[A-Za-z0-9_]{1,15}$/;
+
+/** @returns {{ channel: 'email'|'x', value: string } | null} */
+function parseContact(channel, value) {
+  const ch = channel === 'x' ? 'x' : channel === 'email' ? 'email' : null;
+  if (!ch) return null;
+  const raw = String(value || '').trim();
+  if (!raw || raw.length > 254) return null;
+  if (ch === 'email') {
+    if (!EMAIL_RE.test(raw)) return null;
+    return { channel: 'email', value: raw.toLowerCase() };
+  }
+  const handle = raw.replace(/^@/, '');
+  if (!X_HANDLE_RE.test(handle)) return null;
+  return { channel: 'x', value: `@${handle}` };
+}
+
 function createAuthRouter(pool) {
   const router = express.Router();
   router.use(express.json({ limit: '10kb' }));
@@ -219,9 +237,13 @@ function createAuthRouter(pool) {
       const username = auth.normalizeUsername(req.body?.username);
       const securityAnswer = req.body?.securityAnswer;
       const clientId = isValidClientId(req.body?.clientId) ? req.body.clientId : null;
+      const contact = parseContact(req.body?.contactChannel, req.body?.contactValue);
 
       if (!auth.isValidUsername(username) || !isValidSecurityAnswer(securityAnswer)) {
         throw badRequest('INVALID_FORGOT', 'Username and security answer required');
+      }
+      if (!contact) {
+        throw badRequest('INVALID_CONTACT', 'Email or X username required');
       }
 
       const { rows } = await pool.query(
@@ -248,6 +270,7 @@ function createAuthRouter(pool) {
           `questionId: ${row.security_question_id || '-'}`,
           `questionKey: ${qKey || '-'}`,
           `answer: ${normalizeSecurityAnswer(securityAnswer)}`,
+          `contact: ${contact.channel} ${contact.value}`,
           'Please send temporary password.',
         ].join('\n');
 

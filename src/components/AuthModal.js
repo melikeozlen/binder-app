@@ -19,11 +19,27 @@ const KNOWN_ERROR_CODES = new Set([
   'INVALID_SECURITY_QUESTION',
   'WEAK_SECURITY_ANSWER',
   'INVALID_FORGOT',
+  'INVALID_CONTACT',
   'RATE_LIMITED',
   'NETWORK_ERROR',
 ]);
 
 const USERNAME_RE = /^[A-Za-z0-9_.]{3,32}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const X_HANDLE_RE = /^[A-Za-z0-9_]{1,15}$/;
+
+const normalizeForgotContact = (channel, value) => {
+  const ch = channel === 'x' ? 'x' : 'email';
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  if (ch === 'email') {
+    if (!EMAIL_RE.test(raw) || raw.length > 254) return null;
+    return { channel: 'email', value: raw };
+  }
+  const handle = raw.replace(/^@/, '');
+  if (!X_HANDLE_RE.test(handle)) return null;
+  return { channel: 'x', value: `@${handle}` };
+};
 
 const SECURITY_QUESTIONS = [
   { id: 'favorite_color', labelKey: 'auth.securityQ.favoriteColor' },
@@ -88,6 +104,8 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
   const [securityQuestionId, setSecurityQuestionId] = useState(SECURITY_QUESTIONS[0].id);
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [forgotQuestionId, setForgotQuestionId] = useState(null);
+  const [contactChannel, setContactChannel] = useState('email'); // email | x
+  const [contactValue, setContactValue] = useState('');
   const [errorCode, setErrorCode] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -115,6 +133,8 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     }
     setSecurityAnswer('');
     setForgotQuestionId(null);
+    setContactChannel('email');
+    setContactValue('');
     if (user?.mustChangePassword) {
       setMode('changePassword');
     } else if (user) {
@@ -215,13 +235,20 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
       setErrorCode('INVALID_FORGOT');
       return;
     }
+    const contact = normalizeForgotContact(contactChannel, contactValue);
+    if (!contact) {
+      setErrorCode('INVALID_CONTACT');
+      return;
+    }
     setBusy(true);
     try {
-      await requestForgotPassword(trimmedUsername, securityAnswer.trim());
+      await requestForgotPassword(trimmedUsername, securityAnswer.trim(), contact);
       notify({ kind: 'success', text: t('auth.forgotSent') });
       setMode('login');
       setSecurityAnswer('');
       setForgotQuestionId(null);
+      setContactValue('');
+      setContactChannel('email');
     } catch (error) {
       setErrorCode(error?.code || 'GENERIC');
     } finally {
@@ -302,6 +329,8 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     setPasswordConfirm('');
     setSecurityAnswer('');
     setForgotQuestionId(null);
+    setContactChannel('email');
+    setContactValue('');
     setCurrentPassword('');
     setNewPassword('');
     setNewPasswordConfirm('');
@@ -668,6 +697,59 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
                 minLength={1}
               />
             </label>
+            <div className="auth-contact">
+              <span className="auth-contact-label">{t('auth.forgotContact')}</span>
+              <div className="auth-contact-tabs" role="tablist" aria-label={t('auth.forgotContact')}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={contactChannel === 'email'}
+                  className={`auth-contact-tab${contactChannel === 'email' ? ' auth-contact-tab--active' : ''}`}
+                  onClick={() => {
+                    setContactChannel('email');
+                    setContactValue('');
+                    setErrorCode(null);
+                  }}
+                  disabled={busy}
+                >
+                  {t('auth.forgotContactEmail')}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={contactChannel === 'x'}
+                  className={`auth-contact-tab${contactChannel === 'x' ? ' auth-contact-tab--active' : ''}`}
+                  onClick={() => {
+                    setContactChannel('x');
+                    setContactValue('');
+                    setErrorCode(null);
+                  }}
+                  disabled={busy}
+                >
+                  {t('auth.forgotContactX')}
+                </button>
+              </div>
+              <label className="auth-field">
+                <span className="auth-sr-only">
+                  {contactChannel === 'x' ? t('auth.forgotContactX') : t('auth.forgotContactEmail')}
+                </span>
+                <input
+                  type={contactChannel === 'email' ? 'email' : 'text'}
+                  autoComplete={contactChannel === 'email' ? 'email' : 'off'}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={contactValue}
+                  onChange={(e) => setContactValue(e.target.value)}
+                  placeholder={
+                    contactChannel === 'x'
+                      ? t('auth.forgotContactXPlaceholder')
+                      : t('auth.forgotContactEmailPlaceholder')
+                  }
+                  required
+                />
+              </label>
+              <p className="auth-contact-hint">{t('auth.forgotContactHint')}</p>
+            </div>
           </>
         )}
         {errorCode && <p className="auth-modal-error">{t(errorKey(errorCode))}</p>}
