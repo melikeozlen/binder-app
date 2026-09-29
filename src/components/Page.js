@@ -28,6 +28,7 @@ const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
 const SLEEVE_RING_FALLBACK_PX = 6;
 const IMAGE_TOUCH_ACTION_DELAY_MS = 420;
 const IMAGE_TOUCH_SCROLL_CANCEL_PX = 12;
+const IMAGE_TOUCH_DRAG_START_PX = 14;
 const IMAGE_MOUSE_DRAG_START_PX = 5;
 
 const prefersTouchCellActions = () => {
@@ -95,6 +96,8 @@ const Page = ({
     longPressTimer: null,
     lastTarget: null,
     inputType: null,
+    touchActions: false,
+    canDrag: false,
   });
   const performCellMoveOrSwapRef = useRef(null);
   const draggedCellRef = useRef(null);
@@ -227,6 +230,8 @@ const Page = ({
     ts.dragging = false;
     ts.lastTarget = null;
     ts.inputType = null;
+    ts.touchActions = false;
+    ts.canDrag = false;
     draggedCellRef.current = null;
     setDraggedCell(null);
     setDragOverCell(null);
@@ -257,7 +262,29 @@ const Page = ({
       if (!ts.dragging) {
         const dx = Math.abs(touch.clientX - ts.startX);
         const dy = Math.abs(touch.clientY - ts.startY);
-        if (dx > IMAGE_TOUCH_SCROLL_CANCEL_PX || dy > IMAGE_TOUCH_SCROLL_CANCEL_PX) {
+        const moved = dx > IMAGE_TOUCH_DRAG_START_PX || dy > IMAGE_TOUCH_DRAG_START_PX;
+        if (!moved) return;
+
+        // Dokunmatik + resim: sürükleyince doğrudan taşı
+        if (ts.touchActions && ts.canDrag) {
+          if (ts.longPressTimer) {
+            clearTimeout(ts.longPressTimer);
+            ts.longPressTimer = null;
+          }
+          suppressCellClickRef.current = true;
+          ts.dragging = true;
+          beginPointerDrag(ts.cell);
+          if (navigator.vibrate) navigator.vibrate(10);
+          e.preventDefault();
+          updateDragTargetAtPoint(touch.clientX, touch.clientY);
+          return;
+        }
+
+        // Menü/scroll: eşik aşılınca basışı iptal et
+        if (
+          dx > IMAGE_TOUCH_SCROLL_CANCEL_PX ||
+          dy > IMAGE_TOUCH_SCROLL_CANCEL_PX
+        ) {
           resetPointerDrag();
         }
         return;
@@ -1219,6 +1246,8 @@ const Page = ({
     ts.dragging = false;
     ts.lastTarget = null;
     ts.inputType = inputType;
+    ts.touchActions = false;
+    ts.canDrag = false;
 
     if (inputType !== 'touch') return;
 
@@ -1234,31 +1263,21 @@ const Page = ({
       moveArmedRef.current = null;
       suppressCellClickRef.current = true;
       ts.dragging = true;
+      ts.canDrag = true;
+      ts.touchActions = touchActions;
       beginPointerDrag(cell);
       return;
     }
 
-    // Dokunmatik: uzun basış → aksiyon menüsü (hover butonları yok)
+    // Dokunmatik: kısa dokunuş → menü (onClick);
+    // basılı tutup sürükle → doğrudan taşı (touchmove)
     if (touchActions && hasImage) {
-      ts.longPressTimer = setTimeout(() => {
-        ts.longPressTimer = null;
-        ts.cell = null;
-        openCellActionSheet({
-          side,
-          row,
-          col,
-          isDefaultImage: !!options.isDefaultImage,
-          canMove: !!isDraggable,
-          canRemove: !options.isDefaultImage,
-          canSleeve: !options.isDefaultImage,
-          imageUrl: options.imageUrl || '',
-          imageName: options.imageName || '',
-        });
-      }, IMAGE_TOUCH_ACTION_DELAY_MS);
+      ts.touchActions = true;
+      ts.canDrag = !!isDraggable;
       return;
     }
 
-    // Eski davranış (hover destekleyen cihazlarda touch): uzun basış → sürükle
+    // Hover destekleyen cihazlarda touch: uzun basış → sürükle
     if (!isDraggable) return;
     ts.longPressTimer = setTimeout(() => {
       ts.dragging = true;
