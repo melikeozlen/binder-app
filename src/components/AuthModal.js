@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import './AuthModal.css';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -95,7 +96,11 @@ const PasswordField = ({
         aria-pressed={visible}
         tabIndex={-1}
       >
-        <span className={`auth-eye${visible ? '' : ' auth-eye--closed'}`} aria-hidden="true" />
+        {visible ? (
+          <Eye className="auth-eye-icon" size={18} strokeWidth={1.75} aria-hidden="true" />
+        ) : (
+          <EyeOff className="auth-eye-icon" size={18} strokeWidth={1.75} aria-hidden="true" />
+        )}
       </button>
     </div>
   </label>
