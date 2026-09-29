@@ -67,6 +67,7 @@
     flex-wrap: nowrap;
     gap: 0;
     padding: 0.2rem 0.35rem;
+    overflow-x: hidden;
   }
 
   .settings-bar-primary,
@@ -82,6 +83,30 @@
     flex-wrap: nowrap;
     justify-content: flex-start;
     gap: 0.2rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .settings-bar-primary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-bar-primary .cloud-save-now-btn {
+    flex-shrink: 0;
+    min-height: 28px;
+    padding: 0.18rem 0.4rem;
+    font-size: 0.65rem;
+  }
+
+  .settings-bar-primary .cloud-save-now-btn .cloud-save-now-label {
+    display: none;
+  }
+
+  .settings-bar-primary .cloud-save-now-btn--dirty {
+    animation: none;
+    box-shadow: none;
   }
 
   .settings-bar-primary .binder-selector {
@@ -2084,15 +2109,14 @@
 
 @media (max-width: 768px) {
   .cloud-save-now-btn {
-    min-height: 32px;
-    padding: 0.3rem 0.5rem;
+    min-height: 28px;
+    padding: 0.22rem 0.4rem;
   }
 }
 
 /* Çok dar ekranda yalnızca simge */
 @media (max-width: 420px) {
-  .cloud-save-now-btn--saving .cloud-save-now-label,
-  .cloud-save-now-btn--saved .cloud-save-now-label {
+  .cloud-save-now-btn .cloud-save-now-label {
     display: none;
   }
 }

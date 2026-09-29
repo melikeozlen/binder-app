@@ -389,7 +389,9 @@ const PageOrderBar = ({
               }
             }}
             className="page-order-swap-input"
-            title={t('pageOrder.page') + ' 1'}
+            title={t('pageOrder.placeholderFrom')}
+            placeholder={t('pageOrder.placeholderFrom')}
+            aria-label={t('pageOrder.placeholderFrom')}
           />
           <input
             type="number"
@@ -412,7 +414,9 @@ const PageOrderBar = ({
               }
             }}
             className="page-order-swap-input"
-            title={t('pageOrder.page') + ' 2'}
+            title={t('pageOrder.placeholderTo')}
+            placeholder={t('pageOrder.placeholderTo')}
+            aria-label={t('pageOrder.placeholderTo')}
           />
         </div>
         <button

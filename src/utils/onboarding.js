@@ -1,4 +1,5 @@
 export const ONBOARDING_STORAGE_KEY = 'pocapocket-onboarding-done';
+export const MOBILE_GESTURE_GUIDE_KEY = 'pocapocket-mobile-gestures-done';
 
 export const markOnboardingDone = () => {
   try {
@@ -11,6 +12,22 @@ export const markOnboardingDone = () => {
 export const isOnboardingDone = () => {
   try {
     return localStorage.getItem(ONBOARDING_STORAGE_KEY) === '1';
+  } catch {
+    return true;
+  }
+};
+
+export const markMobileGestureGuideDone = () => {
+  try {
+    localStorage.setItem(MOBILE_GESTURE_GUIDE_KEY, '1');
+  } catch {
+    // ignore
+  }
+};
+
+export const isMobileGestureGuideDone = () => {
+  try {
+    return localStorage.getItem(MOBILE_GESTURE_GUIDE_KEY) === '1';
   } catch {
     return true;
   }

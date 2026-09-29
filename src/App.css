@@ -165,6 +165,9 @@ body {
     padding: 0.15rem;
     touch-action: manipulation;
     overflow: hidden;
+    /* BMC floating butonlarının binder altından sızmasını kes */
+    z-index: 995;
+    background-color: #fff;
   }
 
   .App > .page-order-bar {
@@ -172,12 +175,14 @@ body {
     max-height: var(--app-chrome-max-page-order);
     min-height: 0;
     flex-shrink: 0;
+    z-index: 996;
+    background-color: #fff;
   }
 
   .App > .page-order-bar.is-mobile-expanded {
-    max-height: min(38dvh, 200px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    /* 2 satır: swap + yatay sayfa şeridi — grid içinde sığar */
+    max-height: 92px;
+    overflow: hidden;
   }
 
   .App > .app-footer {
@@ -209,7 +214,11 @@ body {
   :root {
     --app-chrome-max-header: 14dvh;
     --app-chrome-max-footer: 12dvh;
-    --app-chrome-max-page-order: 20px;
+    --app-chrome-max-page-order: 36px;
+  }
+
+  .App > .page-order-bar.is-mobile-expanded {
+    max-height: 76px;
   }
 
   .App > .settings-bar {
@@ -248,7 +257,7 @@ body {
   }
 
   .App > .page-order-bar.is-mobile-expanded {
-    max-height: min(36dvh, 190px);
+    max-height: 88px;
   }
 }
 

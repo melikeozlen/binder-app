@@ -140,9 +140,11 @@
   .bmc-stack {
     --bmc-size: 34px;
     --bmc-gap: 7px;
-    --bmc-footer-clearance: 56px;
-    --bmc-gap-above-footer: 8px;
+    /* Footer + sayfa şeridi; binder alanına taşmasın */
+    --bmc-footer-clearance: calc(52px + var(--app-chrome-max-page-order, 44px));
+    --bmc-gap-above-footer: 6px;
     right: calc(10px + var(--safe-right, 0px));
+    z-index: 980;
   }
 
   .buy-me-coffee-emoji {
@@ -155,12 +157,13 @@
   }
 
   .App.footer-hidden .bmc-stack {
-    --bmc-footer-clearance: 44px;
+    --bmc-footer-clearance: calc(8px + var(--app-chrome-max-page-order, 44px));
   }
 
   .App.fullscreen-mode .bmc-stack {
     --bmc-footer-clearance: 0px;
     --bmc-gap-above-footer: 10px;
+    z-index: 10020;
   }
 }
 
