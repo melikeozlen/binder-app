@@ -81,6 +81,7 @@ const Page = ({
   const [dragOverCell, setDragOverCell] = useState(null); // {side, row, col}
   const [cellActionSheet, setCellActionSheet] = useState(null);
   // { side, row, col, isDefaultImage, canRemove, canSleeve, imageUrl, imageName }
+  const [actionSheetPanel, setActionSheetPanel] = useState('actions'); // 'actions' | 'sleeve'
   const [cellImagePreview, setCellImagePreview] = useState(null); // { url, name }
   const fileInputRefs = useRef({});
   const backFileInputRefs = useRef({});
@@ -1183,12 +1184,14 @@ const Page = ({
     if (pointerEvents === 'none' || !isTopPage) return;
     suppressCellClickRef.current = true;
     setCellImagePreview(null);
+    setActionSheetPanel('actions');
     setCellActionSheet(sheet);
     if (navigator.vibrate) navigator.vibrate(12);
   }, [pointerEvents, isTopPage]);
 
   const closeCellActionSheet = useCallback(() => {
     setCellActionSheet(null);
+    setActionSheetPanel('actions');
   }, []);
 
   const handleTouchImageTap = useCallback((sheet) => {
@@ -1495,6 +1498,20 @@ const Page = ({
     setSleevePickerCell({ side, row, col });
   };
 
+  const openSleevePanelInSheet = (side, row, col) => {
+    if (pointerEvents === 'none' || !isTopPage || !page.id) return;
+    const cellKey = getRotationKey(side, row, col);
+    if (!sleeves[cellKey]) {
+      updatePageWithState(
+        undefined,
+        undefined,
+        undefined,
+        (prevSleeves) => ({ ...prevSleeves, [cellKey]: DEFAULT_SLEEVE_COLOR })
+      );
+    }
+    setActionSheetPanel('sleeve');
+  };
+
   const updateSleeveColor = (side, row, col, color) => {
     const cellKey = getRotationKey(side, row, col);
     updatePageWithState(
@@ -1518,6 +1535,9 @@ const Page = ({
       }
     );
     setSleevePickerCell(null);
+    if (cellActionSheet) {
+      setActionSheetPanel('actions');
+    }
   };
 
   const renderCellImage = (imageUrl, imageName, rotationKey, sleeveColor, wrapperClasses, extraImgClass = '') => {
@@ -1537,23 +1557,14 @@ const Page = ({
     );
   };
 
-  const renderSleevePicker = (side, row, col) => {
-    if (
-      !sleevePickerCell ||
-      sleevePickerCell.side !== side ||
-      sleevePickerCell.row !== row ||
-      sleevePickerCell.col !== col
-    ) {
-      return null;
-    }
-
+  const renderSleevePickerContent = (side, row, col, { inSheet = false } = {}) => {
     const cellKey = getRotationKey(side, row, col);
     const currentColor = sleeves[cellKey];
 
     return (
       <div
-        ref={sleevePickerRef}
-        className="cell-sleeve-picker"
+        ref={inSheet ? undefined : sleevePickerRef}
+        className={`cell-sleeve-picker${inSheet ? ' cell-sleeve-picker--sheet' : ''}`}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -1609,6 +1620,19 @@ const Page = ({
         )}
       </div>
     );
+  };
+
+  const renderSleevePicker = (side, row, col) => {
+    if (
+      !sleevePickerCell ||
+      sleevePickerCell.side !== side ||
+      sleevePickerCell.row !== row ||
+      sleevePickerCell.col !== col
+    ) {
+      return null;
+    }
+
+    return renderSleevePickerContent(side, row, col);
   };
 
   const isSleevePickerOpenAt = (side, row, col) =>
@@ -2407,86 +2431,113 @@ const Page = ({
             ) : (
               <p className="cell-action-sheet-title">{t('page.cellActions')}</p>
             )}
-            {cellActionSheet.imageUrl ? (
-              <button
-                type="button"
-                className="cell-action-sheet-btn"
-                onClick={() => {
-                  const { imageUrl, imageName } = cellActionSheet;
-                  closeCellActionSheet();
-                  setCellImagePreview({
-                    url: imageUrl,
-                    name: imageName || '',
-                  });
-                }}
-              >
-                👁 {t('page.viewImage')}
-              </button>
-            ) : null}
-            <div className="cell-action-sheet-actions">
-              <button
-                type="button"
-                className="cell-action-sheet-btn"
-                onClick={(e) => {
-                  const { side, row, col } = cellActionSheet;
-                  closeCellActionSheet();
-                  if (side === 'back') handleRotateBackImage(e, row, col);
-                  else handleRotateImage(e, row, col);
-                }}
-              >
-                ↻ {t('page.rotateImage')}
-              </button>
-              <button
-                type="button"
-                className="cell-action-sheet-btn"
-                onClick={(e) => {
-                  const { side, row, col } = cellActionSheet;
-                  closeCellActionSheet();
-                  if (side === 'back') {
-                    if (cellActionSheet.isDefaultImage) handleBackCellClick(row, col);
-                    else handleReplaceBackImage(e, row, col);
-                  } else {
-                    handleReplaceImage(e, row, col);
-                  }
-                }}
-              >
-                + {t('page.replaceImage')}
-              </button>
-              {cellActionSheet.canRemove && (
-                <button
-                  type="button"
-                  className="cell-action-sheet-btn cell-action-sheet-btn--danger"
-                  onClick={(e) => {
-                    const { side, row, col } = cellActionSheet;
-                    closeCellActionSheet();
-                    if (side === 'back') handleRemoveBackImage(e, row, col);
-                    else handleRemoveImage(e, row, col);
-                  }}
-                >
-                  × {t('page.removeImage')}
-                </button>
-              )}
-              {cellActionSheet.canSleeve && (
+            {actionSheetPanel === 'sleeve' ? (
+              <>
+                <p className="cell-action-sheet-subtitle">{t('page.sleeveColor')}</p>
+                {renderSleevePickerContent(
+                  cellActionSheet.side,
+                  cellActionSheet.row,
+                  cellActionSheet.col,
+                  { inSheet: true }
+                )}
                 <button
                   type="button"
                   className="cell-action-sheet-btn"
-                  onClick={(e) => {
-                    const { side, row, col } = cellActionSheet;
-                    closeCellActionSheet();
-                    handleSleeveButtonClick(e, side, row, col);
-                  }}
+                  onClick={() => setActionSheetPanel('actions')}
                 >
-                  ▢ {t('page.sleeve')}
+                  ← {t('settings.galleryBack')}
                 </button>
-              )}
-            </div>
-            <button
-              type="button"
-              className="cell-action-sheet-btn cell-action-sheet-btn--cancel"
-              onClick={closeCellActionSheet}
-            >
-              {t('binder.cancel')}
-            </button>
+                <button
+                  type="button"
+                  className="cell-action-sheet-btn cell-action-sheet-btn--cancel"
+                  onClick={closeCellActionSheet}
+                >
+                  {t('binder.cancel')}
+                </button>
+              </>
+            ) : (
+              <>
+                {cellActionSheet.imageUrl ? (
+                  <button
+                    type="button"
+                    className="cell-action-sheet-btn"
+                    onClick={() => {
+                      const { imageUrl, imageName } = cellActionSheet;
+                      closeCellActionSheet();
+                      setCellImagePreview({
+                        url: imageUrl,
+                        name: imageName || '',
+                      });
+                    }}
+                  >
+                    👁 {t('page.viewImage')}
+                  </button>
+                ) : null}
+                <div className="cell-action-sheet-actions">
+                  <button
+                    type="button"
+                    className="cell-action-sheet-btn"
+                    onClick={(e) => {
+                      const { side, row, col } = cellActionSheet;
+                      closeCellActionSheet();
+                      if (side === 'back') handleRotateBackImage(e, row, col);
+                      else handleRotateImage(e, row, col);
+                    }}
+                  >
+                    ↻ {t('page.rotateImage')}
+                  </button>
+                  <button
+                    type="button"
+                    className="cell-action-sheet-btn"
+                    onClick={(e) => {
+                      const { side, row, col } = cellActionSheet;
+                      closeCellActionSheet();
+                      if (side === 'back') {
+                        if (cellActionSheet.isDefaultImage) handleBackCellClick(row, col);
+                        else handleReplaceBackImage(e, row, col);
+                      } else {
+                        handleReplaceImage(e, row, col);
+                      }
+                    }}
+                  >
+                    + {t('page.replaceImage')}
+                  </button>
+                  {cellActionSheet.canRemove && (
+                    <button
+                      type="button"
+                      className="cell-action-sheet-btn cell-action-sheet-btn--danger"
+                      onClick={(e) => {
+                        const { side, row, col } = cellActionSheet;
+                        closeCellActionSheet();
+                        if (side === 'back') handleRemoveBackImage(e, row, col);
+                        else handleRemoveImage(e, row, col);
+                      }}
+                    >
+                      × {t('page.removeImage')}
+                    </button>
+                  )}
+                  {cellActionSheet.canSleeve && (
+                    <button
+                      type="button"
+                      className="cell-action-sheet-btn"
+                      onClick={() => {
+                        const { side, row, col } = cellActionSheet;
+                        openSleevePanelInSheet(side, row, col);
+                      }}
+                    >
+                      ▢ {t('page.sleeve')}
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="cell-action-sheet-btn cell-action-sheet-btn--cancel"
+                  onClick={closeCellActionSheet}
+                >
+                  {t('binder.cancel')}
+                </button>
+              </>
+            )}
           </div>
         </div>,
         document.body
