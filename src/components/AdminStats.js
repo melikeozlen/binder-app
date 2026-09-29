@@ -200,6 +200,44 @@ const AdminStatsModal = ({ open, onClose }) => {
     }
   };
 
+  const resetUserPassword = async (item) => {
+    const ok = await confirm({
+      title: t('dialog.title.resetPassword'),
+      message: t('stats.resetPasswordConfirm', { username: item.username }),
+      confirmLabel: t('stats.resetPassword'),
+      cancelLabel: t('dialog.cancel'),
+      danger: true,
+    });
+    if (!ok) return;
+    setAccountBusyId(item.id);
+    try {
+      const result = await api(
+        `/api/admin/users/${encodeURIComponent(item.id)}/reset-password`,
+        { method: 'POST' }
+      );
+      const temp = result?.temporaryPassword || '';
+      if (temp && navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(temp);
+        } catch {
+          // ignore
+        }
+      }
+      notify({
+        kind: 'success',
+        text: t('stats.resetPasswordDone', {
+          username: item.username,
+          password: temp,
+        }),
+        duration: 12000,
+      });
+    } catch (err) {
+      notify({ kind: 'error', text: err?.message || t('stats.accountActionFailed') });
+    } finally {
+      setAccountBusyId(null);
+    }
+  };
+
   const deleteFeedback = async (item) => {
     const raw = String(item.message || '').trim();
     const preview = raw.length > 15 ? `${raw.slice(0, 15)}…` : raw || '…';
@@ -498,19 +536,32 @@ const AdminStatsModal = ({ open, onClose }) => {
                         </span>
                       </div>
                       {!row.isAdmin && (
-                        <button
-                          type="button"
-                          className={`admin-stats-copy-btn${row.active ? ' admin-stats-delete-btn' : ''}`}
-                          disabled={accountBusyId === row.id}
-                          onClick={() => setAccountActive(row, !row.active)}
-                          title={row.active ? t('stats.deactivate') : t('stats.activate')}
-                        >
-                          {accountBusyId === row.id
-                            ? '…'
-                            : row.active
-                              ? t('stats.deactivate')
-                              : t('stats.activate')}
-                        </button>
+                        <div className="admin-stats-account-actions">
+                          {row.active && (
+                            <button
+                              type="button"
+                              className="admin-stats-copy-btn"
+                              disabled={accountBusyId === row.id}
+                              onClick={() => resetUserPassword(row)}
+                              title={t('stats.resetPassword')}
+                            >
+                              {accountBusyId === row.id ? '…' : t('stats.resetPasswordShort')}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={`admin-stats-copy-btn${row.active ? ' admin-stats-delete-btn' : ''}`}
+                            disabled={accountBusyId === row.id}
+                            onClick={() => setAccountActive(row, !row.active)}
+                            title={row.active ? t('stats.deactivate') : t('stats.activate')}
+                          >
+                            {accountBusyId === row.id
+                              ? '…'
+                              : row.active
+                                ? t('stats.deactivate')
+                                : t('stats.activate')}
+                          </button>
+                        </div>
                       )}
                     </li>
                   ))}

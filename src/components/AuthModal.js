@@ -15,11 +15,31 @@ const KNOWN_ERROR_CODES = new Set([
   'INVALID_USERNAME',
   'WEAK_PASSWORD',
   'PASSWORD_MISMATCH',
+  'SAME_PASSWORD',
+  'INVALID_SECURITY_QUESTION',
+  'WEAK_SECURITY_ANSWER',
+  'INVALID_FORGOT',
   'RATE_LIMITED',
   'NETWORK_ERROR',
 ]);
 
 const USERNAME_RE = /^[A-Za-z0-9_.]{3,32}$/;
+
+const SECURITY_QUESTIONS = [
+  { id: 'favorite_color', labelKey: 'auth.securityQ.favoriteColor' },
+  { id: 'favorite_food', labelKey: 'auth.securityQ.favoriteFood' },
+  { id: 'childhood_city', labelKey: 'auth.securityQ.childhoodCity' },
+  { id: 'lucky_number', labelKey: 'auth.securityQ.luckyNumber' },
+];
+
+const LEGACY_QUESTION_LABELS = {
+  first_teacher: 'auth.securityQ.firstTeacher',
+};
+
+const questionLabelKey = (id) =>
+  SECURITY_QUESTIONS.find((q) => q.id === id)?.labelKey ||
+  LEGACY_QUESTION_LABELS[id] ||
+  'auth.securityQuestion';
 
 const errorKey = (code) => `auth.error.${KNOWN_ERROR_CODES.has(code) ? code : 'GENERIC'}`;
 
@@ -32,7 +52,16 @@ const fill = (text, params) =>
  * - Giriş yapılmışsa: kullanıcı adı, eşitleme durumu, paylaşımlar, "Şimdi eşitle", "Çıkış"
  */
 const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOpenStats }) => {
-  const { user, login, register, logout, deleteAccount } = useAuth();
+  const {
+    user,
+    login,
+    register,
+    logout,
+    deleteAccount,
+    changePassword,
+    requestForgotPassword,
+    fetchSecurityQuestion,
+  } = useAuth();
   const { notify } = useToast();
   const { confirm } = useConfirm();
   const { language } = useLanguage();
@@ -49,12 +78,20 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     }
   };
 
-  const [mode, setMode] = useState('login'); // login | register
+  const [mode, setMode] = useState('login'); // login | register | forgot | changePassword
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [securityQuestionId, setSecurityQuestionId] = useState(SECURITY_QUESTIONS[0].id);
+  const [securityAnswer, setSecurityAnswer] = useState('');
+  const [forgotQuestionId, setForgotQuestionId] = useState(null);
   const [errorCode, setErrorCode] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  const mustChange = Boolean(user?.mustChangePassword);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -63,15 +100,27 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     setBusy(false);
     setPassword('');
     setPasswordConfirm('');
+    // mustChange geçişinde mevcut şifreyi silme (login sonrası otomatik doldurulur)
+    if (!user?.mustChangePassword) {
+      setCurrentPassword('');
+      setNewPassword('');
+      setNewPasswordConfirm('');
+    }
+    setSecurityAnswer('');
+    setForgotQuestionId(null);
+    if (user?.mustChangePassword) {
+      setMode('changePassword');
+    } else if (user) {
+      setMode('login');
+    }
     shares?.refresh?.();
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') onClose?.();
+      if (e.key === 'Escape' && !user?.mustChangePassword) onClose?.();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-    // shares.refresh stabil; yalnızca açılışta çağrılmak istenir
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, onClose]);
+  }, [open, onClose, user?.mustChangePassword, user?.id]);
 
   if (!open) return null;
 
@@ -93,16 +142,107 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
       setErrorCode('PASSWORD_MISMATCH');
       return;
     }
+    if (mode === 'register') {
+      if (!securityQuestionId) {
+        setErrorCode('INVALID_SECURITY_QUESTION');
+        return;
+      }
+      if (securityAnswer.trim().length < 1) {
+        setErrorCode('WEAK_SECURITY_ANSWER');
+        return;
+      }
+    }
 
     setBusy(true);
     try {
       if (mode === 'login') {
-        await login(trimmedUsername, password);
+        const nextUser = await login(trimmedUsername, password);
         notify({ kind: 'success', text: t('notify.loggedIn', { username: trimmedUsername }) });
+        if (nextUser?.mustChangePassword) {
+          setMode('changePassword');
+          setCurrentPassword(password);
+          setPassword('');
+          return;
+        }
+        onClose?.();
       } else {
-        await register(trimmedUsername, password);
+        await register(trimmedUsername, password, securityQuestionId, securityAnswer.trim());
         notify({ kind: 'success', text: t('notify.registered', { username: trimmedUsername }) });
+        onClose?.();
       }
+    } catch (error) {
+      setErrorCode(error?.code || 'GENERIC');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleForgotLookup = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    setErrorCode(null);
+    const trimmedUsername = username.trim();
+    if (!USERNAME_RE.test(trimmedUsername)) {
+      setErrorCode('INVALID_USERNAME');
+      return;
+    }
+    setBusy(true);
+    try {
+      const qid = await fetchSecurityQuestion(trimmedUsername);
+      setForgotQuestionId(qid);
+      if (!qid) {
+        notify({ kind: 'info', text: t('auth.forgotNoQuestion') });
+      }
+    } catch (error) {
+      setErrorCode(error?.code || 'GENERIC');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    setErrorCode(null);
+    const trimmedUsername = username.trim();
+    if (!USERNAME_RE.test(trimmedUsername) || securityAnswer.trim().length < 1) {
+      setErrorCode('INVALID_FORGOT');
+      return;
+    }
+    setBusy(true);
+    try {
+      await requestForgotPassword(trimmedUsername, securityAnswer.trim());
+      notify({ kind: 'success', text: t('auth.forgotSent') });
+      setMode('login');
+      setSecurityAnswer('');
+      setForgotQuestionId(null);
+    } catch (error) {
+      setErrorCode(error?.code || 'GENERIC');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    setErrorCode(null);
+    if (newPassword.length < 8) {
+      setErrorCode('WEAK_PASSWORD');
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setErrorCode('PASSWORD_MISMATCH');
+      return;
+    }
+    setBusy(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      notify({ kind: 'success', text: t('auth.passwordChanged') });
+      setCurrentPassword('');
+      setNewPassword('');
+      setNewPasswordConfirm('');
+      setMode('login');
       onClose?.();
     } catch (error) {
       setErrorCode(error?.code || 'GENERIC');
@@ -154,9 +294,70 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     setMode(nextMode);
     setErrorCode(null);
     setPasswordConfirm('');
+    setSecurityAnswer('');
+    setForgotQuestionId(null);
+    setCurrentPassword('');
+    setNewPassword('');
+    setNewPasswordConfirm('');
   };
 
-  const content = user ? (
+  const changePasswordForm = (
+    <form className="auth-modal-body" onSubmit={handleChangePassword} noValidate>
+      {mustChange && (
+        <p className="auth-modal-hint auth-modal-hint--warn">{t('auth.mustChangePassword')}</p>
+      )}
+      <label className="auth-field">
+        <span>{t('auth.currentPassword')}</span>
+        <input
+          type="password"
+          autoComplete="current-password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          required
+        />
+      </label>
+      <label className="auth-field">
+        <span>{t('auth.newPassword')}</span>
+        <input
+          type="password"
+          autoComplete="new-password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          required
+          minLength={8}
+        />
+      </label>
+      <label className="auth-field">
+        <span>{t('auth.newPasswordConfirm')}</span>
+        <input
+          type="password"
+          autoComplete="new-password"
+          value={newPasswordConfirm}
+          onChange={(e) => setNewPasswordConfirm(e.target.value)}
+          required
+          minLength={8}
+        />
+      </label>
+      {errorCode && <p className="auth-modal-error">{t(errorKey(errorCode))}</p>}
+      <button type="submit" className="auth-btn auth-btn--primary" disabled={busy}>
+        {busy ? t('auth.processing') : t('auth.changePassword')}
+      </button>
+      {!mustChange && (
+        <button
+          type="button"
+          className="auth-btn auth-btn--secondary"
+          disabled={busy}
+          onClick={() => setMode('login')}
+        >
+          {t('auth.back')}
+        </button>
+      )}
+    </form>
+  );
+
+  const content = user && (mustChange || mode === 'changePassword') ? (
+    changePasswordForm
+  ) : user ? (
     <div className="auth-modal-body">
       <p className="auth-modal-user">
         <span className="auth-modal-label">{t('auth.loggedInAs')}</span>
@@ -382,6 +583,14 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
           📊 {t('stats.title')}
         </button>
       )}
+      <button
+        type="button"
+        className="auth-btn auth-btn--secondary auth-stats-btn"
+        onClick={() => setMode('changePassword')}
+        disabled={busy}
+      >
+        🔑 {t('auth.changePassword')}
+      </button>
       <div className="auth-modal-actions">
         <button
           type="button"
@@ -412,6 +621,67 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
         </button>
       </div>
     </div>
+  ) : mode === 'forgot' ? (
+    <>
+      <form
+        className="auth-modal-body"
+        onSubmit={forgotQuestionId ? handleForgotSubmit : handleForgotLookup}
+        noValidate
+      >
+        <p className="auth-modal-hint">{t('auth.forgotHint')}</p>
+        <label className="auth-field">
+          <span>{t('auth.username')}</span>
+          <input
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              setForgotQuestionId(null);
+            }}
+            placeholder={t('auth.usernamePlaceholder')}
+            required
+            autoFocus
+          />
+        </label>
+        {forgotQuestionId && (
+          <>
+            <p className="auth-security-question">
+              {t(questionLabelKey(forgotQuestionId))}
+            </p>
+            <label className="auth-field">
+              <span>{t('auth.securityAnswer')}</span>
+              <input
+                type="text"
+                autoComplete="off"
+                value={securityAnswer}
+                onChange={(e) => setSecurityAnswer(e.target.value)}
+                required
+                minLength={1}
+              />
+            </label>
+          </>
+        )}
+        {errorCode && <p className="auth-modal-error">{t(errorKey(errorCode))}</p>}
+        <button type="submit" className="auth-btn auth-btn--primary" disabled={busy}>
+          {busy
+            ? t('auth.processing')
+            : forgotQuestionId
+              ? t('auth.forgotSubmit')
+              : t('auth.forgotContinue')}
+        </button>
+        <button
+          type="button"
+          className="auth-link-btn"
+          onClick={() => switchMode('login')}
+          disabled={busy}
+        >
+          {t('auth.backToLogin')}
+        </button>
+      </form>
+    </>
   ) : (
     <>
       <div className="auth-tabs" role="tablist">
@@ -464,17 +734,47 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
         </label>
 
         {mode === 'register' && (
-          <label className="auth-field">
-            <span>{t('auth.passwordConfirm')}</span>
-            <input
-              type="password"
-              autoComplete="new-password"
-              value={passwordConfirm}
-              onChange={(e) => setPasswordConfirm(e.target.value)}
-              minLength={8}
-              required
-            />
-          </label>
+          <>
+            <label className="auth-field">
+              <span>{t('auth.passwordConfirm')}</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                minLength={8}
+                required
+              />
+            </label>
+            <label className="auth-field">
+              <span>{t('auth.securityQuestion')}</span>
+              <select
+                className="auth-select"
+                value={securityQuestionId}
+                onChange={(e) => setSecurityQuestionId(e.target.value)}
+                required
+              >
+                {SECURITY_QUESTIONS.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {t(q.labelKey)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="auth-field">
+              <span>{t('auth.securityAnswer')}</span>
+              <input
+                type="text"
+                autoComplete="off"
+                value={securityAnswer}
+                onChange={(e) => setSecurityAnswer(e.target.value)}
+                placeholder={t('auth.securityAnswerPlaceholder')}
+                required
+                minLength={1}
+              />
+            </label>
+            <p className="auth-modal-hint">{t('auth.securityHint')}</p>
+          </>
         )}
 
         {errorCode && <p className="auth-modal-error">{t(errorKey(errorCode))}</p>}
@@ -482,6 +782,16 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
         <button type="submit" className="auth-btn auth-btn--primary" disabled={busy}>
           {busy ? t('auth.processing') : mode === 'login' ? t('auth.login') : t('auth.register')}
         </button>
+        {mode === 'login' && (
+          <button
+            type="button"
+            className="auth-link-btn"
+            onClick={() => switchMode('forgot')}
+            disabled={busy}
+          >
+            {t('auth.forgotPassword')}
+          </button>
+        )}
       </form>
     </>
   );
@@ -490,15 +800,17 @@ const AuthModal = ({ open, onClose, syncStatus = 'idle', onSyncNow, shares, onOp
     <div
       className="auth-modal-overlay"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
+        if (e.target === e.currentTarget && !mustChange) onClose?.();
       }}
     >
       <div className="auth-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <div className="auth-modal-header">
-          <h2>{t('auth.account')}</h2>
-          <button type="button" className="auth-modal-close" onClick={onClose} title={t('auth.close')}>
-            ×
-          </button>
+          <h2>{mustChange ? t('auth.changePassword') : t('auth.account')}</h2>
+          {!mustChange && (
+            <button type="button" className="auth-modal-close" onClick={onClose} title={t('auth.close')}>
+              ×
+            </button>
+          )}
         </div>
         {content}
       </div>

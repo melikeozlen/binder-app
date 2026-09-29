@@ -27,6 +27,8 @@ const toPublicUser = (row) => ({
   active: row.active !== false,
   // İstatistik panelini görebilir mi (ADMIN_USERNAMES). Yetki kontrolü yine sunucuda yapılır.
   isAdmin: isAdminUsername(row.username),
+  mustChangePassword: row.must_change_password === true,
+  hasSecurityQuestion: Boolean(row.security_question_id && row.security_answer_hash),
 });
 
 function cookieOptions() {
@@ -77,7 +79,8 @@ function attachUser(pool) {
 
     try {
       const { rows } = await pool.query(
-        `SELECT u.id, u.username, u.created_at, u.active
+        `SELECT u.id, u.username, u.created_at, u.active,
+                u.must_change_password, u.security_question_id, u.security_answer_hash
            FROM sessions s
            JOIN users u ON u.id = s.user_id
           WHERE s.token_hash = $1 AND s.expires_at > now()`,

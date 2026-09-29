@@ -454,6 +454,13 @@
   min-width: 0;
 }
 
+.admin-stats-account-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.3rem;
+  align-items: center;
+}
+
 .admin-stats-account-name {
   font-size: 0.82rem;
   color: #333;

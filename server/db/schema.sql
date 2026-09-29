@@ -10,6 +10,11 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx ON users (lower(username));
 -- Pasif hesaplar giriş yapamaz / oturum kullanamaz
 ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT true;
+-- Güvenlik sorusu (şifre unutma doğrulaması için)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS security_question_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS security_answer_hash TEXT;
+-- Geçici şifre sonrası zorunlu değiştirme
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash  TEXT PRIMARY KEY,

@@ -117,6 +117,11 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
   useEffect(() => {
     if (loginRequest > 0) setShowAuthModal(true);
   }, [loginRequest]);
+
+  // Geçici şifre ile giriş → şifre değiştirme zorunlu
+  useEffect(() => {
+    if (user?.mustChangePassword) setShowAuthModal(true);
+  }, [user?.mustChangePassword]);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [storageUsage, setStorageUsage] = useState(0);
@@ -319,7 +324,10 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
 
       <AuthModal
         open={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+        onClose={() => {
+          if (user?.mustChangePassword) return;
+          setShowAuthModal(false);
+        }}
         syncStatus={syncStatus}
         onSyncNow={onSyncNow}
         shares={shares}

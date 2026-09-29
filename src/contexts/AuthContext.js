@@ -14,11 +14,8 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  // 'loading' → 'ready'
   const [status, setStatus] = useState('loading');
-  // Backend yoksa (örn. yalnızca statik deploy) hesap UI'si gizlenir
   const [available, setAvailable] = useState(true);
-  // Uygulamanın herhangi bir yerinden giriş penceresini açma isteği (sayaç; Footer dinler)
   const [loginRequest, setLoginRequest] = useState(0);
   const requestLogin = useCallback(() => setLoginRequest((n) => n + 1), []);
 
@@ -53,14 +50,43 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   }, []);
 
-  const register = useCallback(async (username, password) => {
+  const register = useCallback(async (username, password, securityQuestionId, securityAnswer) => {
     const data = await api('/api/auth/register', {
       method: 'POST',
-      body: { username, password, clientId: getClientId() },
+      body: {
+        username,
+        password,
+        securityQuestionId,
+        securityAnswer,
+        clientId: getClientId(),
+      },
     });
     setUser(data.user);
     setAvailable(true);
     return data.user;
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
+    const data = await api('/api/auth/change-password', {
+      method: 'POST',
+      body: { currentPassword, newPassword },
+    });
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const requestForgotPassword = useCallback(async (username, securityAnswer) => {
+    await api('/api/auth/forgot-password', {
+      method: 'POST',
+      body: { username, securityAnswer, clientId: getClientId() },
+    });
+  }, []);
+
+  const fetchSecurityQuestion = useCallback(async (username) => {
+    const data = await api(
+      `/api/auth/security-question?username=${encodeURIComponent(username)}`
+    );
+    return data?.questionId || null;
   }, []);
 
   const logout = useCallback(async () => {
@@ -83,12 +109,28 @@ export const AuthProvider = ({ children }) => {
       available,
       login,
       register,
+      changePassword,
+      requestForgotPassword,
+      fetchSecurityQuestion,
       logout,
       deleteAccount,
       loginRequest,
       requestLogin,
     }),
-    [user, status, available, login, register, logout, deleteAccount, loginRequest, requestLogin]
+    [
+      user,
+      status,
+      available,
+      login,
+      register,
+      changePassword,
+      requestForgotPassword,
+      fetchSecurityQuestion,
+      logout,
+      deleteAccount,
+      loginRequest,
+      requestLogin,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
