@@ -1095,7 +1095,7 @@ const Page = ({
     const style = getComputedStyle(wrapper);
     const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
     const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    // Sleeve halkası ceptaki dikiş/slack boşluğuna taşar; resmi küçültme
+    // Sleeve halkası dikişten 1px içeride kalır; padding sleeve kalınlığını da kapsar
     const wrapperWidth = Math.max(0, wrapper.clientWidth - padX);
     const wrapperHeight = Math.max(0, wrapper.clientHeight - padY);
 

@@ -96,12 +96,19 @@
   .settings-bar-primary .cloud-save-now-btn {
     flex-shrink: 0;
     min-height: 28px;
-    padding: 0.18rem 0.4rem;
-    font-size: 0.65rem;
+    min-width: 28px;
+    width: 28px;
+    padding: 0.18rem;
+    font-size: 0.75rem;
   }
 
-  .settings-bar-primary .cloud-save-now-btn .cloud-save-now-label {
-    display: none;
+  .settings-bar-primary .cloud-discard-btn {
+    flex-shrink: 0;
+    min-height: 28px;
+    min-width: 28px;
+    width: 28px;
+    padding: 0.18rem;
+    font-size: 0.75rem;
   }
 
   .settings-bar-primary .cloud-save-now-btn--dirty {
@@ -338,6 +345,9 @@
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .ratio-btn:hover {
@@ -2076,9 +2086,42 @@
 }
 
 /* Buluta kaydet butonu (üst çubuk): kaydedilmemiş değişiklik varsa dikkat çekici */
+.cloud-save-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
 .cloud-save-now-btn {
   white-space: nowrap;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cloud-save-now-btn--icon,
+.cloud-discard-btn--icon {
+  min-width: 32px;
+  width: 32px;
+  padding-left: 0;
+  padding-right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.cloud-discard-btn {
+  white-space: nowrap;
+  background-color: #fff;
+  border-color: #d0d0d0;
+  color: #555;
+}
+
+.cloud-discard-btn:hover {
+  background-color: #f5f5f5;
+  border-color: #bbb;
+  color: #333;
 }
 
 .cloud-save-now-btn--dirty {
@@ -2108,15 +2151,11 @@
 }
 
 @media (max-width: 768px) {
-  .cloud-save-now-btn {
+  .cloud-save-now-btn--icon,
+  .cloud-discard-btn--icon {
+    min-width: 28px;
+    width: 28px;
     min-height: 28px;
-    padding: 0.22rem 0.4rem;
-  }
-}
-
-/* Çok dar ekranda yalnızca simge */
-@media (max-width: 420px) {
-  .cloud-save-now-btn .cloud-save-now-label {
-    display: none;
+    font-size: 0.85rem;
   }
 }

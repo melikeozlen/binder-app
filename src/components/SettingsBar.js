@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { HexColorPicker } from 'react-colorful';
+import { Undo2 } from 'lucide-react';
 import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
@@ -83,7 +84,8 @@ const SettingsBar = ({
   readOnly = false,
   // null → gizli; 'dirty' → kaydedilmemiş değişiklik (aktif); 'saving' | 'saved' → pasif
   cloudSaveState = null,
-  onCloudSaveNow
+  onCloudSaveNow,
+  onCloudDiscard,
 }) => {
   const binderImportInputRef = useRef(null);
   const { language } = useLanguage();
@@ -104,6 +106,7 @@ const SettingsBar = ({
   const widthDownIntervalRef = useRef(null);
   const heightUpIntervalRef = useRef(null);
   const heightDownIntervalRef = useRef(null);
+  const ratioHoldDelayRef = useRef(null);
   const widthRatioRef = useRef(widthRatio);
   const heightRatioRef = useRef(heightRatio);
   const [showBackImageUrlInput, setShowBackImageUrlInput] = useState(false);
@@ -174,15 +177,111 @@ const SettingsBar = ({
   }, [heightRatio]);
 
 
-  // Interval'ları temizle
-  useEffect(() => {
-    return () => {
-      if (widthUpIntervalRef.current) clearInterval(widthUpIntervalRef.current);
-      if (widthDownIntervalRef.current) clearInterval(widthDownIntervalRef.current);
-      if (heightUpIntervalRef.current) clearInterval(heightUpIntervalRef.current);
-      if (heightDownIntervalRef.current) clearInterval(heightDownIntervalRef.current);
-    };
+  // Basılı tutma: pointer (mouse+touch tek yol) + pencere düzeyinde bırakma
+  const stopAllRatioRepeats = useCallback(() => {
+    if (widthUpIntervalRef.current) {
+      clearInterval(widthUpIntervalRef.current);
+      widthUpIntervalRef.current = null;
+    }
+    if (widthDownIntervalRef.current) {
+      clearInterval(widthDownIntervalRef.current);
+      widthDownIntervalRef.current = null;
+    }
+    if (heightUpIntervalRef.current) {
+      clearInterval(heightUpIntervalRef.current);
+      heightUpIntervalRef.current = null;
+    }
+    if (heightDownIntervalRef.current) {
+      clearInterval(heightDownIntervalRef.current);
+      heightDownIntervalRef.current = null;
+    }
+    if (ratioHoldDelayRef.current) {
+      clearTimeout(ratioHoldDelayRef.current);
+      ratioHoldDelayRef.current = null;
+    }
   }, []);
+
+  useEffect(() => {
+    const stop = () => stopAllRatioRepeats();
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+    window.addEventListener('blur', stop);
+    return () => {
+      stop();
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+      window.removeEventListener('blur', stop);
+    };
+  }, [stopAllRatioRepeats]);
+
+  const bumpWidth = useCallback(
+    (delta) => {
+      const current = parseFloat(widthRatioRef.current);
+      const base = Number.isFinite(current) ? current : 1.9;
+      const next = Math.max(0.5, Math.min(5, parseFloat((base + delta).toFixed(2))));
+      onWidthRatioChange(next);
+    },
+    [onWidthRatioChange]
+  );
+
+  const bumpHeight = useCallback(
+    (delta) => {
+      const current = parseFloat(heightRatioRef.current);
+      const base = Number.isFinite(current) ? current : 1;
+      const next = Math.max(0.5, Math.min(5, parseFloat((base + delta).toFixed(2))));
+      onHeightRatioChange(next);
+    },
+    [onHeightRatioChange]
+  );
+
+  const startRatioRepeat = useCallback(
+    (axis, delta) => {
+      stopAllRatioRepeats();
+      if (axis === 'width') bumpWidth(delta);
+      else bumpHeight(delta);
+
+      // Kısa basışta tek adım; basılı tutunca tekrarla
+      ratioHoldDelayRef.current = setTimeout(() => {
+        ratioHoldDelayRef.current = null;
+        const tick = () => {
+          if (axis === 'width') bumpWidth(delta);
+          else bumpHeight(delta);
+        };
+        const id = setInterval(tick, 60);
+        if (axis === 'width') {
+          if (delta > 0) widthUpIntervalRef.current = id;
+          else widthDownIntervalRef.current = id;
+        } else if (delta > 0) {
+          heightUpIntervalRef.current = id;
+        } else {
+          heightDownIntervalRef.current = id;
+        }
+      }, 280);
+    },
+    [stopAllRatioRepeats, bumpWidth, bumpHeight]
+  );
+
+  const onRatioPointerDown = (axis, delta) => (e) => {
+    if (e.button != null && e.button !== 0) return;
+    e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    } catch {
+      // ignore
+    }
+    startRatioRepeat(axis, delta);
+  };
+
+  const onRatioPointerStop = (e) => {
+    try {
+      if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // ignore
+    }
+    stopAllRatioRepeats();
+  };
 
   // Default gallery'yi yükle
   useEffect(() => {
@@ -192,91 +291,6 @@ const SettingsBar = ({
     };
     loadGallery();
   }, []);
-
-  // Basılı tutma için yardımcı fonksiyonlar
-  const startWidthIncrease = () => {
-    // İlk tıklamada hemen çalış
-    const current = parseFloat(widthRatioRef.current) || 1.9;
-    const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
-    onWidthRatioChange(newValue);
-    
-    // Sonra hızlı tekrarla
-    widthUpIntervalRef.current = setInterval(() => {
-      const current = parseFloat(widthRatioRef.current) || 1.9;
-      const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
-      onWidthRatioChange(newValue);
-    }, 50); // 50ms = çok hızlı
-  };
-
-  const stopWidthIncrease = () => {
-    if (widthUpIntervalRef.current) {
-      clearInterval(widthUpIntervalRef.current);
-      widthUpIntervalRef.current = null;
-    }
-  };
-
-  const startWidthDecrease = () => {
-    // İlk tıklamada hemen çalış
-    const current = parseFloat(widthRatioRef.current) || 1.9;
-    const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
-    onWidthRatioChange(newValue);
-    
-    // Sonra hızlı tekrarla
-    widthDownIntervalRef.current = setInterval(() => {
-      const current = parseFloat(widthRatioRef.current) || 1.9;
-      const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
-      onWidthRatioChange(newValue);
-    }, 50); // 50ms = çok hızlı
-  };
-
-  const stopWidthDecrease = () => {
-    if (widthDownIntervalRef.current) {
-      clearInterval(widthDownIntervalRef.current);
-      widthDownIntervalRef.current = null;
-    }
-  };
-
-  const startHeightIncrease = () => {
-    // İlk tıklamada hemen çalış
-    const current = parseFloat(heightRatioRef.current) || 1;
-    const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
-    onHeightRatioChange(newValue);
-    
-    // Sonra hızlı tekrarla
-    heightUpIntervalRef.current = setInterval(() => {
-      const current = parseFloat(heightRatioRef.current) || 1;
-      const newValue = Math.min(5, parseFloat((current + 0.01).toFixed(2)));
-      onHeightRatioChange(newValue);
-    }, 50); // 50ms = çok hızlı
-  };
-
-  const stopHeightIncrease = () => {
-    if (heightUpIntervalRef.current) {
-      clearInterval(heightUpIntervalRef.current);
-      heightUpIntervalRef.current = null;
-    }
-  };
-
-  const startHeightDecrease = () => {
-    // İlk tıklamada hemen çalış
-    const current = parseFloat(heightRatioRef.current) || 1;
-    const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
-    onHeightRatioChange(newValue);
-    
-    // Sonra hızlı tekrarla
-    heightDownIntervalRef.current = setInterval(() => {
-      const current = parseFloat(heightRatioRef.current) || 1;
-      const newValue = Math.max(0.5, parseFloat((current - 0.01).toFixed(2)));
-      onHeightRatioChange(newValue);
-    }, 50); // 50ms = çok hızlı
-  };
-
-  const stopHeightDecrease = () => {
-    if (heightDownIntervalRef.current) {
-      clearInterval(heightDownIntervalRef.current);
-      heightDownIntervalRef.current = null;
-    }
-  };
 
   const closeGallerySettingsModal = () => {
     setShowGallerySettingsModal(false);
@@ -843,12 +857,12 @@ const SettingsBar = ({
         {showBinderMenu && !isMobileLayout && renderBinderMenu()}
       </div>
 
-      {/* Buluta kaydet: kaydedilmemiş değişiklik varsa aktif */}
+      {/* Buluta kaydet / iptal: kaydedilmemiş değişiklik varsa */}
       {cloudSaveState && (
-        <div className="setting-item">
+        <div className="setting-item cloud-save-actions">
           <button
             type="button"
-            className={`settings-control action-button cloud-save-now-btn cloud-save-now-btn--${cloudSaveState}`}
+            className={`settings-control action-button cloud-save-now-btn cloud-save-now-btn--icon cloud-save-now-btn--${cloudSaveState}`}
             disabled={cloudSaveState !== 'dirty'}
             onClick={() => onCloudSaveNow && onCloudSaveNow()}
             title={
@@ -858,17 +872,38 @@ const SettingsBar = ({
                   ? t('binder.saving')
                   : t('binder.allSaved')
             }
-            aria-live="polite"
-          >
-            {cloudSaveState === 'dirty' ? '💾 ' : cloudSaveState === 'saving' ? '⟳ ' : '✓ '}
-            <span className="cloud-save-now-label">
-              {cloudSaveState === 'dirty'
+            aria-label={
+              cloudSaveState === 'dirty'
                 ? t('binder.saveNow')
                 : cloudSaveState === 'saving'
                   ? t('binder.saving')
-                  : t('binder.saved')}
-            </span>
+                  : t('binder.saved')
+            }
+            aria-live="polite"
+          >
+            {cloudSaveState === 'dirty' ? '💾' : cloudSaveState === 'saving' ? '⟳' : '✓'}
           </button>
+          {cloudSaveState === 'dirty' && (
+            <button
+              type="button"
+              className="settings-control action-button cloud-discard-btn cloud-discard-btn--icon"
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t('dialog.title.discardChanges'),
+                  message: t('binder.discardConfirm'),
+                  confirmLabel: t('binder.discard'),
+                  cancelLabel: t('dialog.cancel'),
+                  danger: true,
+                });
+                if (!ok) return;
+                onCloudDiscard?.();
+              }}
+              title={t('binder.discardHelp')}
+              aria-label={t('binder.cancel')}
+            >
+              <Undo2 size={15} strokeWidth={2.25} aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
 
@@ -965,17 +1000,9 @@ const SettingsBar = ({
             <button
               type="button"
               className="ratio-btn ratio-btn-up"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                startWidthIncrease();
-              }}
-              onMouseUp={stopWidthIncrease}
-              onMouseLeave={stopWidthIncrease}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                startWidthIncrease();
-              }}
-              onTouchEnd={stopWidthIncrease}
+              onPointerDown={onRatioPointerDown('width', 0.01)}
+              onPointerUp={onRatioPointerStop}
+              onPointerCancel={onRatioPointerStop}
               title={t('settings.wider')}
               aria-label={t('settings.wider')}
             >
@@ -984,17 +1011,9 @@ const SettingsBar = ({
             <button
               type="button"
               className="ratio-btn ratio-btn-down"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                startWidthDecrease();
-              }}
-              onMouseUp={stopWidthDecrease}
-              onMouseLeave={stopWidthDecrease}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                startWidthDecrease();
-              }}
-              onTouchEnd={stopWidthDecrease}
+              onPointerDown={onRatioPointerDown('width', -0.01)}
+              onPointerUp={onRatioPointerStop}
+              onPointerCancel={onRatioPointerStop}
               title={t('settings.narrower')}
               aria-label={t('settings.narrower')}
             >
@@ -1051,17 +1070,9 @@ const SettingsBar = ({
             <button
               type="button"
               className="ratio-btn ratio-btn-up"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                startHeightIncrease();
-              }}
-              onMouseUp={stopHeightIncrease}
-              onMouseLeave={stopHeightIncrease}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                startHeightIncrease();
-              }}
-              onTouchEnd={stopHeightIncrease}
+              onPointerDown={onRatioPointerDown('height', 0.01)}
+              onPointerUp={onRatioPointerStop}
+              onPointerCancel={onRatioPointerStop}
               title={t('settings.taller')}
               aria-label={t('settings.taller')}
             >
@@ -1070,17 +1081,9 @@ const SettingsBar = ({
             <button
               type="button"
               className="ratio-btn ratio-btn-down"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                startHeightDecrease();
-              }}
-              onMouseUp={stopHeightDecrease}
-              onMouseLeave={stopHeightDecrease}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                startHeightDecrease();
-              }}
-              onTouchEnd={stopHeightDecrease}
+              onPointerDown={onRatioPointerDown('height', -0.01)}
+              onPointerUp={onRatioPointerStop}
+              onPointerCancel={onRatioPointerStop}
               title={t('settings.shorter')}
               aria-label={t('settings.shorter')}
             >

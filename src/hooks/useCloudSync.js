@@ -4,6 +4,7 @@ import {
   deleteCloudBinder,
   isCloudBinder,
   isViewOnlyBinder,
+  pullBinder,
   pushBinder,
   reconcile,
   removeCloudMeta,
@@ -297,6 +298,37 @@ export function useCloudSync({
 
   const syncNow = useCallback(() => runReconcile(true), [runReconcile]);
 
+  // "İptal": son kaydedilmiş bulut sürümünü çek, yerel kirli değişiklikleri geri al
+  const discardChanges = useCallback(
+    () =>
+      run('discard', async () => {
+        const binderId = selectedRef.current;
+        const currentUser = userRef.current;
+        if (!currentUser || !binderId) return null;
+        if (!isCloudBinder(binderId, currentUser.id)) return null;
+
+        const info = await pullBinder(binderId, currentUser.id);
+        setDirty(false);
+        setBinders((prev) =>
+          prev.map((b) =>
+            b.id === binderId
+              ? {
+                  ...b,
+                  name: info.name || b.name,
+                  createdAt: info.createdAt || b.createdAt,
+                  shared: info.shared,
+                  ownerUsername: info.ownerUsername,
+                  role: info.role,
+                }
+              : b
+          )
+        );
+        onPulledRef.current?.(binderId, { discarded: true });
+        return info;
+      }),
+    [run, setBinders]
+  );
+
   return useMemo(
     () => ({
       status,
@@ -306,10 +338,23 @@ export function useCloudSync({
       dirty,
       markDirty,
       pushNow,
+      discardChanges,
       deleteBinder,
       saveBinder,
       syncNow,
     }),
-    [status, lastError, cloudBinderIds, savingBinderIds, dirty, markDirty, pushNow, deleteBinder, saveBinder, syncNow]
+    [
+      status,
+      lastError,
+      cloudBinderIds,
+      savingBinderIds,
+      dirty,
+      markDirty,
+      pushNow,
+      discardChanges,
+      deleteBinder,
+      saveBinder,
+      syncNow,
+    ]
   );
 }

@@ -1534,11 +1534,17 @@ function App() {
   }, [authUser, pendingCloudSaveId, saveBinderToCloudWithNotice]);
 
   // "Kaydet" (üst çubuk): hemen push + sonuç bildirimi
-  const { pushNow: cloudPushNow } = cloudSync;
+  const { pushNow: cloudPushNow, discardChanges: cloudDiscardChanges } = cloudSync;
   const handleCloudSaveNow = async () => {
     const result = await cloudPushNow();
     if (result) notify({ kind: 'success', text: t('notify.saved') });
     else notify({ kind: 'error', text: t('notify.saveFailed') });
+  };
+
+  const handleCloudDiscard = async () => {
+    const result = await cloudDiscardChanges();
+    if (result) notify({ kind: 'info', text: t('notify.changesDiscarded') });
+    else notify({ kind: 'error', text: t('notify.discardFailed') });
   };
 
   // Eşitleme hatası → tek bildirim (aynı hata tekrar bildirilmez)
@@ -2368,6 +2374,7 @@ function App() {
         readOnly={readOnly}
         cloudSaveState={cloudSaveState}
         onCloudSaveNow={handleCloudSaveNow}
+        onCloudDiscard={handleCloudDiscard}
         binders={binders}
         selectedBinderId={selectedBinderId}
         onSelectBinder={handleSelectBinder}
