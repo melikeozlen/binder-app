@@ -30,10 +30,11 @@ const isTouchMobile = () => {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return false;
   }
-  return (
-    window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
-    window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches
-  );
+  const mq = (query) => window.matchMedia(query).matches;
+  if (mq('(pointer: coarse)') || mq('(any-pointer: coarse)')) return true;
+  const touchPoints = typeof navigator !== 'undefined' ? navigator.maxTouchPoints || 0 : 0;
+  if (touchPoints > 1 && (mq('(hover: none)') || mq('(any-hover: none)'))) return true;
+  return false;
 };
 
 const MobileGestureGuide = () => {

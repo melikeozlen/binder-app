@@ -28,13 +28,19 @@ const DEFAULT_SLEEVE_COLOR = '#A8CCE8';
 const IMAGE_TOUCH_ACTION_DELAY_MS = 420;
 const IMAGE_TOUCH_SCROLL_CANCEL_PX = 12;
 const IMAGE_MOUSE_DRAG_START_PX = 5;
-const IMAGE_TOUCH_DOUBLE_TAP_MS = 400;
+const IMAGE_TOUCH_DOUBLE_TAP_MS = 500;
 
 const prefersTouchCellActions = () => {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return false;
   }
-  return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const mq = (query) => window.matchMedia(query).matches;
+  // Birincil coarse (telefon) veya herhangi bir coarse (parmaklı tablet + trackpad)
+  if (mq('(pointer: coarse)') || mq('(any-pointer: coarse)')) return true;
+  // Bazı büyük tablet / iPad masaüstü modu: fine pointer ama çoklu dokunma
+  const touchPoints = typeof navigator !== 'undefined' ? navigator.maxTouchPoints || 0 : 0;
+  if (touchPoints > 1 && (mq('(hover: none)') || mq('(any-hover: none)'))) return true;
+  return false;
 };
 
 const Page = ({
@@ -88,6 +94,7 @@ const Page = ({
   const colorPickerActiveRef = useRef(false);
   const suppressCellClickRef = useRef(false);
   const lastCellTapRef = useRef(null); // { side, row, col, time } — çift dokunuş
+  const lastPointerWasTouchImageRef = useRef(false);
   const touchDragRef = useRef({
     cell: null,
     startX: 0,
@@ -315,11 +322,21 @@ const Page = ({
       resetPointerDrag();
     };
 
+    const blockNativeImageMenu = (e) => {
+      const ts = touchDragRef.current;
+      // Uzun basış / sürükleme sırasında tarayıcı “görseli kaydet” menüsünü engelle
+      if (ts.inputType === 'touch' && (ts.longPressTimer || ts.dragging || ts.cell)) {
+        e.preventDefault();
+      }
+    };
+
     document.addEventListener('touchmove', onTouchMove, { passive: false });
     document.addEventListener('touchend', onTouchEnd);
     document.addEventListener('touchcancel', onTouchEnd);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('contextmenu', blockNativeImageMenu, { capture: true });
+    document.addEventListener('selectstart', blockNativeImageMenu, { capture: true });
 
     return () => {
       document.removeEventListener('touchmove', onTouchMove);
@@ -327,6 +344,8 @@ const Page = ({
       document.removeEventListener('touchcancel', onTouchEnd);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('contextmenu', blockNativeImageMenu, { capture: true });
+      document.removeEventListener('selectstart', blockNativeImageMenu, { capture: true });
     };
   }, [beginPointerDrag, resetPointerDrag, updateDragTargetAtPoint]);
 
@@ -1207,11 +1226,15 @@ const Page = ({
     if (e.target.closest('.cell-control-btn, .cell-sleeve-picker, .cell-action-sheet')) return;
 
     const hasImage = options.hasImage === true;
-    const touchActions = inputType === 'touch' && prefersTouchCellActions();
+    // Media query kaçsa bile: gerçek dokunuş + görsel → mobil jest yolu
+    const touchActions =
+      inputType === 'touch' && (hasImage || prefersTouchCellActions());
+    lastPointerWasTouchImageRef.current = inputType === 'touch' && hasImage;
 
     if (inputType === 'touch') {
       if (e.touches.length !== 1) return;
     } else if (e.button !== 0) {
+      lastPointerWasTouchImageRef.current = false;
       return;
     }
 
@@ -1235,7 +1258,7 @@ const Page = ({
 
     if (inputType !== 'touch') return;
 
-    // Mobil: uzun basış → PC taşı; sürükleme → sayfa swipe (Binder);
+    // Mobil/tablet: uzun basış → PC taşı; sürükleme → sayfa swipe;
     // çift dokunuş → menü (onClick)
     if (touchActions && hasImage) {
       ts.touchActions = true;
@@ -1871,7 +1894,7 @@ const Page = ({
             suppressCellClickRef.current = false;
             return;
           }
-          if (isImage && prefersTouchCellActions()) {
+          if (isImage && (prefersTouchCellActions() || lastPointerWasTouchImageRef.current)) {
             handleTouchImageTap({
               side: 'front',
               row,
@@ -1887,7 +1910,7 @@ const Page = ({
           handleCellClick(row, col);
         }}
         onContextMenu={(e) => {
-          if (prefersTouchCellActions() && isImage) e.preventDefault();
+          if (isImage) e.preventDefault();
         }}
         onMouseDown={handleCellPointerDown('front', row, col, isImage, 'mouse', {
           hasImage: isImage,
@@ -2062,7 +2085,7 @@ const Page = ({
             suppressCellClickRef.current = false;
             return;
           }
-          if (isImage && prefersTouchCellActions()) {
+          if (isImage && (prefersTouchCellActions() || lastPointerWasTouchImageRef.current)) {
             handleTouchImageTap({
               side: 'back',
               row,
@@ -2078,7 +2101,7 @@ const Page = ({
           handleBackCellClick(row, col);
         }}
         onContextMenu={(e) => {
-          if (prefersTouchCellActions() && isImage) e.preventDefault();
+          if (isImage) e.preventDefault();
         }}
         onMouseDown={handleCellPointerDown('back', row, col, canDragBack, 'mouse', {
           hasImage: isImage,

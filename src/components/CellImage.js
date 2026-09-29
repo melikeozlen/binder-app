@@ -63,6 +63,7 @@ const CellImage = memo(function CellImage({
       title={failed ? undefined : alt || undefined}
       aria-busy={!loaded && !failed}
       aria-label={alt || undefined}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {!loaded && !failed && (
         <div className="cell-image-placeholder" aria-hidden="true">
@@ -81,6 +82,7 @@ const CellImage = memo(function CellImage({
           draggable={false}
           decoding="async"
           loading="lazy"
+          onContextMenu={(e) => e.preventDefault()}
           className={[
             'cell-image',
             extraImgClass,

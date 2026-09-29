@@ -580,6 +580,9 @@
   container-name: pocket;
   --sleeve-width: clamp(2.5px, 3.6cqw, 8px);
   --pocket-stitch-width: clamp(1px, 1.4cqw, 3px);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /*
@@ -777,6 +780,9 @@
   z-index: 1;
   border: none;
   border-radius: clamp(3px, 0.9vw, 8px);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .cell-image-wrapper--loading {
@@ -908,6 +914,12 @@ body.cell-drag-active .grid-cell.cell-draggable {
   touch-action: none;
 }
 
+body.cell-drag-active {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
 .grid-cell.cell-dragging {
   opacity: 0.45;
   pointer-events: none;
@@ -937,6 +949,8 @@ body.cell-drag-active .grid-cell.cell-draggable {
   position: relative;
   border-radius: inherit;
   -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
   user-select: none;
   /* Resimler sayfanın z-index'ini miras almalı - üstteki sayfanın resimleri görünmeli */
   z-index: inherit;
@@ -1071,8 +1085,8 @@ body.cell-drag-active .grid-cell.cell-draggable {
   color: #007bff;
 }
 
-/* Dokunmatik: küçük hover butonlarını gizle — uzun basış menüsü kullanılır */
-@media (hover: none) and (pointer: coarse) {
+/* Dokunmatik: küçük hover butonlarını gizle — çift dokunuş / uzun basış kullanılır */
+@media (pointer: coarse), (any-pointer: coarse) {
   .grid-cell:hover .cell-image-controls,
   .cell-image-controls {
     opacity: 0 !important;
