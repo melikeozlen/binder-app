@@ -68,6 +68,7 @@ const AdminStatsModal = ({ open, onClose }) => {
   const [copiedId, setCopiedId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [accountBusyId, setAccountBusyId] = useState(null);
+  const [showInactiveAccounts, setShowInactiveAccounts] = useState(false);
   const [tempPasswordResult, setTempPasswordResult] = useState(null);
   const [tempPasswordCopied, setTempPasswordCopied] = useState(false);
   const [updatedAt, setUpdatedAt] = useState(null);
@@ -143,10 +144,11 @@ const AdminStatsModal = ({ open, onClose }) => {
 
   const filteredAccounts = useMemo(
     () =>
-      accounts.filter((row) =>
-        matchesQuery(`${row.username || ''} ${row.active ? 'active' : 'passive'}`, q)
-      ),
-    [accounts, q]
+      accounts.filter((row) => {
+        if (!showInactiveAccounts && row.active === false) return false;
+        return matchesQuery(`${row.username || ''} ${row.active ? 'active' : 'passive'}`, q);
+      }),
+    [accounts, q, showInactiveAccounts]
   );
 
   const filteredFeedback = useMemo(
@@ -359,6 +361,16 @@ const AdminStatsModal = ({ open, onClose }) => {
               placeholder={t('stats.searchPlaceholder')}
               aria-label={t('stats.searchPlaceholder')}
             />
+            {tab === 'accounts' && (
+              <label className="admin-stats-filter-check">
+                <input
+                  type="checkbox"
+                  checked={showInactiveAccounts}
+                  onChange={(e) => setShowInactiveAccounts(e.target.checked)}
+                />
+                <span>{t('stats.showInactiveAccounts')}</span>
+              </label>
+            )}
           </div>
         )}
 
