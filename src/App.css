@@ -128,41 +128,42 @@
 .App.footer-hidden:not(.fullscreen-mode) .footer-reopen {
   display: inline-flex;
   position: fixed;
-  bottom: calc(8px + var(--safe-bottom, 0px));
-  left: calc(8px + var(--safe-left, 0px));
+  bottom: calc(10px + var(--safe-bottom, 0px));
+  left: calc(10px + var(--safe-left, 0px));
   right: auto;
   transform: none;
   z-index: 10025;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
   padding: 0;
   align-items: center;
   justify-content: center;
-  border: none;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  color: #2563eb;
+  background: rgba(255, 255, 255, 0.88);
+  color: #555;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   line-height: 1;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: color 0.15s, background-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
 }
 
 .App.footer-hidden:not(.fullscreen-mode) .footer-reopen::before {
   content: '';
   position: absolute;
-  inset: -6px;
+  inset: -8px;
 }
 
 .App.footer-hidden:not(.fullscreen-mode) .footer-reopen:hover,
 .App.footer-hidden:not(.fullscreen-mode) .footer-reopen:focus-visible {
   background: #fff;
-  color: #1d4ed8;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
-  transform: scale(1.05);
+  color: #222;
+  border-color: rgba(0, 0, 0, 0.18);
+  box-shadow: none;
+  transform: none;
 }
 
 .App.fullscreen-mode .app-footer,
@@ -301,12 +302,10 @@ body {
 
   .App.footer-hidden > .page-order-bar {
     padding-bottom: max(0.35rem, var(--safe-bottom));
-    /* Sol köşedeki footer-aç butonu için yer */
-    padding-left: calc(36px + var(--safe-left, 0px));
   }
 
   .App.footer-hidden:not(.fullscreen-mode) .footer-reopen {
-    bottom: calc(6px + var(--safe-bottom, 0px));
+    bottom: calc(8px + var(--safe-bottom, 0px) + var(--app-chrome-max-page-order, 44px));
     left: calc(8px + var(--safe-left, 0px));
   }
 
@@ -369,6 +368,27 @@ body {
 
   .App > .page-order-bar.is-mobile-expanded {
     max-height: 88px;
+  }
+
+  .App.footer-hidden:not(.fullscreen-mode) .footer-reopen {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: rgba(0, 0, 0, 0.45);
+    box-shadow: none;
+  }
+
+  .App.footer-hidden:not(.fullscreen-mode) .footer-reopen:hover,
+  .App.footer-hidden:not(.fullscreen-mode) .footer-reopen:focus-visible {
+    background: transparent;
+    color: rgba(0, 0, 0, 0.65);
+    border-color: transparent;
+  }
+
+  .App.fullscreen-mode .settings-fullscreen-hide-item {
+    margin-right: 14px;
   }
 }
 

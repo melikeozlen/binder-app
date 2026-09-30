@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { HexColorPicker } from 'react-colorful';
-import { Undo2, X, Plus, Minus, Scaling } from 'lucide-react';
+import { Undo2, X, Plus, Minus, Scaling, ChevronDown, ChevronUp } from 'lucide-react';
 import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
@@ -945,13 +945,15 @@ const SettingsBar = ({
       {pagesCount > 0 && isMobileLayout && (
         <div className="setting-item settings-add-page-mobile">
           <button
-            className="settings-control action-button settings-add-page-btn"
+            type="button"
+            className="settings-control action-button settings-add-page-btn settings-add-page-btn--compact"
             data-tour="add-page"
             onClick={() => onAddPage()}
             disabled={!gridSize || readOnly}
             title={t('settings.addPageHelp')}
+            aria-label={t('settings.addPage')}
           >
-            {t('settings.addPage')}
+            {t('settings.addPageShort')}
           </button>
         </div>
       )}
@@ -963,8 +965,13 @@ const SettingsBar = ({
           onClick={() => setMobileSettingsExpanded((v) => !v)}
           title={mobileSettingsExpanded ? t('settings.showLess') : t('settings.moreSettings')}
           aria-expanded={mobileSettingsExpanded}
+          aria-label={mobileSettingsExpanded ? t('settings.showLess') : t('settings.moreSettings')}
         >
-          {mobileSettingsExpanded ? '▲' : '▼'}
+          {mobileSettingsExpanded ? (
+            <ChevronUp size={15} strokeWidth={2.5} aria-hidden="true" />
+          ) : (
+            <ChevronDown size={15} strokeWidth={2.5} aria-hidden="true" />
+          )}
         </button>
       </div>
 

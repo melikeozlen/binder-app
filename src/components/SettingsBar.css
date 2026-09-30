@@ -67,7 +67,16 @@
     flex-wrap: nowrap;
     gap: 0;
     padding: 0.2rem 0.35rem;
+    padding-right: 0.55rem;
     overflow-x: hidden;
+  }
+
+  .App.fullscreen-mode .settings-bar {
+    padding-right: 0.65rem;
+  }
+
+  .App.fullscreen-mode .settings-fullscreen-hide-item {
+    margin-right: 12px;
   }
 
   .settings-bar:has(.size-menu) {
@@ -90,33 +99,66 @@
   .settings-bar-primary {
     flex-wrap: nowrap;
     justify-content: flex-start;
-    gap: 0.2rem;
+    align-items: center;
+    gap: 0.28rem;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    min-height: 36px;
   }
 
   .settings-bar-primary::-webkit-scrollbar {
     display: none;
   }
 
-  .settings-bar-primary .cloud-save-now-btn {
+  /* Ortak mobil toolbar ölçüleri — orantılı kare kontroller */
+  .settings-bar-primary .fullscreen-toggle-btn-left,
+  .settings-bar-primary .binder-menu-btn,
+  .settings-bar-primary .cloud-save-now-btn,
+  .settings-bar-primary .cloud-discard-btn,
+  .settings-bar-primary .settings-mobile-toggle-btn {
+    box-sizing: border-box;
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     flex-shrink: 0;
-    min-height: 28px;
-    min-width: 28px;
-    width: 28px;
-    padding: 0.18rem;
-    font-size: 0.75rem;
+    line-height: 1 !important;
+    font-size: 0.85rem !important;
   }
 
-  .settings-bar-primary .cloud-discard-btn {
+  .settings-bar-primary .settings-add-page-btn--compact {
+    box-sizing: border-box;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 0.55rem !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     flex-shrink: 0;
-    min-height: 28px;
-    min-width: 28px;
-    width: 28px;
-    padding: 0.18rem;
-    font-size: 0.75rem;
+    white-space: nowrap;
+    font-size: 0.68rem !important;
+    font-weight: 600;
+    line-height: 1 !important;
+    background-color: #333 !important;
+    border-color: #333 !important;
+    color: #fff !important;
+  }
+
+  .settings-bar-primary .settings-add-page-btn--compact:hover:not(:disabled) {
+    background-color: #555 !important;
+    border-color: #555 !important;
   }
 
   .settings-bar-primary .cloud-save-now-btn--dirty {
@@ -127,7 +169,7 @@
   .settings-bar-primary .binder-selector {
     flex: 0 1 auto;
     min-width: 0;
-    max-width: min(36vw, 108px);
+    max-width: min(42vw, 140px);
   }
 
   .settings-bar-primary .binder-selector > .setting-label {
@@ -135,38 +177,39 @@
   }
 
   .settings-bar-primary .binder-selector-wrapper {
-    width: auto;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
+    height: 32px;
   }
 
   .settings-bar-primary .binder-select {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     width: auto;
     min-width: 0;
-    max-width: min(30vw, 88px);
-    font-size: 0.6rem;
-    padding: 0.15rem 1.2rem 0.15rem 0.25rem;
-  }
-
-  .settings-bar-primary .binder-menu-btn {
-    flex-shrink: 0;
-    padding: 0.12rem 0.22rem;
-    font-size: 0.7rem;
-  }
-
-  .settings-bar-primary .fullscreen-toggle-btn-left {
-    width: 26px !important;
-    height: 24px !important;
-    flex-shrink: 0;
+    max-width: none;
+    height: 32px;
+    font-size: 0.72rem;
+    padding: 0 1.35rem 0 0.45rem;
+    border-radius: 8px;
   }
 
   .settings-bar-primary .setting-item {
     flex-shrink: 0;
   }
 
-  .settings-add-page-mobile {
+  .settings-bar-primary .settings-add-page-mobile {
+    margin-left: auto;
     flex-shrink: 0;
+  }
+
+  .settings-bar-primary .settings-mobile-toggle-item {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .settings-bar-primary .settings-add-page-mobile + .settings-mobile-toggle-item {
+    margin-left: 0;
   }
 
   .settings-bar-secondary {
@@ -194,19 +237,12 @@
   }
 
   .settings-mobile-toggle-btn {
-    width: 26px;
-    height: 24px;
-    border-radius: 4px;
     border: 1px solid #ccc;
     background-color: #fff;
     color: #333;
-    font-size: 0.65rem;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .settings-mobile-toggle-btn:hover {
@@ -225,28 +261,42 @@
   .settings-bar .gallery-count {
     display: none;
   }
-
-  .settings-add-page-btn {
-    white-space: nowrap;
-    padding: 0.15rem 0.3rem;
-    font-size: 0.6rem;
-  }
 }
 
 @media (max-width: 480px) {
-  .settings-bar-primary .binder-selector {
-    max-width: min(32vw, 96px);
+  .settings-bar-primary {
+    gap: 0.22rem;
+  }
+
+  .settings-bar-primary .fullscreen-toggle-btn-left,
+  .settings-bar-primary .binder-menu-btn,
+  .settings-bar-primary .cloud-save-now-btn,
+  .settings-bar-primary .cloud-discard-btn,
+  .settings-bar-primary .settings-mobile-toggle-btn {
+    width: 30px !important;
+    min-width: 30px !important;
+    max-width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    border-radius: 7px !important;
+  }
+
+  .settings-bar-primary .settings-add-page-btn--compact {
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 0.45rem !important;
+    font-size: 0.64rem !important;
+    border-radius: 7px !important;
+  }
+
+  .settings-bar-primary .binder-selector-wrapper,
+  .settings-bar-primary .binder-select {
+    height: 30px;
   }
 
   .settings-bar-primary .binder-select {
-    max-width: min(26vw, 76px);
-    font-size: 0.58rem;
-    padding: 0.12rem 1rem 0.12rem 0.2rem;
-  }
-
-  .settings-add-page-btn {
-    padding: 0.12rem 0.22rem;
-    font-size: 0.58rem;
+    font-size: 0.68rem;
+    padding: 0 1.2rem 0 0.35rem;
   }
 }
 
@@ -628,7 +678,8 @@
 
 .settings-fullscreen-hide-item {
   margin-left: auto;
-  margin-right: 2px;
+  /* Oval / yuvarlak ekran köşesi için ekstra pay (App zaten safe-right veriyor) */
+  margin-right: 10px;
   flex-shrink: 0;
   padding-right: 2px;
 }
@@ -1188,26 +1239,42 @@
   }
 
   .settings-bar-primary .binder-select {
-    max-width: min(24vw, 72px);
+    max-width: none;
     min-width: 0;
-    font-size: 0.55rem;
-    padding: 0.1rem 1rem 0.1rem 0.2rem;
+    height: 28px;
+    font-size: 0.62rem;
+    padding: 0 1.15rem 0 0.3rem;
   }
 
-  .settings-bar-primary .binder-menu-btn {
-    padding: 0.08rem 0.18rem;
-    font-size: 0.65rem;
+  .settings-bar-primary .binder-selector-wrapper {
+    height: 28px;
   }
 
-  .settings-bar-primary .fullscreen-toggle-btn-left {
-    width: 22px !important;
-    height: 20px !important;
+  .settings-bar-primary .fullscreen-toggle-btn-left,
+  .settings-bar-primary .binder-menu-btn,
+  .settings-bar-primary .cloud-save-now-btn,
+  .settings-bar-primary .cloud-discard-btn,
+  .settings-bar-primary .settings-mobile-toggle-btn {
+    width: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+    border-radius: 7px !important;
   }
 
-  .settings-mobile-toggle-item .settings-control,
-  .settings-add-page-mobile .action-button {
-    padding: 0.1rem 0.25rem;
-    font-size: 0.55rem;
+  .settings-bar-primary .settings-add-page-btn--compact {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 0.4rem !important;
+    font-size: 0.6rem !important;
+    border-radius: 7px !important;
+  }
+
+  .settings-mobile-toggle-item .settings-control {
+    padding: 0 !important;
+    font-size: 0.75rem;
     min-height: 28px;
   }
 }

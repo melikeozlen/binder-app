@@ -95,7 +95,7 @@
   border: none;
   border-radius: 0;
   background: transparent;
-  color: #e11d48;
+  color: #555;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -110,7 +110,7 @@
 .footer-toggle-btn:hover,
 .footer-toggle-btn:focus-visible {
   background: transparent;
-  color: #be123c;
+  color: #222;
   transform: translateY(-50%) scale(1.08);
 }
 

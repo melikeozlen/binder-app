@@ -2466,7 +2466,7 @@ function App() {
           title={t('footer.showFooter')}
           aria-label={t('footer.showFooter')}
         >
-          <ChevronUp size={16} strokeWidth={2.75} aria-hidden="true" />
+          <ChevronUp size={14} strokeWidth={2.25} aria-hidden="true" />
         </button>
       )}
       {readOnly && (
