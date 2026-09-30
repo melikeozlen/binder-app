@@ -82,8 +82,9 @@ const SettingsBar = ({
   onImportBinder,
   binderUsedImages = null,
   readOnly = false,
-  // null → gizli; 'dirty' → kaydedilmemiş değişiklik (aktif); 'saving' | 'saved' → pasif
+  // null → gizli; 'dirty' → kaydedilmemiş / henüz hesaba yazılmamış; 'saving' | 'saved' → pasif
   cloudSaveState = null,
+  cloudSaveCanDiscard = false,
   onCloudSaveNow,
   onCloudDiscard,
 }) => {
@@ -867,14 +868,18 @@ const SettingsBar = ({
             onClick={() => onCloudSaveNow && onCloudSaveNow()}
             title={
               cloudSaveState === 'dirty'
-                ? t('binder.unsavedChanges')
+                ? cloudSaveCanDiscard
+                  ? t('binder.unsavedChanges')
+                  : t('binder.saveToCloud')
                 : cloudSaveState === 'saving'
                   ? t('binder.saving')
                   : t('binder.allSaved')
             }
             aria-label={
               cloudSaveState === 'dirty'
-                ? t('binder.saveNow')
+                ? cloudSaveCanDiscard
+                  ? t('binder.saveNow')
+                  : t('binder.saveToCloudShort')
                 : cloudSaveState === 'saving'
                   ? t('binder.saving')
                   : t('binder.saved')
@@ -883,7 +888,7 @@ const SettingsBar = ({
           >
             {cloudSaveState === 'dirty' ? '💾' : cloudSaveState === 'saving' ? '⟳' : '✓'}
           </button>
-          {cloudSaveState === 'dirty' && (
+          {cloudSaveCanDiscard && (
             <button
               type="button"
               className="settings-control action-button cloud-discard-btn cloud-discard-btn--icon"

@@ -1533,9 +1533,14 @@ function App() {
     saveBinderToCloudWithNotice(id);
   }, [authUser, pendingCloudSaveId, saveBinderToCloudWithNotice]);
 
-  // "Kaydet" (üst çubuk): hemen push + sonuç bildirimi
+  // "Kaydet" (üst çubuk): buluttaysa push; henüz yerel ise hesaba ilk kayıt
   const { pushNow: cloudPushNow, discardChanges: cloudDiscardChanges } = cloudSync;
   const handleCloudSaveNow = async () => {
+    if (!selectedBinderId) return;
+    if (!cloudSync.cloudBinderIds.has(selectedBinderId)) {
+      await saveBinderToCloudWithNotice(selectedBinderId);
+      return;
+    }
     const result = await cloudPushNow();
     if (result) notify({ kind: 'success', text: t('notify.saved') });
     else notify({ kind: 'error', text: t('notify.saveFailed') });
@@ -2324,15 +2329,20 @@ function App() {
           return fn(...args);
         };
 
-  // Üst çubuktaki "Kaydet" durumu (yalnızca hesaba kayıtlı, düzenlenebilir binder için)
-  const cloudSaveState =
-    authUser && selectedBinderId && !readOnly && cloudSync.cloudBinderIds.has(selectedBinderId)
-      ? cloudSync.dirty
-        ? cloudSync.status === 'syncing'
-          ? 'saving'
-          : 'dirty'
-        : 'saved'
-      : null;
+  // Üst çubuk Kaydet: hesaba kayıtlı binder VEYA henüz kaydedilmemiş yerel binder
+  const selectedOnCloud =
+    Boolean(authUser && selectedBinderId && !readOnly && cloudSync.cloudBinderIds.has(selectedBinderId));
+  const cloudSaveState = (() => {
+    if (!authUser || !selectedBinderId || readOnly) return null;
+    if (selectedOnCloud) {
+      if (!cloudSync.dirty) return 'saved';
+      return cloudSync.status === 'syncing' ? 'saving' : 'dirty';
+    }
+    // Yerel binder — hesaba ilk kayıt için buton görünsün
+    if (cloudSync.savingBinderIds?.has(selectedBinderId)) return 'saving';
+    return 'dirty';
+  })();
+  const cloudSaveCanDiscard = selectedOnCloud && cloudSync.dirty && cloudSaveState === 'dirty';
 
   return (
     <div
@@ -2373,6 +2383,7 @@ function App() {
         })}
         readOnly={readOnly}
         cloudSaveState={cloudSaveState}
+        cloudSaveCanDiscard={cloudSaveCanDiscard}
         onCloudSaveNow={handleCloudSaveNow}
         onCloudDiscard={handleCloudDiscard}
         binders={binders}
