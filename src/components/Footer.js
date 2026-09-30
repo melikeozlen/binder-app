@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import './Footer.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTranslation } from '../utils/translations';
@@ -103,7 +104,7 @@ const getLocalStorageUsagePercent = () => {
   }
 };
 
-const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
+const Footer = ({ syncStatus = 'idle', onSyncNow, shares, onToggleFooter }) => {
   const incomingCount = shares?.incoming?.length || 0;
   const { language, setLanguage } = useLanguage();
   const t = (key) => getTranslation(key, language);
@@ -249,6 +250,17 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares }) => {
 
   return (
     <footer className="app-footer">
+      {onToggleFooter && (
+        <button
+          type="button"
+          className="footer-toggle-btn"
+          onClick={onToggleFooter}
+          title={t('footer.hideFooter')}
+          aria-label={t('footer.hideFooter')}
+        >
+          <X size={14} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      )}
       <div className="footer-content">
         {!isInstalled && deferredPrompt && (
           <>

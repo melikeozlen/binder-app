@@ -147,8 +147,7 @@
     font-size: 0.7rem;
   }
 
-  .settings-bar-primary .fullscreen-toggle-btn-left,
-  .settings-bar-primary .footer-toggle-btn {
+  .settings-bar-primary .fullscreen-toggle-btn-left {
     width: 26px !important;
     height: 24px !important;
     flex-shrink: 0;
@@ -471,27 +470,29 @@
 }
 
 .fullscreen-header-hide-btn {
-  width: 32px;
-  height: 26px;
-  min-width: 32px;
-  min-height: 26px;
+  width: 36px;
+  height: 24px;
+  min-width: 36px;
+  min-height: 24px;
   padding: 0;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(0, 0, 0, 0.5);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
 .fullscreen-header-hide-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
-  color: rgba(0, 0, 0, 0.55);
-  border-color: transparent;
+  background: rgba(255, 255, 255, 0.95);
+  color: rgba(0, 0, 0, 0.7);
+  border-color: rgba(0, 0, 0, 0.14);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
 }
 
 .settings-fullscreen-hide-item {
@@ -499,43 +500,6 @@
   margin-right: 2px;
   flex-shrink: 0;
   padding-right: 2px;
-}
-
-.footer-toggle-btn {
-  width: 32px !important;
-  height: 25px !important;
-  border-radius: 4px !important;
-  border: 1px solid #ccc !important;
-  background-color: #ffffff !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: flex-end !important;
-  justify-content: center !important;
-  transition: all 0.15s ease !important;
-  padding: 0 0 5px !important;
-}
-
-.footer-toggle-btn:hover {
-  background-color: #f5f5f5 !important;
-  border-color: #999 !important;
-}
-
-.footer-toggle-glyph {
-  display: block;
-  width: 13px;
-  height: 2px;
-  border-radius: 1px;
-  background-color: #555;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
-}
-
-.footer-toggle-btn--off .footer-toggle-glyph {
-  opacity: 0.28;
-  background-color: #999;
-}
-
-.footer-toggle-btn--on .footer-toggle-glyph {
-  opacity: 1;
 }
 
 .icon-button.remove-button:hover {
@@ -1104,8 +1068,7 @@
     font-size: 0.65rem;
   }
 
-  .settings-bar-primary .fullscreen-toggle-btn-left,
-  .settings-bar-primary .footer-toggle-btn {
+  .settings-bar-primary .fullscreen-toggle-btn-left {
     width: 22px !important;
     height: 20px !important;
   }

@@ -7,7 +7,7 @@ import Binder from './components/Binder';
 import Footer from './components/Footer';
 import BuyMeCoffee from './components/BuyMeCoffee';
 import MobileGestureGuide from './components/MobileGestureGuide';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import { useToast } from './contexts/ToastContext';
@@ -2411,8 +2411,6 @@ function App() {
         binderUsedImages={binderUsedImages}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
-        footerVisible={footerVisible}
-        onToggleFooter={toggleFooterVisibility}
         onHideFullscreenHeader={
           isFullscreen ? () => setFullscreenHeaderVisible(false) : undefined
         }
@@ -2425,7 +2423,18 @@ function App() {
           title={t('binder.showFullscreenHeader')}
           aria-label={t('binder.showFullscreenHeader')}
         >
-          <ChevronDown size={14} strokeWidth={1.5} aria-hidden="true" />
+          <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />
+        </button>
+      )}
+      {!isFullscreen && !footerVisible && (
+        <button
+          type="button"
+          className="footer-reopen"
+          onClick={toggleFooterVisibility}
+          title={t('footer.showFooter')}
+          aria-label={t('footer.showFooter')}
+        >
+          <ChevronUp size={14} strokeWidth={1.75} aria-hidden="true" />
         </button>
       )}
       {readOnly && (
@@ -2477,7 +2486,12 @@ function App() {
         onAddPage={edit(handleAddPage)}
         readOnly={readOnly}
       />
-      <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} shares={authUser ? shares : null} />
+      <Footer
+        syncStatus={cloudSync.status}
+        onSyncNow={cloudSync.syncNow}
+        shares={authUser ? shares : null}
+        onToggleFooter={toggleFooterVisibility}
+      />
       <BuyMeCoffee
         mode={isFullscreen && !fullscreenHeaderVisible ? 'fullscreenTools' : 'default'}
         readOnly={readOnly}

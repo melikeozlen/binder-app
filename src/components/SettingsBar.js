@@ -66,8 +66,6 @@ const SettingsBar = ({
   onGalleryUrlsChange,
   isFullscreen = false,
   onToggleFullscreen,
-  footerVisible = true,
-  onToggleFooter,
   onHideFullscreenHeader,
   binders = [],
   selectedBinderId = null,
@@ -806,21 +804,6 @@ const SettingsBar = ({
           </button>
         </div>
       )}
-
-      {onToggleFooter && (
-        <div className="setting-item">
-          <button
-            type="button"
-            className={`footer-toggle-btn ${footerVisible ? 'footer-toggle-btn--on' : 'footer-toggle-btn--off'}`}
-            onClick={onToggleFooter}
-            title={footerVisible ? t('footer.hideFooter') : t('footer.showFooter')}
-            aria-label={footerVisible ? t('footer.hideFooter') : t('footer.showFooter')}
-            aria-pressed={footerVisible}
-          >
-            <span className="footer-toggle-glyph" aria-hidden="true" />
-          </button>
-        </div>
-      )}
       
       {/* Binder seçimi ve yönetimi */}
       <div className="setting-item binder-selector">
@@ -948,7 +931,7 @@ const SettingsBar = ({
             title={t('binder.hideFullscreenHeader')}
             aria-label={t('binder.hideFullscreenHeader')}
           >
-            <ChevronUp size={14} strokeWidth={1.5} aria-hidden="true" />
+            <ChevronUp size={16} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
       )}

@@ -100,7 +100,7 @@
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  color: rgba(0, 0, 0, 0.45);
+  color: rgba(0, 0, 0, 0.5);
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   line-height: 1;
@@ -119,6 +119,48 @@
   background: rgba(255, 255, 255, 0.92);
   color: rgba(0, 0, 0, 0.62);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.footer-reopen {
+  display: none;
+}
+
+.App.footer-hidden:not(.fullscreen-mode) .footer-reopen {
+  display: inline-flex;
+  position: fixed;
+  bottom: calc(8px + var(--safe-bottom, 0px));
+  left: calc(8px + var(--safe-left, 0px));
+  right: auto;
+  transform: none;
+  z-index: 10025;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.42);
+  cursor: pointer;
+  box-shadow: none;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.App.footer-hidden:not(.fullscreen-mode) .footer-reopen::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+.App.footer-hidden:not(.fullscreen-mode) .footer-reopen:hover,
+.App.footer-hidden:not(.fullscreen-mode) .footer-reopen:focus-visible {
+  background: transparent;
+  color: rgba(0, 0, 0, 0.7);
+  box-shadow: none;
 }
 
 .App.fullscreen-mode .app-footer,
@@ -257,6 +299,13 @@ body {
 
   .App.footer-hidden > .page-order-bar {
     padding-bottom: max(0.35rem, var(--safe-bottom));
+    /* Sol köşedeki footer-aç butonu için yer */
+    padding-left: calc(36px + var(--safe-left, 0px));
+  }
+
+  .App.footer-hidden:not(.fullscreen-mode) .footer-reopen {
+    bottom: calc(6px + var(--safe-bottom, 0px));
+    left: calc(8px + var(--safe-left, 0px));
   }
 
   .App.footer-hidden {
