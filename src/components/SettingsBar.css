@@ -470,6 +470,37 @@
   transform: scale(1.05);
 }
 
+.fullscreen-header-hide-btn {
+  width: 32px;
+  height: 26px;
+  min-width: 32px;
+  min-height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fullscreen-header-hide-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(0, 0, 0, 0.55);
+  border-color: transparent;
+}
+
+.settings-fullscreen-hide-item {
+  margin-left: auto;
+  margin-right: 2px;
+  flex-shrink: 0;
+  padding-right: 2px;
+}
+
 .footer-toggle-btn {
   width: 32px !important;
   height: 25px !important;

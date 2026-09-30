@@ -49,7 +49,7 @@
   display: none !important;
 }
 
-/* Fullscreen modunda Settings ve Footer minimal görünüm */
+/* Fullscreen modunda Settings ve Footer */
 .App.fullscreen-mode .settings-bar {
   position: fixed !important;
   top: var(--safe-top);
@@ -57,18 +57,68 @@
   right: var(--safe-right);
   z-index: 10001 !important;
   display: flex !important;
-  padding: 0.15rem 0.3rem;
+  /* Telefon köşe / rounded corner’dan uzak tut */
+  padding: 0.2rem max(14px, calc(var(--safe-right, 0px) + 10px)) 0.2rem
+    max(10px, calc(var(--safe-left, 0px) + 6px));
   background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  opacity: 0.85;
-  transition: opacity 0.2s;
+  opacity: 0.95;
+  transition: opacity 0.2s, transform 0.2s;
   max-height: none;
   overflow: visible;
 }
 
 .App.fullscreen-mode .settings-bar:hover {
   opacity: 1;
+}
+
+.App.fullscreen-mode.fullscreen-header-hidden .settings-bar {
+  display: none !important;
+}
+
+.fullscreen-header-reopen {
+  display: none;
+}
+
+.App.fullscreen-mode.fullscreen-header-hidden .fullscreen-header-reopen {
+  display: inline-flex;
+  position: fixed;
+  top: calc(6px + var(--safe-top, 0px));
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  z-index: 10025;
+  width: 36px;
+  min-width: 36px;
+  height: 22px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.App.fullscreen-mode.fullscreen-header-hidden .fullscreen-header-reopen::before {
+  content: '';
+  position: absolute;
+  inset: -8px -12px;
+}
+
+.App.fullscreen-mode.fullscreen-header-hidden .fullscreen-header-reopen:hover,
+.App.fullscreen-mode.fullscreen-header-hidden .fullscreen-header-reopen:focus-visible {
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(0, 0, 0, 0.62);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .App.fullscreen-mode .app-footer,
@@ -84,6 +134,11 @@
   top: 40px !important;
   bottom: 0 !important;
   height: calc(100dvh - 40px - var(--safe-top)) !important;
+}
+
+.App.fullscreen-mode.fullscreen-header-hidden .binder-container {
+  top: 0 !important;
+  height: calc(100dvh - var(--safe-top, 0px)) !important;
 }
 
 * {
@@ -245,6 +300,11 @@ body {
     top: 32px !important;
     height: calc(100dvh - 32px - var(--safe-top)) !important;
     padding-bottom: var(--safe-bottom) !important;
+  }
+
+  .App.fullscreen-mode.fullscreen-header-hidden .binder-container {
+    top: 0 !important;
+    height: calc(100dvh - var(--safe-top, 0px)) !important;
   }
 }
 

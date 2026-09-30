@@ -7,6 +7,7 @@ import Binder from './components/Binder';
 import Footer from './components/Footer';
 import BuyMeCoffee from './components/BuyMeCoffee';
 import MobileGestureGuide from './components/MobileGestureGuide';
+import { ChevronDown } from 'lucide-react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import { useToast } from './contexts/ToastContext';
@@ -1049,6 +1050,7 @@ function App() {
   // defaultBackImage IndexedDB'den yükle (async olduğu için başlangıçta null)
   const [defaultBackImage, setDefaultBackImage] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenHeaderVisible, setFullscreenHeaderVisible] = useState(true);
   const [footerVisible, setFooterVisible] = useState(() => {
     try {
       return localStorage.getItem('binder-footer-visible') !== 'false';
@@ -2280,7 +2282,13 @@ function App() {
   // Fullscreen değişikliklerini dinle
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement));
+      const next = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement
+      );
+      setIsFullscreen(next);
+      if (next) setFullscreenHeaderVisible(true);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -2346,7 +2354,9 @@ function App() {
 
   return (
     <div
-      className={`App ${isFullscreen ? 'fullscreen-mode' : ''} ${!footerVisible ? 'footer-hidden' : ''} ${readOnly ? 'read-only' : ''}`}
+      className={`App ${isFullscreen ? 'fullscreen-mode' : ''} ${
+        isFullscreen && !fullscreenHeaderVisible ? 'fullscreen-header-hidden' : ''
+      } ${!footerVisible ? 'footer-hidden' : ''} ${readOnly ? 'read-only' : ''}`}
     >
       <SettingsBar
         binderColor={binderColor}
@@ -2403,7 +2413,21 @@ function App() {
         onToggleFullscreen={toggleFullscreen}
         footerVisible={footerVisible}
         onToggleFooter={toggleFooterVisibility}
+        onHideFullscreenHeader={
+          isFullscreen ? () => setFullscreenHeaderVisible(false) : undefined
+        }
       />
+      {isFullscreen && !fullscreenHeaderVisible && (
+        <button
+          type="button"
+          className="fullscreen-header-reopen"
+          onClick={() => setFullscreenHeaderVisible(true)}
+          title={t('binder.showFullscreenHeader')}
+          aria-label={t('binder.showFullscreenHeader')}
+        >
+          <ChevronDown size={14} strokeWidth={1.5} aria-hidden="true" />
+        </button>
+      )}
       {readOnly && (
         <div className="read-only-banner" role="status">
           👁 {t('binder.viewOnlyBanner', { username: selectedBinderEntry?.ownerUsername || '?' })}
@@ -2454,7 +2478,15 @@ function App() {
         readOnly={readOnly}
       />
       <Footer syncStatus={cloudSync.status} onSyncNow={cloudSync.syncNow} shares={authUser ? shares : null} />
-      <BuyMeCoffee />
+      <BuyMeCoffee
+        mode={isFullscreen && !fullscreenHeaderVisible ? 'fullscreenTools' : 'default'}
+        readOnly={readOnly}
+        cloudSaveState={cloudSaveState}
+        cloudSaveCanDiscard={cloudSaveCanDiscard}
+        onAddPage={edit(handleAddPage)}
+        onCloudSaveNow={handleCloudSaveNow}
+        onCloudDiscard={handleCloudDiscard}
+      />
       <MobileGestureGuide />
       <ShareModal
         open={Boolean(shareBinderId)}

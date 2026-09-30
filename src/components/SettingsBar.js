@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { HexColorPicker } from 'react-colorful';
-import { Undo2 } from 'lucide-react';
+import { Undo2, ChevronUp } from 'lucide-react';
 import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
@@ -68,6 +68,7 @@ const SettingsBar = ({
   onToggleFullscreen,
   footerVisible = true,
   onToggleFooter,
+  onHideFullscreenHeader,
   binders = [],
   selectedBinderId = null,
   onSelectBinder,
@@ -937,6 +938,20 @@ const SettingsBar = ({
           {mobileSettingsExpanded ? '▲' : '▼'}
         </button>
       </div>
+
+      {isFullscreen && onHideFullscreenHeader && (
+        <div className="setting-item settings-fullscreen-hide-item">
+          <button
+            type="button"
+            className="fullscreen-header-hide-btn"
+            onClick={onHideFullscreenHeader}
+            title={t('binder.hideFullscreenHeader')}
+            aria-label={t('binder.hideFullscreenHeader')}
+          >
+            <ChevronUp size={14} strokeWidth={1.5} aria-hidden="true" />
+          </button>
+        </div>
+      )}
       </div>
 
       <div className="settings-bar-secondary">

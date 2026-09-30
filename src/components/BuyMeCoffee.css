@@ -121,12 +121,16 @@
 }
 
 .App.fullscreen-mode .bmc-stack {
-  right: calc(12px + var(--safe-right, 0px));
+  right: calc(14px + var(--safe-right, 0px));
+  z-index: 10020;
+  --bmc-size: 28px;
+  --bmc-gap: 6px;
 }
 
 .App.fullscreen-mode .bmc-share,
 .App.fullscreen-mode .buy-me-coffee {
-  opacity: 0.72;
+  opacity: 0.75;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .App.fullscreen-mode .bmc-share:hover,
@@ -134,6 +138,73 @@
 .App.fullscreen-mode .buy-me-coffee:hover,
 .App.fullscreen-mode .buy-me-coffee:focus-visible {
   opacity: 1;
+}
+
+.bmc-stack--tools {
+  pointer-events: none;
+}
+
+.bmc-tool {
+  pointer-events: auto;
+  width: var(--bmc-size);
+  height: var(--bmc-size);
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(0, 0, 0, 0.4);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: opacity 0.15s ease, color 0.15s, background-color 0.15s;
+}
+
+.bmc-tool:hover:not(:disabled),
+.bmc-tool:focus-visible:not(:disabled) {
+  transform: none;
+  color: rgba(0, 0, 0, 0.65);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: none;
+}
+
+.bmc-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.bmc-tool--save-dirty {
+  background: rgba(26, 95, 180, 0.1);
+  color: #1a5fb4;
+}
+
+.bmc-tool--save-dirty:hover:not(:disabled) {
+  background: rgba(26, 95, 180, 0.18);
+  color: #154d91;
+}
+
+.bmc-tool--save-saving,
+.bmc-tool--save-saved {
+  background: rgba(255, 255, 255, 0.55);
+  color: rgba(0, 0, 0, 0.32);
+}
+
+.bmc-tool--discard {
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.bmc-tool-spin {
+  animation: bmc-spin 0.8s linear infinite;
+}
+
+@keyframes bmc-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 1024px) {

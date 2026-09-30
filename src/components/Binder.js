@@ -292,31 +292,7 @@ const Binder = ({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Fullscreen kontrolleri */}
-      {isFullscreen && (
-        <div className="fullscreen-controls">
-          {/* Üstte ortada sayfa ekle butonu */}
-          <button
-            type="button"
-            className="fullscreen-add-page-btn"
-            onClick={onAddPage}
-            title={t('binder.addPage')}
-            aria-label={t('binder.addPage')}
-          >
-            +
-          </button>
-          {/* Sağda ekran küçültme butonu */}
-          <button
-            type="button"
-            className="fullscreen-exit-btn"
-            onClick={onToggleFullscreen}
-            title={t('binder.exitFullscreen')}
-            aria-label={t('binder.exitFullscreen')}
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      {/* Fullscreen araçları App / BuyMeCoffee üzerinden */}
       <div className="binder-wrapper" style={{ 
         ...wrapperStyle,
         '--binder-color': binderColor,
