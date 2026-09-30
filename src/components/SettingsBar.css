@@ -70,6 +70,14 @@
     overflow-x: hidden;
   }
 
+  .settings-bar:has(.size-menu) {
+    overflow: visible;
+  }
+
+  .settings-bar-secondary:has(.size-menu) {
+    overflow: visible;
+  }
+
   .settings-bar-primary,
   .settings-bar-secondary {
     display: flex;
@@ -317,10 +325,132 @@
   gap: 0.2rem;
 }
 
+.setting-item--size-menu {
+  position: relative;
+  z-index: 20;
+}
+
+.size-menu-btn {
+  gap: 0.28rem;
+}
+
+.size-menu-btn--open {
+  border-color: #999;
+  background: #f5f5f5;
+}
+
+.size-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 200px;
+  padding: 0.45rem 0.5rem;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  z-index: 1200;
+}
+
+.size-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.size-menu-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #444;
+  min-width: 3.6rem;
+  flex-shrink: 0;
+}
+
+.size-menu-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.size-step-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.size-step-btn:hover {
+  background: #f3f3f3;
+  border-color: #aaa;
+  color: #111;
+}
+
+.size-step-btn:active {
+  background: #ebebeb;
+}
+
+.size-menu-input {
+  width: 52px;
+  padding: 0.22rem 0.28rem;
+  text-align: center;
+  font-size: 0.72rem;
+  border-radius: 6px;
+}
+
+.size-menu-zoom-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.size-menu-input--zoom {
+  width: 44px;
+}
+
+.size-menu-suffix {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #777;
+  user-select: none;
+}
+
 .ratio-input {
   width: 50px;
   padding: 0.2rem 0.25rem;
   text-align: center;
+}
+
+.ratio-input-wrapper--zoom {
+  gap: 0.12rem;
+}
+
+.ratio-input--zoom {
+  width: 42px;
+  padding-right: 0.15rem;
+}
+
+.ratio-input-suffix {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #777;
+  line-height: 1;
+  user-select: none;
 }
 
 .ratio-buttons {
@@ -470,29 +600,30 @@
 }
 
 .fullscreen-header-hide-btn {
-  width: 36px;
-  height: 24px;
-  min-width: 36px;
-  min-height: 24px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
   padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  color: rgba(0, 0, 0, 0.5);
+  border: 1.5px solid rgba(0, 0, 0, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: rgba(0, 0, 0, 0.55);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
 }
 
 .fullscreen-header-hide-btn:hover {
-  background: rgba(255, 255, 255, 0.95);
-  color: rgba(0, 0, 0, 0.7);
-  border-color: rgba(0, 0, 0, 0.14);
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  background: #fff;
+  color: rgba(0, 0, 0, 0.78);
+  border-color: rgba(0, 0, 0, 0.28);
+  box-shadow: none;
 }
 
 .settings-fullscreen-hide-item {

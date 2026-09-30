@@ -1040,6 +1040,12 @@ function App() {
   const [binderType, setBinderType] = useState(savedSettings?.binderType || 'leather');
   const [widthRatio, setWidthRatio] = useState(savedSettings?.widthRatio || 1.9);
   const [heightRatio, setHeightRatio] = useState(savedSettings?.heightRatio || 1);
+  const [binderZoom, setBinderZoom] = useState(() => {
+    const z = savedSettings?.binderZoom;
+    const n = typeof z === 'number' ? z : parseFloat(z);
+    if (!Number.isFinite(n)) return 1;
+    return Math.max(0.5, Math.min(1, n));
+  });
   
   // widthRatio ve heightRatio state'lerini string veya number olarak yönetebilmek için
   // localStorage'a kaydederken sayısal değerleri kullan
@@ -1078,6 +1084,11 @@ function App() {
           setBinderType(settings.binderType || 'leather');
           setWidthRatio(settings.widthRatio || 1.9);
           setHeightRatio(settings.heightRatio || 1);
+          {
+            const z = settings.binderZoom;
+            const n = typeof z === 'number' ? z : parseFloat(z);
+            setBinderZoom(Number.isFinite(n) ? Math.max(0.5, Math.min(1, n)) : 1);
+          }
           setGridSize(settings.gridSize || '2x2');
           setPageType(settings.pageType || 'mat');
           setImageInputMode(settings.imageInputMode || 'defaultGallery');
@@ -1154,6 +1165,8 @@ function App() {
     // Boş string değerleri varsayılan değerlerle değiştir
     const widthRatioToSave = widthRatio === '' ? 1.9 : widthRatio;
     const heightRatioToSave = heightRatio === '' ? 1 : heightRatio;
+    const binderZoomToSave =
+      binderZoom === '' ? 1 : Math.max(0.5, Math.min(1, parseFloat(binderZoom) || 1));
     
     // defaultBackImage'ı localStorage'a kaydetme (büyük olabilir, sadece state'te tut)
     const settingsToSave = {
@@ -1161,6 +1174,7 @@ function App() {
       ringColor,
       widthRatio: widthRatioToSave,
       heightRatio: heightRatioToSave,
+      binderZoom: binderZoomToSave,
       gridSize,
       pageType,
       imageInputMode,
@@ -1171,7 +1185,7 @@ function App() {
     };
     
     saveSettings(settingsToSave, selectedBinderId);
-  }, [binderColor, ringColor, widthRatio, heightRatio, gridSize, pageType, imageInputMode, containerColor, gridStitchColor, binderType, selectedBinderId]); // defaultBackImage dependency'den çıkarıldı
+  }, [binderColor, ringColor, widthRatio, heightRatio, binderZoom, gridSize, pageType, imageInputMode, containerColor, gridStitchColor, binderType, selectedBinderId]); // defaultBackImage dependency'den çıkarıldı
 
   // Sayfaları localStorage'a kaydet - debounce ile optimize edilmiş
   useEffect(() => {
@@ -1251,6 +1265,19 @@ function App() {
       if (!isNaN(numValue)) {
         setHeightRatio(numValue);
       }
+    }
+  };
+
+  const handleBinderZoomChange = (value) => {
+    if (value === '') {
+      setBinderZoom('');
+      return;
+    }
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      // UI yüzde (50–100) veya oran (0.5–1) gelebilir
+      const asRatio = numValue > 1 ? numValue / 100 : numValue;
+      setBinderZoom(asRatio);
     }
   };
 
@@ -1380,6 +1407,8 @@ function App() {
 
     const widthRatioToSave = widthRatio === '' ? 1.9 : widthRatio;
     const heightRatioToSave = heightRatio === '' ? 1 : heightRatio;
+    const binderZoomToSave =
+      binderZoom === '' ? 1 : Math.max(0.5, Math.min(1, parseFloat(binderZoom) || 1));
 
     saveSettings(
       {
@@ -1387,6 +1416,7 @@ function App() {
         ringColor,
         widthRatio: widthRatioToSave,
         heightRatio: heightRatioToSave,
+        binderZoom: binderZoomToSave,
         gridSize,
         pageType,
         imageInputMode,
@@ -2366,6 +2396,7 @@ function App() {
         binderType={binderType}
         widthRatio={widthRatio}
         heightRatio={heightRatio}
+        binderZoom={binderZoom}
         gridSize={gridSize}
         pageType={pageType}
         defaultBackImage={defaultBackImage}
@@ -2376,6 +2407,7 @@ function App() {
         onBinderTypeChange={edit(handleBinderTypeChange)}
         onWidthRatioChange={edit(handleWidthRatioChange)}
         onHeightRatioChange={edit(handleHeightRatioChange)}
+        onBinderZoomChange={edit(handleBinderZoomChange)}
         onGridSizeChange={edit(handleGridSizeChange)}
         onPageTypeChange={edit(handlePageTypeChange)}
         onDefaultBackImageChange={edit(handleDefaultBackImageChange)}
@@ -2434,7 +2466,7 @@ function App() {
           title={t('footer.showFooter')}
           aria-label={t('footer.showFooter')}
         >
-          <ChevronUp size={14} strokeWidth={1.75} aria-hidden="true" />
+          <ChevronUp size={16} strokeWidth={2.75} aria-hidden="true" />
         </button>
       )}
       {readOnly && (
@@ -2459,6 +2491,7 @@ function App() {
         binderType={binderType}
         widthRatio={widthRatio}
         heightRatio={heightRatio}
+        binderZoom={binderZoom}
         pages={pages}
         pageType={pageType}
         defaultBackImage={defaultBackImage}

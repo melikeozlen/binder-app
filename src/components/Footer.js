@@ -258,7 +258,7 @@ const Footer = ({ syncStatus = 'idle', onSyncNow, shares, onToggleFooter }) => {
           title={t('footer.hideFooter')}
           aria-label={t('footer.hideFooter')}
         >
-          <X size={14} strokeWidth={1.75} aria-hidden="true" />
+          <X size={15} strokeWidth={2.75} aria-hidden="true" />
         </button>
       )}
       <div className="footer-content">

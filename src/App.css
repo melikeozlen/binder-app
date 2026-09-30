@@ -133,34 +133,36 @@
   right: auto;
   transform: none;
   z-index: 10025;
-  width: 28px;
-  min-width: 28px;
-  height: 28px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
   padding: 0;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 0;
-  background: transparent;
-  color: rgba(0, 0, 0, 0.42);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #2563eb;
   cursor: pointer;
-  box-shadow: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   line-height: 1;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  transition: color 0.15s, background-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 
 .App.footer-hidden:not(.fullscreen-mode) .footer-reopen::before {
   content: '';
   position: absolute;
-  inset: -8px;
+  inset: -6px;
 }
 
 .App.footer-hidden:not(.fullscreen-mode) .footer-reopen:hover,
 .App.footer-hidden:not(.fullscreen-mode) .footer-reopen:focus-visible {
-  background: transparent;
-  color: rgba(0, 0, 0, 0.7);
-  box-shadow: none;
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+  transform: scale(1.05);
 }
 
 .App.fullscreen-mode .app-footer,

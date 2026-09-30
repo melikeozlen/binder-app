@@ -12,7 +12,8 @@ const Binder = ({
   containerColor = '#ffffff',
   binderType = 'leather',
   widthRatio = 1.9, 
-  heightRatio = 1, 
+  heightRatio = 1,
+  binderZoom = 1, 
   pages = [], 
   pageType = 'mat',
   defaultBackImage = null,
@@ -113,8 +114,8 @@ const Binder = ({
   const useFullWidth = containerAspectRatio > binderAspectRatio;
 
   const wrapperStyle = useMemo(() => {
-    const isCompact = containerSize.width < 1024;
-    const scale = isCompact ? 0.97 : 0.95;
+    const zoomRaw = typeof binderZoom === 'number' ? binderZoom : parseFloat(binderZoom);
+    const scale = Math.max(0.5, Math.min(1, Number.isFinite(zoomRaw) ? zoomRaw : 1));
 
     if (containerSize.width <= 1 || containerSize.height <= 1) {
       return { width: `${scale * 100}%`, height: `${scale * 100}%` };
@@ -135,7 +136,7 @@ const Binder = ({
       maxWidth: '100%',
       maxHeight: '100%',
     };
-  }, [useFullWidth, containerSize, binderAspectRatio, containerAspectRatio]);
+  }, [useFullWidth, containerSize, binderAspectRatio, containerAspectRatio, binderZoom]);
   // Dikiş rengini hesapla: binder rengi açıksa koyu, koyuysa açık
   const stitchColor = useMemo(() => {
     // Varsayılan binder rengi

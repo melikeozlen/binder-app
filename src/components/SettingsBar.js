@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { HexColorPicker } from 'react-colorful';
-import { Undo2, ChevronUp } from 'lucide-react';
+import { Undo2, X, Plus, Minus, Scaling } from 'lucide-react';
 import './SettingsBar.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
@@ -44,6 +44,7 @@ const SettingsBar = ({
   binderType,
   widthRatio,
   heightRatio,
+  binderZoom = 1,
   gridSize,
   pageType,
   defaultBackImage,
@@ -54,6 +55,7 @@ const SettingsBar = ({
   onBinderTypeChange,
   onWidthRatioChange,
   onHeightRatioChange,
+  onBinderZoomChange,
   onGridSizeChange,
   onPageTypeChange,
   onDefaultBackImageChange,
@@ -106,9 +108,12 @@ const SettingsBar = ({
   const widthDownIntervalRef = useRef(null);
   const heightUpIntervalRef = useRef(null);
   const heightDownIntervalRef = useRef(null);
+  const zoomUpIntervalRef = useRef(null);
+  const zoomDownIntervalRef = useRef(null);
   const ratioHoldDelayRef = useRef(null);
   const widthRatioRef = useRef(widthRatio);
   const heightRatioRef = useRef(heightRatio);
+  const binderZoomRef = useRef(binderZoom);
   const [showBackImageUrlInput, setShowBackImageUrlInput] = useState(false);
   const [backImageUrlInput, setBackImageUrlInput] = useState('');
   const [showBackImageGallery, setShowBackImageGallery] = useState(false);
@@ -126,6 +131,7 @@ const SettingsBar = ({
   const [driveGalleryLoading, setDriveGalleryLoading] = useState(false);
   const [showGallerySettingsModal, setShowGallerySettingsModal] = useState(false);
   const [showAppearanceModal, setShowAppearanceModal] = useState(false);
+  const [showSizeMenu, setShowSizeMenu] = useState(false);
   const [galleryDownloadControls, setGalleryDownloadControls] = useState(null);
   const handleGalleryDownloadControls = useCallback((next) => {
     setGalleryDownloadControls((prev) => {
@@ -154,18 +160,30 @@ const SettingsBar = ({
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  // Görünüm / renk seçici: ESC ile kapat
+  // Görünüm / renk / boyut: ESC ile kapat
   useEffect(() => {
-    if (!showAppearanceModal && !showColorPicker) return undefined;
+    if (!showAppearanceModal && !showColorPicker && !showSizeMenu) return undefined;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
       if (showColorPicker) setShowColorPicker(false);
+      else if (showSizeMenu) setShowSizeMenu(false);
       else if (showAppearanceModal) setShowAppearanceModal(false);
     };
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
-  }, [showAppearanceModal, showColorPicker]);
+  }, [showAppearanceModal, showColorPicker, showSizeMenu]);
+
+  // Boyut menüsü: dışarı tıklayınca kapat
+  useEffect(() => {
+    if (!showSizeMenu) return undefined;
+    const onPointerDown = (e) => {
+      if (e.target.closest?.('.setting-item--size-menu')) return;
+      setShowSizeMenu(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [showSizeMenu]);
 
   // widthRatio ve heightRatio ref'lerini güncelle
   useEffect(() => {
@@ -175,6 +193,10 @@ const SettingsBar = ({
   useEffect(() => {
     heightRatioRef.current = heightRatio;
   }, [heightRatio]);
+
+  useEffect(() => {
+    binderZoomRef.current = binderZoom;
+  }, [binderZoom]);
 
 
   // Basılı tutma: pointer (mouse+touch tek yol) + pencere düzeyinde bırakma
@@ -194,6 +216,14 @@ const SettingsBar = ({
     if (heightDownIntervalRef.current) {
       clearInterval(heightDownIntervalRef.current);
       heightDownIntervalRef.current = null;
+    }
+    if (zoomUpIntervalRef.current) {
+      clearInterval(zoomUpIntervalRef.current);
+      zoomUpIntervalRef.current = null;
+    }
+    if (zoomDownIntervalRef.current) {
+      clearInterval(zoomDownIntervalRef.current);
+      zoomDownIntervalRef.current = null;
     }
     if (ratioHoldDelayRef.current) {
       clearTimeout(ratioHoldDelayRef.current);
@@ -234,31 +264,47 @@ const SettingsBar = ({
     [onHeightRatioChange]
   );
 
+  const bumpZoom = useCallback(
+    (deltaPercent) => {
+      if (!onBinderZoomChange) return;
+      const current = parseFloat(binderZoomRef.current);
+      const base = Number.isFinite(current) ? current : 1;
+      const next = Math.max(0.5, Math.min(1, parseFloat((base + deltaPercent / 100).toFixed(2))));
+      onBinderZoomChange(next);
+    },
+    [onBinderZoomChange]
+  );
+
   const startRatioRepeat = useCallback(
     (axis, delta) => {
       stopAllRatioRepeats();
       if (axis === 'width') bumpWidth(delta);
-      else bumpHeight(delta);
+      else if (axis === 'height') bumpHeight(delta);
+      else if (axis === 'zoom') bumpZoom(delta);
 
       // Kısa basışta tek adım; basılı tutunca tekrarla
       ratioHoldDelayRef.current = setTimeout(() => {
         ratioHoldDelayRef.current = null;
         const tick = () => {
           if (axis === 'width') bumpWidth(delta);
-          else bumpHeight(delta);
+          else if (axis === 'height') bumpHeight(delta);
+          else if (axis === 'zoom') bumpZoom(delta);
         };
         const id = setInterval(tick, 60);
         if (axis === 'width') {
           if (delta > 0) widthUpIntervalRef.current = id;
           else widthDownIntervalRef.current = id;
+        } else if (axis === 'height') {
+          if (delta > 0) heightUpIntervalRef.current = id;
+          else heightDownIntervalRef.current = id;
         } else if (delta > 0) {
-          heightUpIntervalRef.current = id;
+          zoomUpIntervalRef.current = id;
         } else {
-          heightDownIntervalRef.current = id;
+          zoomDownIntervalRef.current = id;
         }
       }, 280);
     },
-    [stopAllRatioRepeats, bumpWidth, bumpHeight]
+    [stopAllRatioRepeats, bumpWidth, bumpHeight, bumpZoom]
   );
 
   const onRatioPointerDown = (axis, delta) => (e) => {
@@ -931,7 +977,7 @@ const SettingsBar = ({
             title={t('binder.hideFullscreenHeader')}
             aria-label={t('binder.hideFullscreenHeader')}
           >
-            <ChevronUp size={16} strokeWidth={2} aria-hidden="true" />
+            <X size={13} strokeWidth={2.5} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -956,144 +1002,211 @@ const SettingsBar = ({
         </button>
       </div>
       
-      <div className="setting-item setting-item--size">
-        <span className="setting-label setting-label--strong" title={t('settings.widthHelp')}>
-          {t('settings.width')}
-        </span>
-        <div className="ratio-input-wrapper">
-          <input
-            type="number"
-            value={widthRatio === '' ? '' : widthRatio}
-            onChange={(e) => {
-              const value = e.target.value;
-              // Boş string'e izin ver (tamamen silip sıfırdan yazabilmek için)
-              if (value === '') {
-                onWidthRatioChange('');
-              } else {
-                onWidthRatioChange(value);
-              }
-            }}
-            onKeyDown={(e) => {
-              // Ok tuşlarını yakala ve sayfa değiştirmeyi engelle
-              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                e.stopPropagation();
-              }
-            }}
-            onBlur={(e) => {
-              // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
-              if (e.target.value === '') {
-                onWidthRatioChange(1.9);
-              } else {
-                // Değeri 2 ondalık basamağa yuvarla
-                const numValue = parseFloat(e.target.value);
-                if (!isNaN(numValue)) {
-                  const rounded = parseFloat(numValue.toFixed(2));
-                  onWidthRatioChange(Math.max(0.5, Math.min(5, rounded)));
-                }
-              }
-            }}
-            min="0.5"
-            max="5"
-            step="0.01"
-            className="settings-control ratio-input"
-            title={t('settings.widthHelp')}
-            aria-label={t('settings.widthHelp')}
-          />
-          <div className="ratio-buttons">
-            <button
-              type="button"
-              className="ratio-btn ratio-btn-up"
-              onPointerDown={onRatioPointerDown('width', 0.01)}
-              onPointerUp={onRatioPointerStop}
-              onPointerCancel={onRatioPointerStop}
-              title={t('settings.wider')}
-              aria-label={t('settings.wider')}
-            >
-              ▲
-            </button>
-            <button
-              type="button"
-              className="ratio-btn ratio-btn-down"
-              onPointerDown={onRatioPointerDown('width', -0.01)}
-              onPointerUp={onRatioPointerStop}
-              onPointerCancel={onRatioPointerStop}
-              title={t('settings.narrower')}
-              aria-label={t('settings.narrower')}
-            >
-              ▼
-            </button>
+      <div className="setting-item setting-item--size-menu">
+        <button
+          type="button"
+          className={`settings-control icon-button size-menu-btn${showSizeMenu ? ' size-menu-btn--open' : ''}`}
+          onClick={() => setShowSizeMenu((v) => !v)}
+          title={t('settings.sizeHelp')}
+          aria-label={t('settings.sizeHelp')}
+          aria-expanded={showSizeMenu}
+          aria-haspopup="dialog"
+        >
+          <Scaling size={14} strokeWidth={2.25} aria-hidden="true" />
+          <span className="icon-button-label">{t('settings.size')}</span>
+        </button>
+        {showSizeMenu && (
+          <div className="size-menu" role="dialog" aria-label={t('settings.size')}>
+            <div className="size-menu-row">
+              <span className="size-menu-label" title={t('settings.widthHelp')}>
+                {t('settings.width')}
+              </span>
+              <div className="size-menu-controls">
+                <button
+                  type="button"
+                  className="size-step-btn"
+                  onPointerDown={onRatioPointerDown('width', -0.01)}
+                  onPointerUp={onRatioPointerStop}
+                  onPointerCancel={onRatioPointerStop}
+                  title={t('settings.narrower')}
+                  aria-label={t('settings.narrower')}
+                >
+                  <Minus size={14} strokeWidth={2.5} aria-hidden="true" />
+                </button>
+                <input
+                  type="number"
+                  value={widthRatio === '' ? '' : widthRatio}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') onWidthRatioChange('');
+                    else onWidthRatioChange(value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopPropagation();
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value === '') {
+                      onWidthRatioChange(1.9);
+                    } else {
+                      const numValue = parseFloat(e.target.value);
+                      if (!isNaN(numValue)) {
+                        onWidthRatioChange(Math.max(0.5, Math.min(5, parseFloat(numValue.toFixed(2)))));
+                      }
+                    }
+                  }}
+                  min="0.5"
+                  max="5"
+                  step="0.01"
+                  className="settings-control size-menu-input"
+                  title={t('settings.widthHelp')}
+                  aria-label={t('settings.widthHelp')}
+                />
+                <button
+                  type="button"
+                  className="size-step-btn"
+                  onPointerDown={onRatioPointerDown('width', 0.01)}
+                  onPointerUp={onRatioPointerStop}
+                  onPointerCancel={onRatioPointerStop}
+                  title={t('settings.wider')}
+                  aria-label={t('settings.wider')}
+                >
+                  <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            <div className="size-menu-row">
+              <span className="size-menu-label" title={t('settings.heightHelp')}>
+                {t('settings.height')}
+              </span>
+              <div className="size-menu-controls">
+                <button
+                  type="button"
+                  className="size-step-btn"
+                  onPointerDown={onRatioPointerDown('height', -0.01)}
+                  onPointerUp={onRatioPointerStop}
+                  onPointerCancel={onRatioPointerStop}
+                  title={t('settings.shorter')}
+                  aria-label={t('settings.shorter')}
+                >
+                  <Minus size={14} strokeWidth={2.5} aria-hidden="true" />
+                </button>
+                <input
+                  type="number"
+                  value={heightRatio === '' ? '' : heightRatio}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') onHeightRatioChange('');
+                    else onHeightRatioChange(value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopPropagation();
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value === '') {
+                      onHeightRatioChange(1);
+                    } else {
+                      const numValue = parseFloat(e.target.value);
+                      if (!isNaN(numValue)) {
+                        onHeightRatioChange(Math.max(0.5, Math.min(5, parseFloat(numValue.toFixed(2)))));
+                      }
+                    }
+                  }}
+                  min="0.5"
+                  max="5"
+                  step="0.01"
+                  className="settings-control size-menu-input"
+                  title={t('settings.heightHelp')}
+                  aria-label={t('settings.heightHelp')}
+                />
+                <button
+                  type="button"
+                  className="size-step-btn"
+                  onPointerDown={onRatioPointerDown('height', 0.01)}
+                  onPointerUp={onRatioPointerStop}
+                  onPointerCancel={onRatioPointerStop}
+                  title={t('settings.taller')}
+                  aria-label={t('settings.taller')}
+                >
+                  <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            {onBinderZoomChange && (
+              <div className="size-menu-row">
+                <span className="size-menu-label" title={t('settings.zoomHelp')}>
+                  {t('settings.zoom')}
+                </span>
+                <div className="size-menu-controls">
+                  <button
+                    type="button"
+                    className="size-step-btn"
+                    onPointerDown={onRatioPointerDown('zoom', -5)}
+                    onPointerUp={onRatioPointerStop}
+                    onPointerCancel={onRatioPointerStop}
+                    title={t('settings.zoomOut')}
+                    aria-label={t('settings.zoomOut')}
+                  >
+                    <Minus size={14} strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                  <div className="size-menu-zoom-field">
+                    <input
+                      type="number"
+                      value={
+                        binderZoom === ''
+                          ? ''
+                          : Math.round(
+                              (Number.isFinite(parseFloat(binderZoom)) ? parseFloat(binderZoom) : 1) *
+                                100
+                            )
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') onBinderZoomChange('');
+                        else onBinderZoomChange(value);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopPropagation();
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === '') {
+                          onBinderZoomChange(1);
+                        } else {
+                          const numValue = parseFloat(e.target.value);
+                          if (!isNaN(numValue)) {
+                            const asRatio = numValue > 1 ? numValue / 100 : numValue;
+                            onBinderZoomChange(
+                              Math.max(0.5, Math.min(1, parseFloat(asRatio.toFixed(2))))
+                            );
+                          }
+                        }
+                      }}
+                      min="50"
+                      max="100"
+                      step="5"
+                      className="settings-control size-menu-input size-menu-input--zoom"
+                      title={t('settings.zoomHelp')}
+                      aria-label={t('settings.zoomHelp')}
+                    />
+                    <span className="size-menu-suffix" aria-hidden="true">%</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="size-step-btn"
+                    onPointerDown={onRatioPointerDown('zoom', 5)}
+                    onPointerUp={onRatioPointerStop}
+                    onPointerCancel={onRatioPointerStop}
+                    title={t('settings.zoomIn')}
+                    aria-label={t('settings.zoomIn')}
+                  >
+                    <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
-      
-      <div className="setting-item setting-item--size">
-        <span className="setting-label setting-label--strong" title={t('settings.heightHelp')}>
-          {t('settings.height')}
-        </span>
-        <div className="ratio-input-wrapper">
-          <input
-            type="number"
-            value={heightRatio === '' ? '' : heightRatio}
-            onChange={(e) => {
-              const value = e.target.value;
-              // Boş string'e izin ver (tamamen silip sıfırdan yazabilmek için)
-              if (value === '') {
-                onHeightRatioChange('');
-              } else {
-                onHeightRatioChange(value);
-              }
-            }}
-            onKeyDown={(e) => {
-              // Ok tuşlarını yakala ve sayfa değiştirmeyi engelle
-              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                e.stopPropagation();
-              }
-            }}
-            onBlur={(e) => {
-              // Focus kaybolduğunda, eğer boşsa varsayılan değeri kullan
-              if (e.target.value === '') {
-                onHeightRatioChange(1);
-              } else {
-                // Değeri 2 ondalık basamağa yuvarla
-                const numValue = parseFloat(e.target.value);
-                if (!isNaN(numValue)) {
-                  const rounded = parseFloat(numValue.toFixed(2));
-                  onHeightRatioChange(Math.max(0.5, Math.min(5, rounded)));
-                }
-              }
-            }}
-            min="0.5"
-            max="5"
-            step="0.01"
-            className="settings-control ratio-input"
-            title={t('settings.heightHelp')}
-            aria-label={t('settings.heightHelp')}
-          />
-          <div className="ratio-buttons">
-            <button
-              type="button"
-              className="ratio-btn ratio-btn-up"
-              onPointerDown={onRatioPointerDown('height', 0.01)}
-              onPointerUp={onRatioPointerStop}
-              onPointerCancel={onRatioPointerStop}
-              title={t('settings.taller')}
-              aria-label={t('settings.taller')}
-            >
-              ▲
-            </button>
-            <button
-              type="button"
-              className="ratio-btn ratio-btn-down"
-              onPointerDown={onRatioPointerDown('height', -0.01)}
-              onPointerUp={onRatioPointerStop}
-              onPointerCancel={onRatioPointerStop}
-              title={t('settings.shorter')}
-              aria-label={t('settings.shorter')}
-            >
-              ▼
-            </button>
-          </div>
-        </div>
+        )}
       </div>
       
       <div className="setting-item setting-item--grid">
