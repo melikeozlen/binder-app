@@ -1330,11 +1330,12 @@ GREENGREEN | https://resmim.net/cdn/2026/06/12/CAfZGM.png |  Musicart Fansign Gr
 GREENGREEN | https://resmim.net/cdn/2026/06/12/CAfmr3.png|  Musicart Fansign GreenGreen Martin
 
 
-GREENGREEN | https://resmim.net/cdn/2026/06/12/CAfyGF.png |  Hellolive GreenGreen Juhoon
-GREENGREEN | https://resmim.net/cdn/2026/06/12/CAfgIb.png |  Hellolive GreenGreen Keonho
-GREENGREEN | https://resmim.net/cdn/2026/06/12/CAf1Xi.png |  Hellolive GreenGreen James
-GREENGREEN | https://resmim.net/cdn/2026/06/12/CAfodx.png |  Hellolive GreenGreen Seonghyeon
-GREENGREEN | https://resmim.net/cdn/2026/06/12/CAfif1.png |  Hellolive GreenGreen Martin
+
+GREENGREEN | https://i.pinimg.com/474x/4d/fb/c6/4dfbc6dff8af6d6000d520a19a380983.jpg | Keonho CORTIS 2nd EP 'GREENGREEN' Hellolive VCE 
+GREENGREEN | https://i.pinimg.com/474x/0b/e6/04/0be6045cfcebefab788a748377274602.jpg | Seonghyeon CORTIS 2nd EP 'GREENGREEN' Hellolive VCE 
+GREENGREEN | https://i.pinimg.com/474x/2a/5d/a4/2a5da4cad2c3509793181ec06ad69776.jpg | Juhoon CORTIS 2nd EP 'GREENGREEN' Hellolive VCE 
+GREENGREEN | https://i.pinimg.com/474x/7b/62/d9/7b62d9556fbc3034d92d078168513620.jpg | James CORTIS 2nd EP 'GREENGREEN' Hellolive VCE 
+GREENGREEN | https://i.pinimg.com/474x/89/08/d9/8908d9b883492f883da895568e8a971d.jpg | Martin CORTIS 2nd EP 'GREENGREEN' Hellolive VCE 
 
 
 
@@ -1868,6 +1869,11 @@ GREENGREEN   |   https://i.hizliresim.com/2f85fxh.png | Juhoon Hellolive ld 0.2
 GREENGREEN   |   https://i.hizliresim.com/ci45t5q.png | Seonghyeon Hellolive ld 0.2
 GREENGREEN   |   https://i.hizliresim.com/5e0nnzo.png | Keonho Hellolive ld 0.2
 
+GREENGREEN | https://i.pinimg.com/474x/4f/ed/39/4fed39eac4bf71dabca6ebe7e1c4cd11.jpg | Keonho CORTIS 2nd EP 'GREENGREEN' Hellolive Luckydraw 2.0 Ver. 
+GREENGREEN | https://i.pinimg.com/474x/3f/f8/c9/3ff8c9aba00c54ebabb4da0cf9e3f70e.jpg | Seonghyeon CORTIS 2nd EP 'GREENGREEN' Hellolive Luckydraw 2.0 Ver. 
+GREENGREEN | https://i.pinimg.com/474x/e6/36/6a/e6366a483eac4ee874ace2e80ef646ae.jpg | Juhoon CORTIS 2nd EP 'GREENGREEN' Hellolive Luckydraw 2.0 Ver. 
+GREENGREEN | https://i.pinimg.com/474x/49/53/50/4953509fd8f19278089cb00746f7d5fd.jpg | James CORTIS 2nd EP 'GREENGREEN' Hellolive Luckydraw 2.0 Ver. 
+GREENGREEN | https://i.pinimg.com/474x/2b/3c/ee/2b3ceef29a7e476c050e7099ba67464e.jpg | Martin CORTIS 2nd EP 'GREENGREEN' Hellolive Luckydraw 2.0 Ver. 
 
 
 GREENGREEN   |   https://i.hizliresim.com/3cvnk5z.png | Martin Lip balm Holographic
